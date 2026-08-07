@@ -11,8 +11,10 @@
  * 5) SECRET debe coincidir con appsScriptSecret
  *
  * Tipos de POST:
- *  - type: "verify"  → código al cliente
+ *  - type: "verify"  → código al cliente (activar cuenta)
+ *  - type: "recover" → código al cliente (recuperar contraseña)
  *  - type: "booking" → aviso de reserva al admin
+ *  - type: "redeem"  → aviso de canje de puntos por producto al admin
  */
 
 var SECRET = "barberhome-otp-2026";
@@ -30,6 +32,12 @@ function doPost(e) {
     if (type === "booking") {
       return sendBookingAlert_(data);
     }
+    if (type === "redeem") {
+      return sendRedeemAlert_(data);
+    }
+    if (type === "recover") {
+      return sendRecoverCode_(data);
+    }
     return sendVerifyCode_(data);
   } catch (err) {
     return json_({ ok: false, message: String(err) });
@@ -40,7 +48,7 @@ function doGet() {
   return json_({
     ok: true,
     message:
-      "BarberHome mail OK. Usa POST type=verify (código) o type=booking (aviso admin).",
+      "BarberHome mail OK. Usa POST type=verify, recover, booking o redeem.",
   });
 }
 
@@ -62,7 +70,7 @@ function sendVerifyCode_(data) {
     "Tu código de verificación de Puntos BarberHome es: " +
     code +
     "\n\n" +
-    "Escríbelo en la app para activar tu cuenta.\n" +
+    "Escríbelo en la app para activar tu cuenta y canjear puntos por productos.\n" +
     "Si no solicitaste este código, ignora este mensaje.\n\n" +
     "— " +
     fromName;
@@ -76,7 +84,7 @@ function sendVerifyCode_(data) {
     '<p style="font-size:32px;letter-spacing:6px;font-weight:700;margin:24px 0;color:#5b21b6">' +
     escapeHtml_(code) +
     "</p>" +
-    "<p>Escríbelo en la app para activar tu cuenta.</p>" +
+    "<p>Escríbelo en la app para activar tu cuenta y canjear puntos por productos.</p>" +
     '<p style="color:#6b7280;font-size:13px">Si no solicitaste este código, ignora este mensaje.</p>' +
     "<p>— " +
     escapeHtml_(fromName) +
@@ -92,6 +100,57 @@ function sendVerifyCode_(data) {
   });
 
   return json_({ ok: true, message: "Código enviado" });
+}
+
+function sendRecoverCode_(data) {
+  var to = String(data.to_email || "").trim();
+  var name = String(data.to_name || "cliente").trim();
+  var code = String(data.code || "").trim();
+  var fromName = String(data.from_name || "BarberHome").trim();
+
+  if (!to || !code) {
+    return json_({ ok: false, message: "Faltan to_email o code" });
+  }
+
+  var subject = "Recupera tu contraseña Puntos BarberHome: " + code;
+  var body =
+    "Hola " +
+    name +
+    ",\n\n" +
+    "Recibimos una solicitud para recuperar tu contraseña de Puntos BarberHome.\n" +
+    "Tu código es: " +
+    code +
+    "\n\n" +
+    "Escríbelo en la app para crear una contraseña nueva.\n" +
+    "Si no solicitaste esto, ignora este mensaje.\n\n" +
+    "— " +
+    fromName;
+
+  var html =
+    '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111827">' +
+    "<p>Hola <strong>" +
+    escapeHtml_(name) +
+    "</strong>,</p>" +
+    "<p>Usa este código para <strong>recuperar tu contraseña</strong> de Puntos BarberHome:</p>" +
+    '<p style="font-size:32px;letter-spacing:6px;font-weight:700;margin:24px 0;color:#5b21b6">' +
+    escapeHtml_(code) +
+    "</p>" +
+    "<p>Escríbelo en la app para crear una contraseña nueva.</p>" +
+    '<p style="color:#6b7280;font-size:13px">Si no solicitaste esto, ignora este mensaje.</p>' +
+    "<p>— " +
+    escapeHtml_(fromName) +
+    "</p>" +
+    "</div>";
+
+  MailApp.sendEmail({
+    to: to,
+    subject: subject,
+    body: body,
+    htmlBody: html,
+    name: fromName,
+  });
+
+  return json_({ ok: true, message: "Código de recuperación enviado" });
 }
 
 function sendBookingAlert_(data) {
@@ -190,6 +249,85 @@ function sendBookingAlert_(data) {
   });
 
   return json_({ ok: true, message: "Aviso de reserva enviado" });
+}
+
+function sendRedeemAlert_(data) {
+  var to = String(data.to_email || data.admin_email || "").trim();
+  var fromName = String(data.from_name || "BarberHome").trim();
+  var redeem = data.redeem || {};
+  var customer = redeem.customer || {};
+
+  if (!to) {
+    return json_({ ok: false, message: "Falta admin_email / to_email" });
+  }
+
+  var product = String(redeem.productName || data.product_name || "Producto").trim();
+  var points = String(
+    redeem.pointsCost != null ? redeem.pointsCost : data.points_cost != null ? data.points_cost : "—"
+  );
+  var client = String(customer.name || data.client_name || "Cliente").trim();
+  var phone = String(customer.phone || data.client_phone || "—").trim();
+  var email = String(customer.email || data.client_email || "—").trim();
+  var doc = String(
+    data.client_doc ||
+      ((customer.docType || "") + " " + (customer.docNumber || "")).trim() ||
+      "—"
+  ).trim();
+  var redeemId = String(redeem.id || "").trim();
+
+  var subject = "Canje de puntos · " + product + " · " + client;
+
+  var body =
+    "Nuevo canje de puntos en " +
+    fromName +
+    "\n\n" +
+    "Producto: " +
+    product +
+    "\n" +
+    "Puntos descontados: " +
+    points +
+    "\n" +
+    "Cliente: " +
+    client +
+    "\n" +
+    "Documento: " +
+    doc +
+    "\n" +
+    "WhatsApp: " +
+    phone +
+    "\n" +
+    "Correo: " +
+    email +
+    "\n" +
+    (redeemId ? "ID: " + redeemId + "\n" : "") +
+    "\nLos puntos ya fueron descontados. Entrega el producto y márcalo como entregado en Puntos.\n" +
+    "\n— BarberCloud";
+
+  var html =
+    '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827">' +
+    '<p style="font-size:18px;font-weight:700;margin:0 0 8px">Canje de puntos</p>' +
+    '<p style="color:#6b7280;margin:0 0 20px">Los puntos ya fueron descontados. Entrega el producto.</p>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
+    row_("Producto", product) +
+    row_("Puntos", "−" + points) +
+    row_("Cliente", client) +
+    row_("Documento", doc) +
+    row_("WhatsApp", phone) +
+    row_("Correo", email) +
+    (redeemId ? row_("ID", redeemId) : "") +
+    "</table>" +
+    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de BarberCloud</p>' +
+    "</div>";
+
+  MailApp.sendEmail({
+    to: to,
+    subject: subject,
+    body: body,
+    htmlBody: html,
+    name: fromName,
+  });
+
+  return json_({ ok: true, message: "Aviso de canje enviado" });
 }
 
 function row_(label, value) {

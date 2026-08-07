@@ -6,9 +6,9 @@
   const LOYALTY_HISTORY_KEY = "barbercloud.loyalty_history";
   const POINTS_KEY = "barbercloud.points";
   const LOYALTY = {
+    /** Usado solo para calcular el costo en pts de cada producto al canjear */
     pesosPerPoint: 800,
-    redeemCost: 500,
-    redeemValueCop: 20000,
+    earnPerService: 5,
     expireMonths: 12,
   };
   const MONTHS = [
@@ -542,6 +542,7 @@
   const PRODUCTS_KEY = "barbercloud.marketplace_products";
   const CART_KEY = "barbercloud.marketplace_cart";
   const SALES_KEY = "barbercloud.marketplace_sales";
+  const PRODUCT_REDEEMS_KEY = "barbercloud.loyalty_product_redemptions";
   const PLACEHOLDER =
     "data:image/svg+xml," +
     encodeURIComponent(
@@ -883,6 +884,38 @@
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  let lastRedeemWhatsApp = null;
+
+  function buildRedeemWhatsAppMessage(payload) {
+    const business = config.title || "BarberHome";
+    const c = payload?.customer || {};
+    const lines = [
+      `Hola, canjeé puntos en ${business} y quiero coordinar la entrega:`,
+      "",
+      `Producto: ${payload?.productName || "Producto"}`,
+      `Puntos canjeados: ${payload?.pointsCost ?? "—"}`,
+      `Saldo restante: ${payload?.balance ?? "—"} pts`,
+      `Cliente: ${c.name || "—"}`,
+      `Documento: ${c.docType || "CC"} ${c.docNumber || "—"}`,
+      `Teléfono: ${c.phone || "—"}`,
+    ];
+    if (payload?.id) lines.push(`ID canje: ${payload.id}`);
+    lines.push("", "¿Me indicas cómo y cuándo puedo reclamarlo?");
+    return lines.join("\n");
+  }
+
+  function openRedeemWhatsApp(payload) {
+    const data = payload || lastRedeemWhatsApp;
+    if (!data) {
+      window.AppShell?.toast?.("Primero realiza un canje para coordinar la entrega");
+      return;
+    }
+    const phone = resolveShopWhatsApp();
+    const text = encodeURIComponent(buildRedeemWhatsAppMessage(data));
+    const url = `https://wa.me/${phone}?text=${text}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   document.getElementById("btn-public-checkout")?.addEventListener("click", () => {
     const cart = loadShopCart();
     if (!cart.length) {
@@ -972,11 +1005,88 @@
   /* —— Puntos Barberhome: auth + verificación —— */
   const puntosAuth = document.getElementById("puntos-auth");
   const puntosVerify = document.getElementById("puntos-verify");
+  const puntosRecover = document.getElementById("puntos-recover");
   const puntosDashboard = document.getElementById("puntos-dashboard");
   const loginForm = document.getElementById("loyalty-login-form");
   const registerForm = document.getElementById("loyalty-register-form");
   const verifyForm = document.getElementById("loyalty-verify-form");
+  const recoverRequestForm = document.getElementById("loyalty-recover-request-form");
+  const recoverResetForm = document.getElementById("loyalty-recover-reset-form");
   let pendingVerifyUserId = null;
+  let pendingRecoverUserId = null;
+
+  const PASSWORD_ITERATIONS = 100000;
+
+  function bufToB64(buf) {
+    const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : buf;
+    let binary = "";
+    bytes.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
+    return btoa(binary);
+  }
+
+  function b64ToBuf(b64) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function validatePassword(password) {
+    const pw = String(password || "");
+    if (pw.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+    if (!/[a-z]/.test(pw)) return "Debe incluir al menos una letra minúscula.";
+    if (!/[A-Z]/.test(pw)) return "Debe incluir al menos una letra mayúscula.";
+    if (!/\d/.test(pw)) return "Debe incluir al menos un número.";
+    if (!/[^A-Za-z0-9]/.test(pw)) return "Debe incluir al menos un símbolo (!@#$…).";
+    return "";
+  }
+
+  async function hashPassword(password, existingSaltB64) {
+    const enc = new TextEncoder();
+    const salt = existingSaltB64
+      ? b64ToBuf(existingSaltB64)
+      : crypto.getRandomValues(new Uint8Array(16));
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(String(password)),
+      "PBKDF2",
+      false,
+      ["deriveBits"]
+    );
+    const bits = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt,
+        iterations: PASSWORD_ITERATIONS,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      256
+    );
+    return { salt: bufToB64(salt), hash: bufToB64(bits) };
+  }
+
+  async function verifyPassword(password, saltB64, hashB64) {
+    if (!saltB64 || !hashB64) return false;
+    const { hash } = await hashPassword(password, saltB64);
+    return hash === hashB64;
+  }
+
+  function openLoyaltyTerms() {
+    const panel = document.getElementById("loyalty-terms-panel");
+    if (!panel) return;
+    panel.hidden = false;
+    document.body.classList.add("public-confirm-open");
+    document.getElementById("loyalty-terms-accept")?.focus();
+  }
+
+  function closeLoyaltyTerms() {
+    const panel = document.getElementById("loyalty-terms-panel");
+    if (panel) panel.hidden = true;
+    document.body.classList.remove("public-confirm-open");
+  }
 
   function loadLoyaltyUsers() {
     try {
@@ -1025,11 +1135,21 @@
   function showPuntosView(view) {
     if (puntosAuth) puntosAuth.hidden = view !== "auth";
     if (puntosVerify) puntosVerify.hidden = view !== "verify";
+    if (puntosRecover) puntosRecover.hidden = view !== "recover";
     if (puntosDashboard) puntosDashboard.hidden = view !== "dashboard";
+  }
+
+  function showRecoverStep(step) {
+    if (recoverRequestForm) recoverRequestForm.hidden = step !== "request";
+    if (recoverResetForm) recoverResetForm.hidden = step !== "reset";
   }
 
   function pointsFromPrice(price) {
     return Math.floor((Number(price) || 0) / LOYALTY.pesosPerPoint);
+  }
+
+  function pointsCostForProduct(price) {
+    return Math.max(1, pointsFromPrice(price));
   }
 
   function expireDateFrom(iso) {
@@ -1180,23 +1300,277 @@
     saveLoyaltyUsers(users);
   }
 
+  function redeemableProducts() {
+    return loadShopProducts()
+      .filter((p) => (Number(p.stock) || 0) > 0)
+      .map((p) => ({
+        ...p,
+        pointsCost: pointsCostForProduct(p.price),
+      }))
+      .sort((a, b) => a.pointsCost - b.pointsCost || String(a.name).localeCompare(String(b.name)));
+  }
+
+  function renderRedeemProducts(user) {
+    const grid = document.getElementById("loyalty-redeem-grid");
+    const lead = document.getElementById("loyalty-redeem-lead");
+    if (!grid) return;
+
+    const points = user.points || 0;
+    const products = redeemableProducts();
+    const affordable = products.filter((p) => p.pointsCost <= points).length;
+
+    if (lead) {
+      lead.textContent = products.length
+        ? affordable
+          ? `Puedes canjear ${affordable} producto${affordable === 1 ? "" : "s"} con tus ${points} puntos.`
+          : `Aún no alcanzas ningún producto. Recuerda pedirle al barbero cargar tus ${LOYALTY.earnPerService} pts por servicio.`
+        : "Por ahora no hay productos con stock para canjear.";
+    }
+
+    if (!products.length) {
+      grid.innerHTML =
+        `<p class="loyalty-redeem-empty">Cuando haya productos en el marketplace, aparecerán aquí.</p>`;
+      return;
+    }
+
+    grid.innerHTML = products
+      .map((p) => {
+        const missing = Math.max(0, p.pointsCost - points);
+        const can = missing === 0;
+        const thumb = p.images?.length ? p.images[0] : PLACEHOLDER;
+        return `
+          <article class="loyalty-redeem-item ${can ? "is-ready" : "is-locked"}" data-product-id="${escapeShopHtml(p.id)}">
+            <div class="loyalty-redeem-item__media">
+              <img class="loyalty-redeem-item__img" src="${thumb}" alt="${escapeShopHtml(p.name)}" loading="lazy" />
+            </div>
+            <div class="loyalty-redeem-item__body">
+              <h4>${escapeShopHtml(p.name)}</h4>
+              <p class="loyalty-redeem-item__price"><strong>${p.pointsCost}</strong> puntos</p>
+              <p class="loyalty-redeem-item__status">
+                ${
+                  can
+                    ? "Listo para canjear"
+                    : `Te faltan <strong>${missing}</strong> punto${missing === 1 ? "" : "s"}`
+                }
+              </p>
+              <button
+                type="button"
+                class="btn ${can ? "btn--primary" : "btn--secondary"} btn--block btn-redeem-product"
+                data-product-id="${escapeShopHtml(p.id)}"
+                ${can ? "" : "disabled"}
+              >
+                ${can ? "Canjear ahora" : `Faltan ${missing} pts`}
+              </button>
+            </div>
+          </article>`;
+      })
+      .join("");
+  }
+
+  function updatePointsProgress(points, products) {
+    const bar = document.getElementById("points-progress-bar");
+    const hint = document.getElementById("points-progress-hint");
+    if (!products.length) {
+      if (bar) bar.style.width = "0%";
+      if (hint) hint.textContent = "Sin productos disponibles para canjear por ahora.";
+      return;
+    }
+
+    const next = products.find((p) => p.pointsCost > points) || products[products.length - 1];
+    const need = next.pointsCost;
+    const pct = Math.min(100, Math.round((points / need) * 100));
+    if (bar) bar.style.width = `${pct}%`;
+    if (hint) {
+      if (points >= products[0].pointsCost) {
+        const ready = products.filter((p) => p.pointsCost <= points).length;
+        hint.textContent =
+          points >= need
+            ? `Tienes puntos para canjear ${ready} producto${ready === 1 ? "" : "s"}.`
+            : `Puedes canjear ${ready} producto${ready === 1 ? "" : "s"}. Te faltan ${need - points} pts para ${next.name}.`;
+      } else {
+        hint.textContent = `Te faltan ${need - points} puntos para canjear ${next.name} (${need} pts).`;
+      }
+    }
+  }
+
+  function redeemProductWithPoints(productId) {
+    const users = loadLoyaltyUsers();
+    const sessionId = getSessionUserId();
+    const idx = users.findIndex((u) => u.id === sessionId && u.emailVerified);
+    if (idx < 0) {
+      showAuthError("redeem-error", "Debes iniciar sesión para canjear.");
+      return;
+    }
+
+    let user = syncUserPoints(users[idx]);
+    const products = loadShopProducts();
+    const pIdx = products.findIndex((p) => p.id === productId);
+    if (pIdx < 0) {
+      showAuthError("redeem-error", "Ese producto ya no está disponible.");
+      renderDashboard(user);
+      return;
+    }
+
+    const product = products[pIdx];
+    const stock = Number(product.stock) || 0;
+    if (stock <= 0) {
+      showAuthError("redeem-error", "Ese producto está agotado.");
+      renderDashboard(user);
+      return;
+    }
+
+    const cost = pointsCostForProduct(product.price);
+    if ((user.points || 0) < cost) {
+      showAuthError(
+        "redeem-error",
+        `Te faltan ${cost - (user.points || 0)} puntos para canjear ${product.name}.`
+      );
+      renderDashboard(user);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    ensureLedger(user);
+    appendAdminHistory({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      name: user.name,
+      docType: user.docType,
+      docNumber: user.docNumber,
+      amount: -cost,
+      note: `Canje producto · ${product.name}`,
+      at: now,
+    });
+    user.ledger.push({
+      type: "redeem",
+      amount: -cost,
+      at: now,
+      note: `Canje producto · ${product.name}`,
+      productId: product.id,
+    });
+    syncUserPoints(user);
+    try {
+      const list = JSON.parse(localStorage.getItem(LOYALTY_HISTORY_KEY) || "[]");
+      if (list[0]) {
+        list[0].balance = user.points;
+        localStorage.setItem(LOYALTY_HISTORY_KEY, JSON.stringify(list.slice(0, 100)));
+      }
+    } catch {
+      /* ignore */
+    }
+
+    products[pIdx] = { ...product, stock: stock - 1 };
+    saveShopProducts(products);
+
+    const saleId = `sale-${Date.now().toString(36)}`;
+    const redeemId = `predeem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const customer = {
+      userId: user.id,
+      name: user.name,
+      docType: user.docType,
+      docNumber: user.docNumber,
+      phone: user.phone,
+      email: user.email || "",
+    };
+
+    const sales = loadShopSales();
+    sales.unshift({
+      id: saleId,
+      createdAt: now,
+      total: Number(product.price) || 0,
+      units: 1,
+      items: [
+        {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          qty: 1,
+          lineTotal: Number(product.price) || 0,
+          pointsCost: cost,
+        },
+      ],
+      source: "loyalty-points",
+      redeemId,
+      customer,
+    });
+    saveShopSales(sales);
+
+    try {
+      const redemptions = JSON.parse(localStorage.getItem(PRODUCT_REDEEMS_KEY) || "[]");
+      const list = Array.isArray(redemptions) ? redemptions : [];
+      list.unshift({
+        id: redeemId,
+        saleId,
+        createdAt: now,
+        productId: product.id,
+        productName: product.name,
+        pointsCost: cost,
+        valueCop: Number(product.price) || 0,
+        status: "pending",
+        deliveredAt: null,
+        pointsDeducted: true,
+        customer,
+      });
+      localStorage.setItem(PRODUCT_REDEEMS_KEY, JSON.stringify(list.slice(0, 200)));
+    } catch {
+      /* ignore */
+    }
+
+    users[idx] = user;
+    saveLoyaltyUsers(users);
+    try {
+      renderPublicShop();
+    } catch {
+      /* ignore */
+    }
+
+    const alertPayload = {
+      id: redeemId,
+      productName: product.name,
+      pointsCost: cost,
+      valueCop: Number(product.price) || 0,
+      createdAt: now,
+      customer,
+    };
+    try {
+      const alertFn = window.EmailService?.sendRedeemAdminAlert;
+      if (typeof alertFn === "function") {
+        alertFn(alertPayload).catch((err) => {
+          console.warn("[loyalty] No se pudo avisar al admin del canje", err);
+        });
+      }
+    } catch (err) {
+      console.warn("[loyalty] No se pudo avisar al admin del canje", err);
+    }
+
+    lastRedeemWhatsApp = {
+      id: redeemId,
+      productName: product.name,
+      pointsCost: cost,
+      balance: user.points,
+      customer,
+    };
+
+    const success = document.getElementById("redeem-success");
+    const successText = document.getElementById("redeem-success-text");
+    if (successText) {
+      successText.textContent = `Canjeaste ${product.name} por ${cost} puntos. Te quedan ${user.points} pts. Coordina la entrega por WhatsApp.`;
+    }
+    if (success) success.hidden = false;
+    showAuthError("redeem-error", "");
+    renderDashboard(user, { keepRedeemSuccess: true });
+    window.AppShell?.toast?.(`Canje exitoso: ${product.name}`);
+  }
+
   function renderDashboard(user, opts = {}) {
     syncUserPoints(user);
     const points = user.points || 0;
     document.getElementById("loyalty-user-name").textContent = user.name.split(" ")[0] || user.name;
     document.getElementById("points-value").textContent = String(points);
 
-    const need = LOYALTY.redeemCost;
-    const pct = Math.min(100, Math.round((points / need) * 100));
-    const bar = document.getElementById("points-progress-bar");
-    const hint = document.getElementById("points-progress-hint");
-    if (bar) bar.style.width = `${pct}%`;
-    if (hint) {
-      hint.textContent =
-        points >= need
-          ? `Ya puedes canjear ${formatCop(LOYALTY.redeemValueCop)}.`
-          : `Te faltan ${need - points} puntos para canjear ${formatCop(LOYALTY.redeemValueCop)}.`;
-    }
+    const products = redeemableProducts();
+    updatePointsProgress(points, products);
+    renderRedeemProducts(user);
 
     document.getElementById("loyalty-meta").innerHTML = `
       <p><strong>Documento:</strong> ${user.docType} ${user.docNumber}</p>
@@ -1204,21 +1578,7 @@
       <p><strong>Teléfono:</strong> ${user.phone}</p>
     `;
 
-    const pending = (user.redemptions || []).find((r) => r && !r.used);
-    const redeemBtn = document.getElementById("btn-redeem-points");
-    if (redeemBtn) {
-      if (pending) {
-        redeemBtn.disabled = false;
-        redeemBtn.textContent = "Ver mi código de canje";
-      } else {
-        redeemBtn.disabled = points < need;
-        redeemBtn.textContent =
-          points >= need ? "Canjear puntos" : `Canjear puntos (mín. ${need})`;
-      }
-    }
-    const panel = document.getElementById("redeem-panel");
     const success = document.getElementById("redeem-success");
-    if (panel) panel.hidden = true;
     if (success && !opts.keepRedeemSuccess) success.hidden = true;
     if (!opts.keepRedeemSuccess) showAuthError("redeem-error", "");
     persistUser(user);
@@ -1302,6 +1662,81 @@
     btn.addEventListener("click", () => switchAuthTab(btn.getAttribute("data-auth-tab")));
   });
 
+  document.getElementById("btn-open-terms")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openLoyaltyTerms();
+  });
+  document.getElementById("loyalty-terms-accept")?.addEventListener("click", () => {
+    const box = document.getElementById("register-accept-terms");
+    if (box) box.checked = true;
+    closeLoyaltyTerms();
+  });
+  document.getElementById("loyalty-terms-dismiss")?.addEventListener("click", closeLoyaltyTerms);
+
+  document.getElementById("btn-forgot-password")?.addEventListener("click", () => {
+    showAuthError("recover-request-error", "");
+    showAuthError("recover-reset-error", "");
+    recoverRequestForm?.reset();
+    recoverResetForm?.reset();
+    showRecoverStep("request");
+    showPuntosView("recover");
+  });
+
+  document.getElementById("btn-recover-back-login")?.addEventListener("click", () => {
+    pendingRecoverUserId = null;
+    showPuntosView("auth");
+    switchAuthTab("login");
+  });
+
+  async function startPasswordRecovery(user) {
+    pendingRecoverUserId = user.id;
+    const code = makeCode();
+    const users = loadLoyaltyUsers();
+    const idx = users.findIndex((u) => u.id === user.id);
+    if (idx < 0) return { ok: false, message: "Cuenta no encontrada." };
+    users[idx].recoverCode = code;
+    users[idx].recoverSentAt = new Date().toISOString();
+    saveLoyaltyUsers(users);
+
+    const lead = document.getElementById("recover-lead");
+    if (lead) lead.textContent = `Enviando código a ${user.email}…`;
+    showAuthError("recover-request-error", "");
+    showAuthError("recover-reset-error", "");
+    showRecoverStep("reset");
+    showPuntosView("recover");
+
+    const demo = document.getElementById("recover-demo");
+    const demoCode = document.getElementById("recover-demo-code");
+    const sendFn = window.EmailService?.sendRecoveryCode || window.EmailService?.sendVerificationCode;
+    const sendResult = sendFn
+      ? await sendFn({
+          toEmail: user.email,
+          toName: user.name,
+          code,
+        })
+      : { ok: false, demo: true };
+
+    if (lead) {
+      lead.textContent = sendResult.ok
+        ? `Te enviamos un código a ${user.email}. Ingrésalo y crea tu nueva contraseña.`
+        : `Revisa tu correo (${user.email}). Si no llega, usa el código de respaldo o reenvía.`;
+    }
+    if (demo && demoCode) {
+      const showDemo = !sendResult.ok || sendResult.demo;
+      demo.hidden = !showDemo;
+      demoCode.textContent = showDemo ? code : "";
+    }
+    if (sendResult.ok) {
+      window.AppShell?.toast?.("Código de recuperación enviado");
+    } else if (window.EmailConfig?.enabled) {
+      showAuthError(
+        "recover-reset-error",
+        sendResult.message || "No se pudo enviar el correo. Usa el código mostrado o reenvía."
+      );
+    }
+    return sendResult;
+  }
+
   registerForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const submitBtn = registerForm.querySelector('button[type="submit"]');
@@ -1311,9 +1746,25 @@
     const docNumber = normalizeDoc(data.docNumber);
     const email = normalizeEmail(data.email);
     const phone = normalizePhone(data.phone);
+    const password = String(data.password || "");
+    const passwordConfirm = String(data.passwordConfirm || "");
+    const acceptTerms = data.acceptTerms === "on" || data.acceptTerms === "true";
 
-    if (!name || !docNumber || !email || !phone) {
+    if (!name || !docNumber || !email || !phone || !password) {
       showAuthError("register-error", "Completa todos los campos.");
+      return;
+    }
+    if (!acceptTerms) {
+      showAuthError("register-error", "Debes aceptar los términos y condiciones.");
+      return;
+    }
+    const pwError = validatePassword(password);
+    if (pwError) {
+      showAuthError("register-error", pwError);
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showAuthError("register-error", "Las contraseñas no coinciden.");
       return;
     }
 
@@ -1327,7 +1778,9 @@
       return;
     }
 
-    // Si ya se registró pero no verificó, reenviar código a esa cuenta
+    const passwordBundle = await hashPassword(password);
+
+    // Si ya se registró pero no verificó, actualizar datos y reenviar código
     const pending = users.find(
       (u) => normalizeEmail(u.email) === email && !u.emailVerified
     );
@@ -1336,6 +1789,9 @@
       pending.phone = phone;
       pending.docType = docType;
       pending.docNumber = docNumber;
+      pending.passwordSalt = passwordBundle.salt;
+      pending.passwordHash = passwordBundle.hash;
+      pending.acceptedTermsAt = new Date().toISOString();
       saveLoyaltyUsers(users);
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -1359,6 +1815,9 @@
       emailVerified: false,
       points: 0,
       verifyCode: "",
+      passwordSalt: passwordBundle.salt,
+      passwordHash: passwordBundle.hash,
+      acceptedTermsAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };
     users.push(user);
@@ -1374,12 +1833,13 @@
     }
   });
 
-  loginForm?.addEventListener("submit", (e) => {
+  loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(loginForm).entries());
     const docType = String(data.docType || "CC");
     const docNumber = normalizeDoc(data.docNumber);
     const email = normalizeEmail(data.email);
+    const password = String(data.password || "");
     const users = loadLoyaltyUsers();
     const user = users.find(
       (u) =>
@@ -1398,8 +1858,103 @@
       return;
     }
 
+    if (!user.passwordHash || !user.passwordSalt) {
+      showAuthError(
+        "login-error",
+        "Tu cuenta aún no tiene contraseña. Usa Recuperar contraseña para crear una."
+      );
+      return;
+    }
+
+    const ok = await verifyPassword(password, user.passwordSalt, user.passwordHash);
+    if (!ok) {
+      showAuthError("login-error", "Contraseña incorrecta.");
+      return;
+    }
+
     setSession(user.id);
     renderDashboard(user);
+  });
+
+  recoverRequestForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = recoverRequestForm.querySelector('button[type="submit"]');
+    const data = Object.fromEntries(new FormData(recoverRequestForm).entries());
+    const docType = String(data.docType || "CC");
+    const docNumber = normalizeDoc(data.docNumber);
+    const email = normalizeEmail(data.email);
+    const users = loadLoyaltyUsers();
+    const user = users.find(
+      (u) =>
+        u.docType === docType &&
+        normalizeDoc(u.docNumber) === docNumber &&
+        normalizeEmail(u.email) === email
+    );
+    if (!user) {
+      showAuthError(
+        "recover-request-error",
+        "No encontramos esa cuenta. Revisa documento y correo."
+      );
+      return;
+    }
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Enviando…";
+    }
+    await startPasswordRecovery(user);
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Enviar código";
+    }
+  });
+
+  recoverResetForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(recoverResetForm).entries());
+    const code = String(data.code || "").trim();
+    const password = String(data.password || "");
+    const passwordConfirm = String(data.passwordConfirm || "");
+    const users = loadLoyaltyUsers();
+    const idx = users.findIndex((u) => u.id === pendingRecoverUserId);
+    if (idx < 0) {
+      showAuthError("recover-reset-error", "Sesión de recuperación inválida. Solicita el código de nuevo.");
+      return;
+    }
+    if (String(users[idx].recoverCode || "") !== code) {
+      showAuthError("recover-reset-error", "Código incorrecto. Revisa e intenta otra vez.");
+      return;
+    }
+    const pwError = validatePassword(password);
+    if (pwError) {
+      showAuthError("recover-reset-error", pwError);
+      return;
+    }
+    if (password !== passwordConfirm) {
+      showAuthError("recover-reset-error", "Las contraseñas no coinciden.");
+      return;
+    }
+
+    const bundle = await hashPassword(password);
+    users[idx].passwordSalt = bundle.salt;
+    users[idx].passwordHash = bundle.hash;
+    users[idx].recoverCode = "";
+    users[idx].recoverSentAt = "";
+    users[idx].emailVerified = true;
+    saveLoyaltyUsers(users);
+    pendingRecoverUserId = null;
+    recoverRequestForm?.reset();
+    recoverResetForm?.reset();
+    window.AppShell?.toast?.("Contraseña actualizada. Ya puedes iniciar sesión.");
+    showPuntosView("auth");
+    switchAuthTab("login");
+    showAuthError("login-error", "");
+  });
+
+  document.getElementById("btn-recover-resend")?.addEventListener("click", async () => {
+    const users = loadLoyaltyUsers();
+    const user = users.find((u) => u.id === pendingRecoverUserId);
+    if (!user) return;
+    await startPasswordRecovery(user);
   });
 
   verifyForm?.addEventListener("submit", (e) => {
@@ -1433,83 +1988,85 @@
   document.getElementById("btn-loyalty-logout")?.addEventListener("click", () => {
     setSession("");
     pendingVerifyUserId = null;
+    pendingRecoverUserId = null;
     loginForm?.reset();
     registerForm?.reset();
+    recoverRequestForm?.reset();
+    recoverResetForm?.reset();
     showPuntosView("auth");
     switchAuthTab("login");
   });
 
-  document.getElementById("btn-redeem-points")?.addEventListener("click", () => {
-    const success = document.getElementById("redeem-success");
-    const panel = document.getElementById("redeem-panel");
-    showAuthError("redeem-error", "");
+  function openPublicConfirm({
+    title = "Confirmar",
+    message = "",
+    confirmLabel = "Confirmar",
+    cancelLabel = "Cancelar",
+  } = {}) {
+    const panel = document.getElementById("public-confirm-panel");
+    const titleEl = document.getElementById("public-confirm-title");
+    const messageEl = document.getElementById("public-confirm-message");
+    const okBtn = document.getElementById("public-confirm-ok");
+    const cancelBtn = document.getElementById("public-confirm-cancel");
+    const dismissBtn = document.getElementById("public-confirm-dismiss");
 
-    const users = loadLoyaltyUsers();
-    const sessionId = getSessionUserId();
-    const user = users.find((u) => u.id === sessionId && u.emailVerified);
-    const pending = user && (user.redemptions || []).find((r) => r && !r.used);
-    if (pending) {
-      if (panel) panel.hidden = true;
-      if (success) success.hidden = false;
-      document.getElementById("redeem-success-text").textContent =
-        `Tienes un código pendiente por ${formatCop(pending.valueCop || LOYALTY.redeemValueCop)}. Preséntalo en BarberHome.`;
-      document.getElementById("redeem-code").textContent = pending.code;
-      return;
+    if (!panel || !okBtn || !cancelBtn) {
+      return Promise.resolve(window.confirm(message || title));
     }
 
-    if (success) success.hidden = true;
-    if (panel) panel.hidden = false;
+    if (titleEl) titleEl.textContent = title;
+    if (messageEl) messageEl.textContent = message;
+    okBtn.textContent = confirmLabel;
+    cancelBtn.textContent = cancelLabel;
+
+    return new Promise((resolve) => {
+      const finish = (value) => {
+        panel.hidden = true;
+        document.body.classList.remove("public-confirm-open");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        dismissBtn?.removeEventListener("click", onCancel);
+        panel.removeEventListener("keydown", onKey);
+        resolve(value);
+      };
+      const onOk = () => finish(true);
+      const onCancel = () => finish(false);
+      const onKey = (ev) => {
+        if (ev.key === "Escape") finish(false);
+      };
+
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      dismissBtn?.addEventListener("click", onCancel);
+      panel.addEventListener("keydown", onKey);
+
+      panel.hidden = false;
+      document.body.classList.add("public-confirm-open");
+      okBtn.focus();
+    });
+  }
+
+  document.getElementById("btn-redeem-whatsapp")?.addEventListener("click", () => {
+    openRedeemWhatsApp();
   });
 
-  document.getElementById("btn-cancel-redeem")?.addEventListener("click", () => {
-    const panel = document.getElementById("redeem-panel");
-    if (panel) panel.hidden = true;
-  });
+  document.getElementById("loyalty-redeem-grid")?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".btn-redeem-product");
+    if (!btn || btn.disabled) return;
+    const productId = btn.getAttribute("data-product-id");
+    if (!productId) return;
 
-  document.getElementById("btn-confirm-redeem")?.addEventListener("click", () => {
-    const users = loadLoyaltyUsers();
-    const sessionId = getSessionUserId();
-    const idx = users.findIndex((u) => u.id === sessionId && u.emailVerified);
-    if (idx < 0) {
-      showAuthError("redeem-error", "Debes iniciar sesión para canjear.");
-      return;
-    }
-    const user = syncUserPoints(users[idx]);
-    if ((user.points || 0) < LOYALTY.redeemCost) {
-      showAuthError(
-        "redeem-error",
-        `Necesitas al menos ${LOYALTY.redeemCost} puntos para canjear.`
-      );
-      return;
-    }
-
-    user.redemptions = Array.isArray(user.redemptions) ? user.redemptions : [];
-    const pending = user.redemptions.find((r) => r && !r.used);
-    let code = pending?.code;
-
-    if (!pending) {
-      const now = new Date().toISOString();
-      code = `BH-${String(user.docNumber).slice(-4)}-${makeCode().slice(0, 4)}`;
-      user.redemptions.unshift({
-        code,
-        points: LOYALTY.redeemCost,
-        valueCop: LOYALTY.redeemValueCop,
-        at: now,
-        used: false,
-        status: "pending",
-      });
-      users[idx] = user;
-      saveLoyaltyUsers(users);
-    }
-
-    document.getElementById("redeem-panel").hidden = true;
-    document.getElementById("redeem-success").hidden = false;
-    document.getElementById("redeem-success-text").textContent =
-      pending
-        ? `Ya tienes un código pendiente por ${formatCop(LOYALTY.redeemValueCop)}. Preséntalo en BarberHome.`
-        : `Código generado por ${LOYALTY.redeemCost} puntos (${formatCop(LOYALTY.redeemValueCop)}). Aún no se descontaron.`;
-    document.getElementById("redeem-code").textContent = code;
-    renderDashboard(user, { keepRedeemSuccess: true });
+    const product = loadShopProducts().find((p) => p.id === productId);
+    const cost = product ? pointsCostForProduct(product.price) : 0;
+    const productName = product?.name || "este producto";
+    const ok = await openPublicConfirm({
+      title: "Confirmar canje",
+      message: `Vas a canjear ${productName} por ${cost} puntos. Se descontarán al instante; luego coordina la entrega por WhatsApp.`,
+      confirmLabel: "Sí, canjear",
+      cancelLabel: "Cancelar",
+    });
+    if (!ok) return;
+    redeemProductWithPoints(productId);
   });
 
   /** Respaldo si EmailService aún no tiene sendBookingAdminAlert (caché vieja) */
@@ -1694,51 +2251,7 @@
       }
     }
 
-    // Sumar puntos a cuenta de fidelidad (1 pt por cada $800)
-    try {
-      const phone = normalizePhone(fullPhone);
-      const earned = pointsFromPrice(selectedType?.price || 0);
-      const users = loadLoyaltyUsers();
-      const idx = users.findIndex((u) => normalizePhone(u.phone) === phone && u.emailVerified);
-      if (idx >= 0 && earned > 0) {
-        ensureLedger(users[idx]);
-        const now = new Date().toISOString();
-        appendAdminHistory({
-          id: crypto.randomUUID(),
-          userId: users[idx].id,
-          name: users[idx].name,
-          docType: users[idx].docType,
-          docNumber: users[idx].docNumber,
-          amount: earned,
-          note: `Reserva · ${selectedType?.name || "Cita"}`,
-          at: now,
-        });
-        users[idx].ledger.push({
-          type: "earn",
-          amount: earned,
-          at: now,
-          expiresAt: expireDateFrom(now),
-          note: `Servicio: ${selectedType?.name || "Cita"}`,
-        });
-        syncUserPoints(users[idx]);
-        saveLoyaltyUsers(users);
-        try {
-          const list = JSON.parse(localStorage.getItem(LOYALTY_HISTORY_KEY) || "[]");
-          if (list[0]) {
-            list[0].balance = users[idx].points;
-            localStorage.setItem(LOYALTY_HISTORY_KEY, JSON.stringify(list.slice(0, 100)));
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      const store = JSON.parse(localStorage.getItem(POINTS_KEY) || "{}");
-      store[phone] = (store[phone] || 0) + earned;
-      localStorage.setItem(POINTS_KEY, JSON.stringify(store));
-    } catch {
-      /* ignore */
-    }
-
+    // Los puntos ya no se cargan solos: el barbero los asigna (5 pts por servicio).
     hideAll();
     ok.hidden = false;
   });

@@ -41,7 +41,7 @@
           <button type="button" class="service-row" id="btn-puntos">
             <span class="service-row__body">
               <span class="service-row__name">Puntos Barberhome</span>
-              <span class="service-row__duration">Fidelidad</span>
+              <span class="service-row__duration">Canjea por productos</span>
             </span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -85,7 +85,7 @@
             </button>
             <div class="book-nav__info">
               <strong>Comprar productos</strong>
-              <span class="service-row__duration">BarberHome</span>
+              <span class="service-row__duration">Pago normal · o canjea con Puntos</span>
             </div>
             <button
               class="public-cart-btn"
@@ -170,7 +170,7 @@
           <div id="puntos-auth">
             <h2 class="public-section-title">Puntos Barberhome</h2>
             <p class="public-desc public-desc--block">
-              Inicia sesión o regístrate para ver y acumular tus puntos de fidelidad.
+              Inicia sesión o regístrate para ver tus puntos y canjearlos por productos.
             </p>
 
             <div class="auth-tabs" role="tablist">
@@ -194,20 +194,34 @@
               </label>
               <label class="field">
                 <span class="field__label">Número de documento</span>
-                <input name="docNumber" type="text" required placeholder="Documento (llave única)" />
+                <input name="docNumber" type="text" required placeholder="Documento (llave única)" autocomplete="username" />
               </label>
               <label class="field">
                 <span class="field__label">Correo</span>
-                <input name="email" type="email" required placeholder="tu@correo.com" />
+                <input name="email" type="email" required placeholder="tu@correo.com" autocomplete="email" />
+              </label>
+              <label class="field">
+                <span class="field__label">Contraseña</span>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minlength="8"
+                  placeholder="Tu contraseña"
+                  autocomplete="current-password"
+                />
               </label>
               <p class="auth-error" id="login-error" hidden></p>
               <button class="btn btn--primary btn--block" type="submit">Entrar</button>
+              <button class="btn btn--secondary btn--block" type="button" id="btn-forgot-password">
+                Recuperar contraseña
+              </button>
             </form>
 
             <form class="public-form" id="loyalty-register-form" hidden>
               <label class="field">
                 <span class="field__label">Nombre y Apellido</span>
-                <input name="name" type="text" required placeholder="Tu nombre y apellido" />
+                <input name="name" type="text" required placeholder="Tu nombre y apellido" autocomplete="name" />
               </label>
               <label class="field">
                 <span class="field__label">Tipo de documento</span>
@@ -220,15 +234,51 @@
               </label>
               <label class="field">
                 <span class="field__label">Número de documento</span>
-                <input name="docNumber" type="text" required placeholder="Será tu llave única" />
+                <input name="docNumber" type="text" required placeholder="Será tu llave única" autocomplete="off" />
               </label>
               <label class="field">
                 <span class="field__label">Correo</span>
-                <input name="email" type="email" required placeholder="tu@correo.com" />
+                <input name="email" type="email" required placeholder="tu@correo.com" autocomplete="email" />
               </label>
               <label class="field">
                 <span class="field__label">Teléfono / WhatsApp</span>
-                <input name="phone" type="tel" required placeholder="+57 300 000 0000" />
+                <input name="phone" type="tel" required placeholder="+57 300 000 0000" autocomplete="tel" />
+              </label>
+              <label class="field">
+                <span class="field__label">Contraseña</span>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minlength="8"
+                  placeholder="Crea una contraseña segura"
+                  autocomplete="new-password"
+                  id="register-password"
+                />
+                <span class="field__hint" id="password-rules-hint">
+                  Mín. 8 caracteres, con mayúscula, minúscula, número y símbolo (!@#$…).
+                </span>
+              </label>
+              <label class="field">
+                <span class="field__label">Confirmar contraseña</span>
+                <input
+                  name="passwordConfirm"
+                  type="password"
+                  required
+                  minlength="8"
+                  placeholder="Repite la contraseña"
+                  autocomplete="new-password"
+                />
+              </label>
+              <label class="auth-terms">
+                <input type="checkbox" name="acceptTerms" id="register-accept-terms" required />
+                <span>
+                  Acepto los
+                  <button type="button" class="auth-terms__link" id="btn-open-terms">
+                    términos y condiciones
+                  </button>
+                  de Puntos BarberHome.
+                </span>
               </label>
               <p class="auth-error" id="register-error" hidden></p>
               <button class="btn btn--primary btn--block" type="submit">Crear cuenta</button>
@@ -266,10 +316,92 @@
             </form>
           </div>
 
+          <div id="puntos-recover" hidden>
+            <h2 class="public-section-title">Recuperar contraseña</h2>
+            <p class="public-desc public-desc--block" id="recover-lead">
+              Te enviaremos un código a tu correo para crear una contraseña nueva.
+            </p>
+
+            <form class="public-form" id="loyalty-recover-request-form">
+              <label class="field">
+                <span class="field__label">Tipo de documento</span>
+                <select name="docType" required>
+                  <option value="CC">Cédula de ciudadanía</option>
+                  <option value="CE">Cédula de extranjería</option>
+                  <option value="TI">Tarjeta de identidad</option>
+                  <option value="PAS">Pasaporte</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Número de documento</span>
+                <input name="docNumber" type="text" required placeholder="Tu documento" />
+              </label>
+              <label class="field">
+                <span class="field__label">Correo</span>
+                <input name="email" type="email" required placeholder="tu@correo.com" />
+              </label>
+              <p class="auth-error" id="recover-request-error" hidden></p>
+              <button class="btn btn--primary btn--block" type="submit">Enviar código</button>
+              <button class="btn btn--secondary btn--block" type="button" id="btn-recover-back-login">
+                Volver a iniciar sesión
+              </button>
+            </form>
+
+            <form class="public-form" id="loyalty-recover-reset-form" hidden>
+              <div class="verify-demo" id="recover-demo" hidden>
+                <strong>Código de respaldo:</strong>
+                <code id="recover-demo-code"></code>
+                <span> (solo si el correo no se pudo enviar)</span>
+              </div>
+              <label class="field">
+                <span class="field__label">Código del correo</span>
+                <input
+                  name="code"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  required
+                  placeholder="6 dígitos"
+                  autocomplete="one-time-code"
+                />
+              </label>
+              <label class="field">
+                <span class="field__label">Nueva contraseña</span>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  minlength="8"
+                  placeholder="Nueva contraseña segura"
+                  autocomplete="new-password"
+                />
+                <span class="field__hint">
+                  Mín. 8 caracteres, con mayúscula, minúscula, número y símbolo.
+                </span>
+              </label>
+              <label class="field">
+                <span class="field__label">Confirmar nueva contraseña</span>
+                <input
+                  name="passwordConfirm"
+                  type="password"
+                  required
+                  minlength="8"
+                  placeholder="Repite la contraseña"
+                  autocomplete="new-password"
+                />
+              </label>
+              <p class="auth-error" id="recover-reset-error" hidden></p>
+              <button class="btn btn--primary btn--block" type="submit">Guardar contraseña</button>
+              <button class="btn btn--secondary btn--block" type="button" id="btn-recover-resend">
+                Reenviar código
+              </button>
+            </form>
+          </div>
+
           <div id="puntos-dashboard" hidden>
             <h2 class="public-section-title">Hola, <span id="loyalty-user-name">cliente</span></h2>
             <p class="public-desc public-desc--block">
-              Estos son tus puntos acumulados por servicios en BarberHome.
+              Acumulas 5 puntos por servicio (el barbero los carga) y los canjeas por productos.
             </p>
             <div class="points-card">
               <span class="points-card__label">Tus puntos</span>
@@ -283,41 +415,39 @@
             <div class="loyalty-rules">
               <p><strong>Cómo funcionan:</strong></p>
               <ul>
-                <li>Ganas <strong>1 punto</strong> por cada <strong>$800</strong> en servicios.</li>
-                <li>Desde <strong>500 puntos</strong> puedes canjear un beneficio de <strong>$20.000</strong>.</li>
+                <li>Por cada servicio acumulas <strong>5 puntos</strong>.</li>
+                <li>Después de cada servicio, <strong>recuérdale al barbero</strong> que quieres acumular los puntos para que te los cargue a tu cuenta.</li>
+                <li>Canjea tus puntos por <strong>productos</strong>; cada uno muestra cuántos puntos necesita.</li>
+                <li>Al canjear, los puntos se descuentan al instante; coordina la entrega por <strong>WhatsApp</strong>.</li>
                 <li>Los puntos vencen a los <strong>12 meses</strong>.</li>
               </ul>
             </div>
 
             <div class="loyalty-meta" id="loyalty-meta"></div>
 
+            <section class="loyalty-redeem-shop" aria-labelledby="loyalty-redeem-title">
+              <h3 id="loyalty-redeem-title" class="loyalty-redeem-shop__title">Canjear por productos</h3>
+              <p class="loyalty-redeem-shop__lead" id="loyalty-redeem-lead">
+                Solo ves el costo en puntos. Elige un producto y confirma el canje.
+              </p>
+              <div class="loyalty-redeem-grid" id="loyalty-redeem-grid"></div>
+              <p class="auth-error" id="redeem-error" hidden></p>
+              <div class="redeem-success" id="redeem-success" hidden>
+                <strong>¡Canje exitoso!</strong>
+                <p id="redeem-success-text"></p>
+                <button class="btn btn--whatsapp btn--block" type="button" id="btn-redeem-whatsapp">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2.1A9.9 9.9 0 0 0 3.3 17L2 22l5.2-1.3A9.9 9.9 0 1 0 12 2.1Zm5.5 14.1c-.2.7-1.3 1.2-2.1 1.4-.6.1-1.3.2-3.7-.8-3.1-1.3-5.1-4.5-5.2-4.7-.2-.2-1.2-1.6-1.2-3.1 0-1.4.8-2.2 1.1-2.4.3-.3.7-.3.9-.3h.7c.2 0 .5-.1.7.6.3.8.9 2.1 1 2.3.1.1.1.3 0 .5l-.5.7c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.2.4-.2.7-.1l2.1 1c.3.1.4.3.4.4 0 .3 0 1.4-.3 2.1Z"/>
+                  </svg>
+                  Coordinar entrega por WhatsApp
+                </button>
+              </div>
+            </section>
+
             <div class="loyalty-actions">
-              <button class="btn btn--primary btn--block" type="button" id="btn-redeem-points" disabled>
-                Canjear puntos
-              </button>
               <button class="btn btn--secondary btn--block" type="button" id="btn-loyalty-logout">
                 Cerrar sesión
               </button>
-            </div>
-
-            <div class="redeem-panel" id="redeem-panel" hidden>
-              <h3>Canjear 500 puntos</h3>
-              <p>
-                Generaremos un código para canjear <strong>500 puntos</strong> por
-                <strong>$20.000</strong>. Los puntos se descontarán cuando lo validen en BarberHome.
-              </p>
-              <p class="auth-error" id="redeem-error" hidden></p>
-              <div class="redeem-panel__actions">
-                <button class="btn btn--secondary" type="button" id="btn-cancel-redeem">Cancelar</button>
-                <button class="btn btn--primary" type="button" id="btn-confirm-redeem">Generar código</button>
-              </div>
-            </div>
-
-            <div class="redeem-success" id="redeem-success" hidden>
-              <strong>¡Código listo!</strong>
-              <p id="redeem-success-text"></p>
-              <p class="redeem-code">Código: <code id="redeem-code"></code></p>
-              <small>Muéstralo en BarberHome. Allí validarán el código y descontarán tus puntos.</small>
             </div>
           </div>
         </section>
@@ -435,13 +565,90 @@
       </div>
     </div>
 
+    <div class="public-confirm-overlay" id="loyalty-terms-panel" hidden>
+      <button
+        class="public-confirm-overlay__backdrop"
+        type="button"
+        id="loyalty-terms-dismiss"
+        aria-label="Cerrar"
+      ></button>
+      <div
+        class="public-confirm-sheet public-confirm-sheet--tall"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="loyalty-terms-title"
+      >
+        <div class="public-confirm-sheet__handle" aria-hidden="true"></div>
+        <h3 id="loyalty-terms-title">Términos y condiciones</h3>
+        <div class="loyalty-terms-body" id="loyalty-terms-body">
+          <p>
+            Al crear una cuenta en <strong>Puntos BarberHome</strong> aceptas estas condiciones de uso del
+            programa de fidelidad.
+          </p>
+          <ol>
+            <li>
+              Los puntos se acumulan según las reglas vigentes (actualmente 5 puntos por servicio) y deben
+              ser cargados por el barbero a tu solicitud.
+            </li>
+            <li>
+              Los puntos pueden canjearse por productos disponibles según el costo en puntos indicado en la
+              app. El canje descuenta los puntos de inmediato.
+            </li>
+            <li>
+              Los puntos vencen a los 12 meses desde su asignación. BarberHome puede ajustar catálogo, stock
+              o reglas con aviso razonable.
+            </li>
+            <li>
+              Tus datos (nombre, documento, correo y teléfono) se usan para gestionar tu cuenta, canjes y
+              coordinación de entregas. No compartimos tu información con terceros ajenos al servicio.
+            </li>
+            <li>
+              Eres responsable de la confidencialidad de tu contraseña. Puedes recuperarla con un código
+              enviado a tu correo registrado.
+            </li>
+            <li>
+              El abuso del programa, datos falsos o uso indebido puede implicar la suspensión de la cuenta.
+            </li>
+          </ol>
+          <p>Al aceptar, confirmas que leíste y estás de acuerdo con estas condiciones.</p>
+        </div>
+        <div class="public-confirm-sheet__actions public-confirm-sheet__actions--single">
+          <button class="btn btn--primary" type="button" id="loyalty-terms-accept">Entendido</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="public-confirm-overlay" id="public-confirm-panel" hidden>
+      <button
+        class="public-confirm-overlay__backdrop"
+        type="button"
+        id="public-confirm-dismiss"
+        aria-label="Cerrar"
+      ></button>
+      <div
+        class="public-confirm-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="public-confirm-title"
+        aria-describedby="public-confirm-message"
+      >
+        <div class="public-confirm-sheet__handle" aria-hidden="true"></div>
+        <h3 id="public-confirm-title">Confirmar canje</h3>
+        <p id="public-confirm-message" class="public-confirm-sheet__message"></p>
+        <div class="public-confirm-sheet__actions">
+          <button class="btn btn--secondary" type="button" id="public-confirm-cancel">Cancelar</button>
+          <button class="btn btn--primary" type="button" id="public-confirm-ok">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script src="js/email-config.js?v=20260806"></script>
-    <script src="js/email-service.js?v=20260806"></script>
+    <script src="js/email-config.js?v=20260807"></script>
+    <script src="js/email-service.js?v=20260807j"></script>
     <script src="js/google-config.js?v=20260806"></script>
     <script src="js/google-calendar.js?v=20260806"></script>
     <script src="js/booking-store.js?v=20260806"></script>
-    <script src="js/booking-public.js?v=20260806"></script>
+    <script src="js/booking-public.js?v=20260807j"></script>
   </body>
 </html>

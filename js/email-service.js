@@ -61,9 +61,9 @@
     return { ok: true, demo: false, data };
   }
 
-  async function sendViaAppsScript({ toEmail, toName, code }) {
+  async function sendViaAppsScript({ toEmail, toName, code, type = "verify" }) {
     await postAppsScript({
-      type: "verify",
+      type: type || "verify",
       to_email: toEmail,
       to_name: toName || "cliente",
       code: String(code),
@@ -97,11 +97,39 @@
 
     try {
       if (c.provider === "appscript") {
-        return await sendViaAppsScript({ toEmail, toName, code });
+        return await sendViaAppsScript({ toEmail, toName, code, type: "verify" });
       }
       return await sendViaEmailJs({ toEmail, toName, code });
     } catch (err) {
       console.error("Email send error", err);
+      return {
+        ok: false,
+        demo: true,
+        message:
+          err?.message ||
+          "No se pudo enviar el correo. Mientras tanto usamos el código en pantalla.",
+        error: err,
+      };
+    }
+  }
+
+  async function sendRecoveryCode({ toEmail, toName, code }) {
+    const c = cfg();
+    if (!isConfigured()) {
+      return {
+        ok: false,
+        demo: true,
+        message: "Correo no configurado. Se muestra el código en pantalla (modo demo).",
+      };
+    }
+
+    try {
+      if (c.provider === "appscript") {
+        return await sendViaAppsScript({ toEmail, toName, code, type: "recover" });
+      }
+      return await sendViaEmailJs({ toEmail, toName, code });
+    } catch (err) {
+      console.error("Recovery email send error", err);
       return {
         ok: false,
         demo: true,
@@ -174,9 +202,71 @@
     }
   }
 
+  async function sendRedeemAdminAlert(redeem) {
+    const c = cfg();
+    if (!c.enabled || c.notifyAdminOnRedeem === false) {
+      return { ok: false, skipped: true, message: "Aviso de canje desactivado" };
+    }
+    if (!isConfigured()) {
+      return { ok: false, message: "Correo no configurado" };
+    }
+    const admin = String(c.adminEmail || c.fromEmail || "").trim();
+    if (!admin) {
+      return { ok: false, message: "Falta EmailConfig.adminEmail" };
+    }
+    if (!redeem) {
+      return { ok: false, message: "No hay datos de canje para avisar" };
+    }
+
+    try {
+      if (c.provider !== "appscript") {
+        return { ok: false, message: "Aviso de canje solo con provider appscript" };
+      }
+      const customer = redeem.customer || {};
+      const payload = {
+        id: redeem.id || "",
+        productName: redeem.productName || "Producto",
+        pointsCost: redeem.pointsCost ?? 0,
+        valueCop: redeem.valueCop ?? 0,
+        createdAt: redeem.createdAt || new Date().toISOString(),
+        customer: {
+          name: customer.name || "Cliente",
+          phone: customer.phone || "",
+          email: customer.email || "",
+          docType: customer.docType || "CC",
+          docNumber: customer.docNumber || "",
+        },
+      };
+      console.info("[EmailService] Enviando aviso de canje a", admin, payload);
+      await postAppsScript({
+        type: "redeem",
+        to_email: admin,
+        admin_email: admin,
+        product_name: payload.productName,
+        points_cost: payload.pointsCost,
+        value_cop: payload.valueCop,
+        client_name: payload.customer.name,
+        client_phone: payload.customer.phone,
+        client_email: payload.customer.email,
+        client_doc: `${payload.customer.docType} ${payload.customer.docNumber}`.trim(),
+        redeem: payload,
+      });
+      return { ok: true, message: "Aviso de canje enviado al administrador" };
+    } catch (err) {
+      console.error("Admin redeem email error", err);
+      return {
+        ok: false,
+        message: err?.message || "No se pudo avisar al administrador del canje",
+        error: err,
+      };
+    }
+  }
+
   window.EmailService = {
     isConfigured,
     sendVerificationCode,
+    sendRecoveryCode,
     sendBookingAdminAlert,
+    sendRedeemAdminAlert,
   };
 })();

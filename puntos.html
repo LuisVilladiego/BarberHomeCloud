@@ -86,23 +86,38 @@
         <header class="page-header page-header--stack">
           <h1>Puntos</h1>
           <p class="page-lead">
-            Valida códigos de canje, busca clientes por cédula y ajusta puntos de fidelidad.
+            Revisa canjes de productos, busca clientes por cédula y ajusta puntos de fidelidad.
           </p>
         </header>
+
+        <section class="panel config-panel" aria-labelledby="product-redeems-title">
+          <div class="config-panel__toolbar">
+            <div>
+              <h2 id="product-redeems-title" class="config-panel__title">Canjes de productos</h2>
+              <p class="section-lead">
+                Cuando un cliente canjea, los puntos ya quedan descontados. Aquí marcas cuando entregues el producto.
+              </p>
+            </div>
+            <span class="points-redeem-badge" id="product-redeems-badge" hidden>0 pendientes</span>
+          </div>
+          <div class="points-product-redeems" id="product-redeems-list"></div>
+        </section>
 
         <section class="panel config-panel loyalty-rules-admin">
           <h2 class="config-panel__title">Reglas BarberHome</h2>
           <ul class="section-lead" style="margin: 8px 0 0; padding-left: 1.2rem; max-width: none">
-            <li>1 punto por cada $800 en servicios</li>
-            <li>Canje desde 500 puntos = $20.000 (el cliente genera un código; tú lo validas aquí)</li>
+            <li>Acumulación: 5 puntos por cada servicio (tú los cargas aquí cuando el cliente te lo pida)</li>
+            <li>Canje: el cliente canjea por productos del marketplace según los puntos de cada producto</li>
+            <li>Al canjear, los puntos se descuentan solos; el cliente te escribe por WhatsApp</li>
+            <li>Tú entregas el producto y marcas “Entregado” en Canjes de productos</li>
             <li>Los puntos vencen a los 12 meses</li>
           </ul>
         </section>
 
         <section class="panel config-panel" aria-labelledby="redeem-title">
-          <h2 id="redeem-title" class="config-panel__title">Validar código de canje</h2>
+          <h2 id="redeem-title" class="config-panel__title">Validar código antiguo (opcional)</h2>
           <p class="section-lead">
-            El cliente genera un código en su cuenta. Ingrésalo aquí para aplicar el beneficio y descontar los puntos.
+            Los canjes nuevos se hacen en la cuenta del cliente por productos. Usa esto solo si queda un código pendiente del sistema anterior.
           </p>
           <form class="points-redeem-form" id="points-redeem-form">
             <label class="field">
@@ -166,15 +181,15 @@
                   id="admin-points-amount"
                   type="number"
                   required
-                  value="10"
+                  value="5"
                   step="1"
-                  placeholder="10"
+                  placeholder="5"
                 />
-                <span class="field__hint">Usa un número negativo para descontar (ej. -20).</span>
+                <span class="field__hint">Por servicio suma +5. Usa negativo para descontar (ej. -5).</span>
               </label>
               <label class="field">
                 <span class="field__label">Motivo (opcional)</span>
-                <input name="note" id="admin-points-note" type="text" placeholder="Corte, promoción, canje…" />
+                <input name="note" id="admin-points-note" type="text" placeholder="Servicio del día, promoción…" />
               </label>
             </div>
 
@@ -244,7 +259,9 @@
     </button>
     <div class="backdrop" aria-hidden="true"></div>
 
+    <script src="js/email-config.js?v=20260807"></script>
+    <script src="js/email-service.js?v=20260807"></script>
     <script src="js/app.js"></script>
-    <script src="js/puntos.js"></script>
+    <script src="js/puntos.js?v=20260807b"></script>
   </body>
 </html>

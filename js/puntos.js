@@ -1,6 +1,8 @@
 (function () {
   const USERS_KEY = "barbercloud.loyalty_users";
   const HISTORY_KEY = "barbercloud.loyalty_history";
+  const SALES_KEY = "barbercloud.marketplace_sales";
+  const PRODUCT_REDEEMS_KEY = "barbercloud.loyalty_product_redemptions";
   const EXPIRE_MONTHS = 12;
 
   const form = document.getElementById("points-assign-form");
@@ -8,6 +10,8 @@
   const table = document.getElementById("points-clients-table");
   const historyEl = document.getElementById("points-history");
   const searchInput = document.getElementById("points-search");
+  const productRedeemsEl = document.getElementById("product-redeems-list");
+  const productRedeemsBadge = document.getElementById("product-redeems-badge");
 
   function normalizeDoc(value) {
     return String(value || "").replace(/\s+/g, "").toUpperCase();
@@ -37,12 +41,161 @@
     localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 200)));
   }
 
+  function loadProductRedeems() {
+    try {
+      const list = JSON.parse(localStorage.getItem(PRODUCT_REDEEMS_KEY) || "[]");
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveProductRedeems(list) {
+    localStorage.setItem(PRODUCT_REDEEMS_KEY, JSON.stringify(list.slice(0, 200)));
+  }
+
+  function loadSales() {
+    try {
+      const list = JSON.parse(localStorage.getItem(SALES_KEY) || "[]");
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Importa canjes antiguos guardados solo como ventas del marketplace. */
+  function syncProductRedeemsFromSales() {
+    const sales = loadSales().filter((s) => s && s.source === "loyalty-points");
+    if (!sales.length) return loadProductRedeems();
+
+    const list = loadProductRedeems();
+    const known = new Set(
+      list.flatMap((r) => [r.id, r.saleId].filter(Boolean).map(String))
+    );
+    let changed = false;
+
+    sales.forEach((sale) => {
+      const saleId = String(sale.id || "");
+      const redeemId = String(sale.redeemId || "");
+      if ((saleId && known.has(saleId)) || (redeemId && known.has(redeemId))) return;
+
+      const item = Array.isArray(sale.items) ? sale.items[0] : null;
+      const customer = sale.customer || {};
+      const entry = {
+        id: redeemId || `predeem-from-${saleId || Date.now().toString(36)}`,
+        saleId: saleId || null,
+        createdAt: sale.createdAt || new Date().toISOString(),
+        productId: item?.productId || "",
+        productName: item?.name || "Producto",
+        pointsCost: Number(item?.pointsCost) || 0,
+        valueCop: Number(item?.lineTotal ?? item?.price ?? sale.total) || 0,
+        status: "pending",
+        deliveredAt: null,
+        pointsDeducted: true,
+        customer: {
+          userId: customer.userId || "",
+          name: customer.name || "Cliente",
+          docType: customer.docType || "CC",
+          docNumber: customer.docNumber || "",
+          phone: customer.phone || "",
+          email: customer.email || "",
+        },
+      };
+      list.unshift(entry);
+      known.add(entry.id);
+      if (saleId) known.add(saleId);
+      changed = true;
+    });
+
+    if (changed) {
+      list.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      saveProductRedeems(list);
+    }
+    return list;
+  }
+
   function escapeHtml(str) {
     return String(str)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function formatWhen(iso) {
+    try {
+      return new Date(iso).toLocaleString("es-CO");
+    } catch {
+      return "—";
+    }
+  }
+
+  function renderProductRedeems() {
+    if (!productRedeemsEl) return;
+    const list = syncProductRedeemsFromSales().slice().sort((a, b) => {
+      const rank = (x) => (x.status === "delivered" ? 1 : 0);
+      return rank(a) - rank(b) || String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+    const pending = list.filter((r) => r.status !== "delivered");
+    const recent = list.slice(0, 20);
+
+    if (productRedeemsBadge) {
+      const n = pending.length;
+      productRedeemsBadge.hidden = n <= 0;
+      productRedeemsBadge.textContent = n === 1 ? "1 pendiente" : `${n} pendientes`;
+    }
+
+    if (!recent.length) {
+      productRedeemsEl.innerHTML =
+        `<p class="empty-hint">Aún no hay canjes de productos. Cuando un cliente canjee en Puntos, aparecerá aquí.</p>`;
+      return;
+    }
+
+    productRedeemsEl.innerHTML = recent
+      .map((r) => {
+        const c = r.customer || {};
+        const pending = r.status !== "delivered";
+        const pts = Number(r.pointsCost) || 0;
+        return `
+          <article class="points-product-redeem ${pending ? "is-pending" : "is-delivered"}">
+            <div class="points-product-redeem__main">
+              <div class="points-product-redeem__top">
+                <strong>${escapeHtml(r.productName || "Producto")}</strong>
+                <span class="points-product-redeem__chip">${pending ? "Por entregar" : "Entregado"}</span>
+              </div>
+              <p>
+                ${escapeHtml(c.name || "Cliente")}
+                · ${escapeHtml(c.docType || "CC")} ${escapeHtml(c.docNumber || "—")}
+                ${c.phone ? ` · ${escapeHtml(c.phone)}` : ""}
+              </p>
+              <small>
+                ${formatWhen(r.createdAt)}
+                · −${pts} pts (ya descontados)
+                ${r.deliveredAt ? ` · entregado ${formatWhen(r.deliveredAt)}` : ""}
+              </small>
+            </div>
+            ${
+              pending
+                ? `<button type="button" class="btn btn--primary btn--sm" data-deliver-redeem="${escapeHtml(r.id)}">Marcar entregado</button>`
+                : ""
+            }
+          </article>`;
+      })
+      .join("");
+  }
+
+  function markProductRedeemDelivered(id) {
+    const list = loadProductRedeems();
+    const idx = list.findIndex((r) => r.id === id);
+    if (idx < 0) return false;
+    if (list[idx].status === "delivered") return true;
+    list[idx] = {
+      ...list[idx],
+      status: "delivered",
+      deliveredAt: new Date().toISOString(),
+    };
+    saveProductRedeems(list);
+    return true;
   }
 
   function expireDateFrom(iso) {
@@ -472,6 +625,20 @@
     renderClients(searchInput.value);
   });
 
+  productRedeemsEl?.addEventListener("click", (e) => {
+    const id = e.target.closest("[data-deliver-redeem]")?.getAttribute("data-deliver-redeem");
+    if (!id) return;
+    const before = loadProductRedeems().find((r) => r.id === id);
+    const ok = markProductRedeemDelivered(id);
+    if (!ok) {
+      window.AppShell?.toast("No se encontró ese canje.");
+      return;
+    }
+    renderProductRedeems();
+    window.AppShell?.toast(`Entregado: ${before?.productName || "producto"}`);
+  });
+
+  renderProductRedeems();
   renderClients();
   renderHistory();
 })();

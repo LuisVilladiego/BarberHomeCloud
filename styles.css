@@ -3859,7 +3859,9 @@ body.nav-open .backdrop {
 #puntos-dashboard[hidden],
 #loyalty-login-form[hidden],
 #loyalty-register-form[hidden],
-#redeem-panel[hidden],
+#loyalty-recover-request-form[hidden],
+#loyalty-recover-reset-form[hidden],
+#puntos-recover[hidden],
 #redeem-success[hidden],
 .public-form[hidden] {
   display: none !important;
@@ -4000,6 +4002,72 @@ body.nav-open .backdrop {
   font-size: 0.9rem;
 }
 
+.auth-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 12px;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.auth-terms input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: #5248e7;
+}
+
+.auth-terms__link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #5248e7;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.public-confirm-sheet--tall {
+  max-height: min(86vh, 720px);
+  display: flex;
+  flex-direction: column;
+}
+
+.loyalty-terms-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 0 14px;
+  padding-right: 4px;
+  text-align: left;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  -webkit-overflow-scrolling: touch;
+}
+
+.loyalty-terms-body p {
+  margin: 0 0 10px;
+}
+
+.loyalty-terms-body ol {
+  margin: 0 0 12px;
+  padding-left: 1.2rem;
+}
+
+.loyalty-terms-body li {
+  margin-bottom: 8px;
+}
+
+.public-confirm-sheet__actions--single {
+  grid-template-columns: 1fr;
+}
+
 .verify-demo {
   margin: 0 0 14px;
   padding: 12px 14px;
@@ -4077,39 +4145,131 @@ body.nav-open .backdrop {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 16px;
 }
 
-.redeem-panel,
-.redeem-success {
-  margin-top: 14px;
-  padding: 14px 16px;
+.loyalty-redeem-shop {
+  margin: 0 0 4px;
+}
+
+.loyalty-redeem-shop__title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  color: #111827;
+}
+
+.loyalty-redeem-shop__lead {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.loyalty-redeem-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.loyalty-redeem-empty {
+  margin: 0;
+  padding: 14px;
   border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed #d1d5db;
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.loyalty-redeem-item {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid #e5e7eb;
   background: #fff;
+  overflow: hidden;
 }
 
-.redeem-panel h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.loyalty-redeem-item.is-ready {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
 }
 
-.redeem-panel p {
-  margin: 0 0 12px;
-  color: #4b5563;
-  font-size: 0.92rem;
-  line-height: 1.45;
+.loyalty-redeem-item.is-locked {
+  opacity: 0.92;
 }
 
-.redeem-panel__actions {
+.loyalty-redeem-item__media {
+  width: 84px;
+  height: 84px;
+  max-width: 84px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.loyalty-redeem-item__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.loyalty-redeem-item__body {
+  min-width: 0;
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loyalty-redeem-item__body h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.loyalty-redeem-item__price {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #111827;
+  font-weight: 600;
+}
+
+.loyalty-redeem-item__price strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.loyalty-redeem-item__status {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.loyalty-redeem-item.is-ready .loyalty-redeem-item__status {
+  color: #047857;
+  font-weight: 600;
+}
+
+.loyalty-redeem-item .btn {
+  margin-top: 2px;
+  min-height: 36px;
+  font-size: 0.88rem;
 }
 
 .redeem-success {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #a7f3d0;
   background: #ecfdf5;
-  border-color: #a7f3d0;
   color: #065f46;
 }
 
@@ -4120,20 +4280,29 @@ body.nav-open .backdrop {
 }
 
 .redeem-success p {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
 }
 
-.redeem-code {
-  font-size: 1rem !important;
+.btn--whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 0;
+  background: #128c7e;
+  color: #fff;
+  font-weight: 600;
 }
 
-.redeem-code code {
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.btn--whatsapp:hover,
+.btn--whatsapp:focus-visible {
+  background: #0f7a6e;
+  color: #fff;
 }
 
-.redeem-success small {
-  color: #047857;
+.redeem-success .btn--whatsapp {
+  width: 100%;
 }
 
 .public-form .field select,
@@ -4278,6 +4447,110 @@ body.nav-open .backdrop {
 
 body.public-cart-open {
   overflow: hidden;
+}
+
+/* Confirmación móvil (bottom sheet) */
+.public-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.public-confirm-overlay[hidden] {
+  display: none !important;
+}
+
+.public-confirm-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+}
+
+.public-confirm-sheet {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 100%);
+  margin: 0;
+  padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.22);
+  animation: public-confirm-in 220ms ease both;
+}
+
+.public-confirm-sheet__handle {
+  width: 40px;
+  height: 4px;
+  margin: 2px auto 14px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.public-confirm-sheet h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  color: #111827;
+  text-align: center;
+}
+
+.public-confirm-sheet__message {
+  margin: 0 0 18px;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.public-confirm-sheet__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.public-confirm-sheet__actions .btn {
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+body.public-confirm-open {
+  overflow: hidden;
+}
+
+@keyframes public-confirm-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 700px) {
+  .public-confirm-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .public-confirm-sheet {
+    border-radius: 18px;
+    padding: 20px 22px 22px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.28);
+  }
+
+  .public-confirm-sheet__handle {
+    display: none;
+  }
 }
 
 .book-nav__back {
@@ -4542,6 +4815,105 @@ body.public-cart-open {
   gap: 10px;
   margin-top: 16px;
   flex-wrap: wrap;
+}
+
+.points-redeem-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.points-product-redeems {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.points-product-redeem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.points-product-redeem.is-pending {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.points-product-redeem.is-delivered {
+  opacity: 0.85;
+}
+
+.points-product-redeem__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.points-product-redeem__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.points-product-redeem__top strong {
+  color: #111827;
+}
+
+.points-product-redeem__chip {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.points-product-redeem.is-pending .points-product-redeem__chip {
+  background: #fde68a;
+  color: #92400e;
+}
+
+.points-product-redeem.is-delivered .points-product-redeem__chip {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.points-product-redeem p {
+  margin: 0 0 4px;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.points-product-redeem small {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.points-product-redeem .btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .points-product-redeem {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .points-lookup {
