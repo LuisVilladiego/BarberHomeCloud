@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Configuración · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar__top">
+          <a class="brand" href="index.html" aria-label="BarberCloud">
+            <img class="brand__logo" src="assets/logo.png" alt="" width="32" height="32" />
+            <span class="brand__name">BarberCloud</span>
+          </a>
+          <button class="icon-btn notifications" type="button" aria-label="Notificaciones">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 9a6 6 0 1 1 12 0c0 3.2.8 4.8 1.5 6H4.5C5.2 13.8 6 12.2 6 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+            <span class="badge-count">49+</span>
+          </button>
+        </div>
+
+        <nav class="nav" aria-label="Principal">
+          <a class="nav__item" href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Inicio
+          </a>
+          <a class="nav__item" href="calendario.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Calendario
+          </a>
+          <a class="nav__item" href="contactos.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S14 16 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="17" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 19c.3-1.8 1.4-3 3.2-3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Contactos
+          </a>
+          <a class="nav__item" href="puntos.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4L4.2 8.7l5.4-.8L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Puntos
+          </a>
+          <a class="nav__item" href="autoagenda.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4h10v4H7V4Zm0 6h10v10H7V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 14h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Autoagenda
+          </a>
+          <a class="nav__item" href="marketplace.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5 6.2 4h11.6L20 8.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 8.5h16M9.5 11.5a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Marketplace
+          </a>
+          <a class="nav__item" href="suscripcion.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17" stroke="currentColor" stroke-width="1.7"/></svg>
+            Suscripción
+          </a>
+          <a class="nav__item" href="reportes.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5m0 14 4-5 3.5 3L16 8l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reportes
+          </a>
+          <a class="nav__item" href="manual.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4h9l3 3v13H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 11h6M9 15h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Manual
+          </a>
+          <a class="nav__item" href="feedback.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18V8a2 2 0 0 1 2-2h8l4 4v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 13h5M8 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Feedback
+          </a>
+          <a class="nav__item is-active" href="configuracion.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M18 6l-1.6 1.6M7.6 16.4 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Configuración
+          </a>
+        </nav>
+
+        <button class="user" type="button">
+          <span class="user__avatar" aria-hidden="true">I</span>
+          <span class="user__name">luis villadiego</span>
+        </button>
+      </aside>
+
+      <main class="main">
+        <!-- Hub -->
+        <div id="view-hub">
+          <header class="page-header page-header--stack">
+            <h1>Configuración</h1>
+            <p class="page-lead">Cuenta, WhatsApp, notificaciones y preferencias del negocio.</p>
+          </header>
+
+          <div class="settings-hub">
+            <button class="settings-hub__item" type="button" data-open-cuenta>
+              <span class="settings-hub__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                  <path d="M5 19c1.2-3.2 3.6-5 7-5s5.8 1.8 7 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="settings-hub__text">
+                <strong>Detalles de tu cuenta</strong>
+                <small>Nombre, email, idioma y referidos</small>
+              </span>
+              <svg class="settings-hub__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <button class="settings-hub__item" type="button" data-open-whatsapp>
+              <span class="settings-hub__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 3.2A8.8 8.8 0 0 0 4.4 16.2L3.2 20.8l4.8-1.2A8.8 8.8 0 1 0 12 3.2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="settings-hub__text">
+                <strong>WhatsApp</strong>
+                <small id="hub-wa-summary">Número conectado y estado de la sesión</small>
+              </span>
+              <svg class="settings-hub__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <button class="settings-hub__item" type="button" data-open-notificaciones>
+              <span class="settings-hub__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9a6 6 0 1 1 12 0c0 3.2.8 4.8 1.5 6H4.5C5.2 13.8 6 12.2 6 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                  <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="settings-hub__text">
+                <strong>Notificaciones</strong>
+                <small>Avisos de citas, fallos de envío y reportes</small>
+              </span>
+              <svg class="settings-hub__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <a class="settings-hub__item" href="index.html">
+              <span class="settings-hub__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/>
+                  <path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="settings-hub__text">
+                <strong>Calendarios</strong>
+                <small>Conecta Google Calendar o usa Calendario BarberCloud</small>
+              </span>
+              <svg class="settings-hub__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+
+            <a class="settings-hub__item" href="manual.html#mensajes">
+              <span class="settings-hub__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 6h14v10H8l-3 3V6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="settings-hub__text">
+                <strong>Plantillas de mensajes</strong>
+                <small>Variables, Meet, Zoom y personalización</small>
+              </span>
+              <svg class="settings-hub__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Detalles de cuenta -->
+        <div id="view-cuenta" hidden>
+          <header class="page-header page-header--back">
+            <button class="back-btn" type="button" data-back-hub aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 6 9 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <h1>Detalles de tu cuenta</h1>
+          </header>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
+              <h2>Detalles de tu cuenta</h2>
+            </div>
+            <div class="settings-card__right">
+              <div class="settings-field">
+                <span class="settings-field__label">Email</span>
+                <p class="settings-field__value" id="account-email">barberhomeluisvilladiego20@gmail.com</p>
+              </div>
+              <div class="settings-field">
+                <span class="settings-field__label">Nombre</span>
+                <div class="settings-field__row">
+                  <input
+                    class="settings-input"
+                    id="account-name"
+                    type="text"
+                    value="luis villadiego"
+                    autocomplete="name"
+                  />
+                  <button class="btn btn--primary" type="button" id="btn-save-account">Guardar</button>
+                </div>
+                <p class="settings-field__hint">Nombre que aparecerá en mensajes que te enviemos.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
+              <h2>Idioma</h2>
+              <p>Idioma del app. Cambiarlo no modificará el idioma de tus mensajes.</p>
+            </div>
+            <div class="settings-card__right">
+              <fieldset class="lang-list" id="lang-list">
+                <legend class="sr-only">Idioma del app</legend>
+                <label class="lang-option">
+                  <input type="radio" name="lang" value="es" checked />
+                  <span>Español</span>
+                </label>
+                <label class="lang-option">
+                  <input type="radio" name="lang" value="en" />
+                  <span>Inglés</span>
+                </label>
+                <label class="lang-option">
+                  <input type="radio" name="lang" value="pt" />
+                  <span>Portugués</span>
+                </label>
+              </fieldset>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
+              <h2>Refiere y gana</h2>
+              <p>Recomienda BarberCloud a tus amigos y colegas y gana créditos</p>
+            </div>
+            <div class="settings-card__right settings-card__right--end">
+              <button class="btn btn--secondary" type="button" id="btn-refer">Recomendar BarberCloud</button>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
+              <h2>Eliminar cuenta</h2>
+              <p>
+                Elimina tu cuenta de BarberCloud. Toda tu información será eliminada y no podrás
+                recuperarla.
+              </p>
+            </div>
+            <div class="settings-card__right settings-card__right--end">
+              <button class="btn btn--danger-soft" type="button" id="btn-delete-account">Eliminar</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- WhatsApp -->
+        <div id="view-whatsapp" hidden>
+          <header class="page-header page-header--back">
+            <button class="back-btn" type="button" data-back-hub aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 6 9 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <h1>WhatsApp</h1>
+          </header>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
+              <h2>Número conectado</h2>
+              <p>Desde este número se envían confirmaciones y recordatorios.</p>
+            </div>
+            <div class="settings-card__right">
+              <div class="settings-field">
+                <span class="settings-field__label">Teléfono</span>
+                <div class="settings-field__row">
+                  <input class="settings-input" id="wa-phone" type="tel" placeholder="+57 300 000 0000" />
+                  <button class="btn btn--primary" type="button" id="btn-save-wa">Guardar</button>
+                </div>
+              </div>
+              <label class="toggle-row">
+                <input type="checkbox" id="wa-connected" checked />
+                <span>Sesión activa</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
+              <h2>Horario de envío</h2>
+              <p>Evita mensajes fuera de horario comercial.</p>
+            </div>
+            <div class="settings-card__right">
+              <div class="settings-field__row settings-field__row--stack">
+                <label class="settings-field">
+                  <span class="settings-field__label">Desde</span>
+                  <input class="settings-input" id="wa-from" type="time" value="08:00" />
+                </label>
+                <label class="settings-field">
+                  <span class="settings-field__label">Hasta</span>
+                  <input class="settings-input" id="wa-to" type="time" value="20:00" />
+                </label>
+              </div>
+              <button class="btn btn--primary" type="button" id="btn-save-wa-hours">Guardar horario</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Notificaciones -->
+        <div id="view-notificaciones" hidden>
+          <header class="page-header page-header--back">
+            <button class="back-btn" type="button" data-back-hub aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 6 9 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <h1>Notificaciones</h1>
+          </header>
+
+          <section class="settings-card settings-card--stack">
+            <label class="toggle-row">
+              <div>
+                <strong>Fallos de envío</strong>
+                <small>Cuando un mensaje de WhatsApp no se entregue</small>
+              </div>
+              <input type="checkbox" id="notif-fail" checked />
+            </label>
+            <label class="toggle-row">
+              <div>
+                <strong>Nueva cita agendada</strong>
+                <small>Avisos cuando alguien reserve por Autoagenda</small>
+              </div>
+              <input type="checkbox" id="notif-booking" checked />
+            </label>
+            <label class="toggle-row">
+              <div>
+                <strong>Resumen semanal</strong>
+                <small>Reporte de confirmaciones y no-shows por email</small>
+              </div>
+              <input type="checkbox" id="notif-weekly" />
+            </label>
+            <div class="settings-card__actions">
+              <button class="btn btn--primary" type="button" id="btn-save-notif">Guardar preferencias</button>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <a class="help" href="https://wa.me/" target="_blank" rel="noreferrer">
+        <span class="help__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff">
+            <path d="M12 2.1A9.9 9.9 0 0 0 3.3 17L2 22l5.2-1.3A9.9 9.9 0 1 0 12 2.1Zm5.5 14.1c-.2.7-1.3 1.2-2.1 1.4-.6.1-1.3.2-3.7-.8-3.1-1.3-5.1-4.5-5.2-4.7-.2-.2-1.2-1.6-1.2-3.1 0-1.4.8-2.2 1.1-2.4.3-.3.7-.3.9-.3h.7c.2 0 .5-.1.7.6.3.8.9 2.1 1 2.3.1.1.1.3 0 .5l-.5.7c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.2.4-.2.7-.1l2.1 1c.3.1.4.3.4.4 0 .3 0 1.4-.3 2.1Z"/>
+          </svg>
+        </span>
+        ¿Tienes dudas?
+      </a>
+    </div>
+
+    <div class="modal" id="refer-modal" hidden>
+      <div class="modal__backdrop" data-close-refer></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="refer-title">
+        <h3 id="refer-title">Refiere y gana</h3>
+        <p class="modal__lead">
+          Comparte tu link. Por cada amigo que se suscriba ganas
+          <strong id="refer-credit">10 citas</strong> de crédito.
+        </p>
+        <label class="settings-field">
+          <span class="settings-field__label">Tu link de referido</span>
+          <div class="settings-field__row">
+            <input class="settings-input" id="refer-link" type="text" readonly />
+            <button class="btn btn--primary" type="button" id="btn-copy-refer">Copiar</button>
+          </div>
+        </label>
+        <p class="settings-field__hint" id="refer-stats">Créditos ganados: 0 · Invitaciones: 0</p>
+        <div class="modal__actions">
+          <button class="btn btn--secondary" type="button" data-close-refer>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="delete-modal" hidden>
+      <div class="modal__backdrop" data-close-delete></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+        <h3 id="delete-title">¿Eliminar tu cuenta?</h3>
+        <p class="modal__lead">
+          Se borrarán calendarios, contactos, plantillas y reportes locales. Esta acción no se puede
+          deshacer.
+        </p>
+        <label class="settings-field">
+          <span class="settings-field__label">Escribe ELIMINAR para confirmar</span>
+          <input class="settings-input" id="delete-confirm" type="text" autocomplete="off" />
+        </label>
+        <div class="modal__actions">
+          <button class="btn btn--secondary" type="button" data-close-delete>Cancelar</button>
+          <button class="btn btn--danger" type="button" id="btn-confirm-delete" disabled>Eliminar cuenta</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden role="status"></div>
+    <button class="menu-toggle" type="button" aria-label="Abrir menú">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/configuracion.js"></script>
+  </body>
+</html>

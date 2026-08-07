@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Agendar cita · BarberHome</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="public-body">
+    <main class="public-page" id="public-page">
+      <div class="public-card">
+        <header class="public-header">
+          <img
+            class="public-avatar"
+            id="public-avatar"
+            src="assets/barberhome-avatar.png"
+            alt="BarberHome"
+            width="72"
+            height="72"
+          />
+          <div class="public-header__text">
+            <h1 id="public-title">BarberHome</h1>
+            <p id="public-description" class="public-desc">
+              EL mejor servicio de 💈Barbería💈, ahora en la comodidad de tu hogar 🏡 gracias a
+              BarberHome😎
+            </p>
+          </div>
+        </header>
+
+        <hr class="public-divider" />
+
+        <section id="service-step">
+          <p class="public-cta">Reserva una cita con nosotros:</p>
+          <div class="public-services" id="public-services"></div>
+          <button type="button" class="service-row" id="btn-puntos">
+            <span class="service-row__body">
+              <span class="service-row__name">Puntos Barberhome</span>
+              <span class="service-row__duration">Fidelidad</span>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="m9 6 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button type="button" class="service-row" id="btn-shop">
+            <span class="service-row__body">
+              <span class="service-row__name">Comprar productos</span>
+              <span class="service-row__duration">Tienda</span>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="m9 6 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </section>
+
+        <section id="shop-step" hidden>
+          <div class="book-nav">
+            <button class="book-nav__back" type="button" id="btn-back-shop" aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M15 6 9 12l6 6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <div class="book-nav__info">
+              <strong>Comprar productos</strong>
+              <span class="service-row__duration">BarberHome</span>
+            </div>
+            <button
+              class="public-cart-btn"
+              type="button"
+              id="btn-public-cart"
+              aria-label="Abrir carrito"
+              title="Carrito"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M3 3h2l.9 4.5M6 7.5h14.2l-1.6 7.2a1.6 1.6 0 0 1-1.6 1.3H8.4a1.6 1.6 0 0 1-1.6-1.3L5.5 3.8"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <circle cx="9" cy="20" r="1.35" fill="currentColor"/>
+                <circle cx="17.5" cy="20" r="1.35" fill="currentColor"/>
+              </svg>
+              <span class="mkt-cart-badge" id="public-cart-badge" hidden>0</span>
+            </button>
+          </div>
+
+          <hr class="public-divider" />
+
+          <div class="public-shop-grid" id="public-shop-grid"></div>
+        </section>
+
+        <section id="calendar-step" hidden>
+          <div class="book-nav">
+            <button class="book-nav__back" type="button" id="btn-back-calendar" aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M15 6 9 12l6 6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <div class="book-nav__info">
+              <strong id="calendar-service-name">Agendar cita en BarberHome</strong>
+              <span class="service-row__duration" id="calendar-service-duration">60 min</span>
+            </div>
+          </div>
+
+          <hr class="public-divider" />
+
+          <div class="book-cal" id="book-cal">
+            <div class="book-cal__toolbar">
+              <h2 class="book-cal__month" id="cal-month-label">Julio, 2026</h2>
+              <div class="book-cal__nav">
+                <button class="book-cal__nav-btn" type="button" id="cal-prev" aria-label="Mes anterior">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M15 6 9 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="book-cal__nav-btn" type="button" id="cal-next" aria-label="Mes siguiente">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="book-cal__weekdays" aria-hidden="true">
+              <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
+            </div>
+            <div class="book-cal__grid" id="cal-grid" role="grid" aria-label="Calendario"></div>
+
+            <div class="book-times" id="book-times" hidden>
+              <p class="book-times__title">Elige una hora</p>
+              <div class="book-times__grid" id="times-grid"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="puntos-step" hidden>
+          <button class="back-link" type="button" id="btn-back-puntos">← Volver</button>
+
+          <div id="puntos-auth">
+            <h2 class="public-section-title">Puntos Barberhome</h2>
+            <p class="public-desc public-desc--block">
+              Inicia sesión o regístrate para ver y acumular tus puntos de fidelidad.
+            </p>
+
+            <div class="auth-tabs" role="tablist">
+              <button type="button" class="auth-tabs__btn is-active" data-auth-tab="login" role="tab">
+                Iniciar sesión
+              </button>
+              <button type="button" class="auth-tabs__btn" data-auth-tab="register" role="tab">
+                Registrarse
+              </button>
+            </div>
+
+            <form class="public-form" id="loyalty-login-form">
+              <label class="field">
+                <span class="field__label">Tipo de documento</span>
+                <select name="docType" required>
+                  <option value="CC">Cédula de ciudadanía</option>
+                  <option value="CE">Cédula de extranjería</option>
+                  <option value="TI">Tarjeta de identidad</option>
+                  <option value="PAS">Pasaporte</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Número de documento</span>
+                <input name="docNumber" type="text" required placeholder="Documento (llave única)" />
+              </label>
+              <label class="field">
+                <span class="field__label">Correo</span>
+                <input name="email" type="email" required placeholder="tu@correo.com" />
+              </label>
+              <p class="auth-error" id="login-error" hidden></p>
+              <button class="btn btn--primary btn--block" type="submit">Entrar</button>
+            </form>
+
+            <form class="public-form" id="loyalty-register-form" hidden>
+              <label class="field">
+                <span class="field__label">Nombre y Apellido</span>
+                <input name="name" type="text" required placeholder="Tu nombre y apellido" />
+              </label>
+              <label class="field">
+                <span class="field__label">Tipo de documento</span>
+                <select name="docType" required>
+                  <option value="CC">Cédula de ciudadanía</option>
+                  <option value="CE">Cédula de extranjería</option>
+                  <option value="TI">Tarjeta de identidad</option>
+                  <option value="PAS">Pasaporte</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Número de documento</span>
+                <input name="docNumber" type="text" required placeholder="Será tu llave única" />
+              </label>
+              <label class="field">
+                <span class="field__label">Correo</span>
+                <input name="email" type="email" required placeholder="tu@correo.com" />
+              </label>
+              <label class="field">
+                <span class="field__label">Teléfono / WhatsApp</span>
+                <input name="phone" type="tel" required placeholder="+57 300 000 0000" />
+              </label>
+              <p class="auth-error" id="register-error" hidden></p>
+              <button class="btn btn--primary btn--block" type="submit">Crear cuenta</button>
+            </form>
+          </div>
+
+          <div id="puntos-verify" hidden>
+            <h2 class="public-section-title">Verifica tu correo</h2>
+            <p class="public-desc public-desc--block" id="verify-lead">
+              Te enviamos un código a tu correo. Ingrésalo para activar tu cuenta.
+            </p>
+            <div class="verify-demo" id="verify-demo" hidden>
+              <strong>Código de respaldo:</strong>
+              <code id="verify-demo-code"></code>
+              <span> (solo si el correo no se pudo enviar)</span>
+            </div>
+            <form class="public-form" id="loyalty-verify-form">
+              <label class="field">
+                <span class="field__label">Código de verificación</span>
+                <input
+                  name="code"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="6"
+                  required
+                  placeholder="6 dígitos"
+                  autocomplete="one-time-code"
+                />
+              </label>
+              <p class="auth-error" id="verify-error" hidden></p>
+              <button class="btn btn--primary btn--block" type="submit">Verificar correo</button>
+              <button class="btn btn--secondary btn--block" type="button" id="btn-resend-code">
+                Reenviar código
+              </button>
+            </form>
+          </div>
+
+          <div id="puntos-dashboard" hidden>
+            <h2 class="public-section-title">Hola, <span id="loyalty-user-name">cliente</span></h2>
+            <p class="public-desc public-desc--block">
+              Estos son tus puntos acumulados por servicios en BarberHome.
+            </p>
+            <div class="points-card">
+              <span class="points-card__label">Tus puntos</span>
+              <strong class="points-card__value" id="points-value">0</strong>
+              <div class="points-progress" id="points-progress-wrap">
+                <div class="points-progress__bar" id="points-progress-bar" style="width: 0%"></div>
+              </div>
+              <p class="points-progress__hint" id="points-progress-hint"></p>
+            </div>
+
+            <div class="loyalty-rules">
+              <p><strong>Cómo funcionan:</strong></p>
+              <ul>
+                <li>Ganas <strong>1 punto</strong> por cada <strong>$800</strong> en servicios.</li>
+                <li>Desde <strong>500 puntos</strong> puedes canjear un beneficio de <strong>$20.000</strong>.</li>
+                <li>Los puntos vencen a los <strong>12 meses</strong>.</li>
+              </ul>
+            </div>
+
+            <div class="loyalty-meta" id="loyalty-meta"></div>
+
+            <div class="loyalty-actions">
+              <button class="btn btn--primary btn--block" type="button" id="btn-redeem-points" disabled>
+                Canjear puntos
+              </button>
+              <button class="btn btn--secondary btn--block" type="button" id="btn-loyalty-logout">
+                Cerrar sesión
+              </button>
+            </div>
+
+            <div class="redeem-panel" id="redeem-panel" hidden>
+              <h3>Canjear 500 puntos</h3>
+              <p>
+                Generaremos un código para canjear <strong>500 puntos</strong> por
+                <strong>$20.000</strong>. Los puntos se descontarán cuando lo validen en BarberHome.
+              </p>
+              <p class="auth-error" id="redeem-error" hidden></p>
+              <div class="redeem-panel__actions">
+                <button class="btn btn--secondary" type="button" id="btn-cancel-redeem">Cancelar</button>
+                <button class="btn btn--primary" type="button" id="btn-confirm-redeem">Generar código</button>
+              </div>
+            </div>
+
+            <div class="redeem-success" id="redeem-success" hidden>
+              <strong>¡Código listo!</strong>
+              <p id="redeem-success-text"></p>
+              <p class="redeem-code">Código: <code id="redeem-code"></code></p>
+              <small>Muéstralo en BarberHome. Allí validarán el código y descontarán tus puntos.</small>
+            </div>
+          </div>
+        </section>
+
+        <form class="public-form" id="booking-form" hidden>
+          <div class="book-nav">
+            <button class="book-nav__back" type="button" id="btn-back-form" aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M15 6 9 12l6 6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <div class="book-nav__info">
+              <strong id="form-summary-title">Finaliza tu reserva</strong>
+            </div>
+          </div>
+
+          <div class="booking-summary" id="booking-summary">
+            <div class="booking-summary__row">
+              <strong id="summary-service">Servicio</strong>
+              <span class="service-row__duration" id="summary-duration">60 min</span>
+            </div>
+            <p class="booking-summary__when" id="summary-when"></p>
+          </div>
+
+          <input type="hidden" name="service" id="public-service" />
+          <input type="hidden" name="date" id="public-date" required />
+          <input type="hidden" name="time" id="public-time" required />
+          <input type="hidden" name="phone" id="public-phone-full" />
+
+          <label class="field">
+            <span class="field__label">¿Cuál es tu nombre?</span>
+            <input name="name" type="text" required placeholder="Tu nombre" autocomplete="name" />
+          </label>
+          <label class="field">
+            <span class="field__label">¿Cuál es tu WhatsApp?</span>
+            <div class="phone-input">
+              <select class="phone-input__select" id="booking-cc" name="countryCode" aria-label="Código de país">
+                <option value="+57" selected>🇨🇴 +57</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+52">🇲🇽 +52</option>
+                <option value="+34">🇪🇸 +34</option>
+                <option value="+54">🇦🇷 +54</option>
+                <option value="+56">🇨🇱 +56</option>
+                <option value="+51">🇵🇪 +51</option>
+                <option value="+58">🇻🇪 +58</option>
+                <option value="+593">🇪🇨 +593</option>
+                <option value="+507">🇵🇦 +507</option>
+                <option value="+506">🇨🇷 +506</option>
+                <option value="+502">🇬🇹 +502</option>
+                <option value="+504">🇭🇳 +504</option>
+                <option value="+505">🇳🇮 +505</option>
+                <option value="+503">🇸🇻 +503</option>
+                <option value="+591">🇧🇴 +591</option>
+                <option value="+595">🇵🇾 +595</option>
+                <option value="+598">🇺🇾 +598</option>
+                <option value="+55">🇧🇷 +55</option>
+                <option value="+39">🇮🇹 +39</option>
+                <option value="+33">🇫🇷 +33</option>
+                <option value="+49">🇩🇪 +49</option>
+                <option value="+44">🇬🇧 +44</option>
+              </select>
+              <input
+                id="booking-phone-local"
+                type="tel"
+                inputmode="tel"
+                required
+                placeholder="Escribe tu número de WhatsApp"
+                autocomplete="tel-national"
+              />
+            </div>
+          </label>
+          <button class="btn btn--primary btn--block" type="submit">Reservar</button>
+        </form>
+        <div class="public-ok-wrap" id="public-ok" hidden>
+          <p class="public-ok">¡Listo! Tu cita quedó registrada.</p>
+          <button class="btn btn--primary btn--block" type="button" id="btn-book-another">
+            Agendar otra cita
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <div class="public-cart-overlay" id="public-cart-panel" hidden>
+      <button
+        class="public-cart-overlay__backdrop"
+        type="button"
+        data-close-public-cart
+        aria-label="Cerrar carrito"
+      ></button>
+      <div class="public-cart-sheet" role="dialog" aria-modal="true" aria-labelledby="public-cart-title">
+        <div class="public-cart-sheet__head">
+          <h3 id="public-cart-title">Tu carrito</h3>
+          <button class="icon-btn" type="button" data-close-public-cart aria-label="Cerrar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div id="public-cart-list" class="mkt-cart-list"></div>
+        <div class="mkt-cart-footer">
+          <div>
+            <span>Total</span>
+            <strong id="public-cart-total">$ 0</strong>
+          </div>
+              <button class="btn btn--primary" type="button" id="btn-public-checkout">
+                Finalizar pedido por WhatsApp
+              </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="js/email-config.js?v=20260806"></script>
+    <script src="js/email-service.js?v=20260806"></script>
+    <script src="js/google-config.js?v=20260806"></script>
+    <script src="js/google-calendar.js?v=20260806"></script>
+    <script src="js/booking-store.js?v=20260806"></script>
+    <script src="js/booking-public.js?v=20260806"></script>
+  </body>
+</html>

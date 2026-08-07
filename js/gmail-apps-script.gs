@@ -1,0 +1,220 @@
+/**
+ * CORREO BarberHome (OTP + aviso de reservas)
+ * -----------------------------------------
+ * 1) Ve a https://script.google.com → abre tu proyecto (o crea uno nuevo)
+ * 2) Reemplaza TODO el código por este archivo y Guarda
+ * 3) Implementar → Administrar implementaciones → lápiz → Nueva versión → Implementar
+ *    (o Nueva implementación → App web)
+ *      - Ejecutar como: Yo
+ *      - Quién tiene acceso: Cualquier persona
+ * 4) Copia la URL /exec en js/email-config.js → appsScriptUrl
+ * 5) SECRET debe coincidir con appsScriptSecret
+ *
+ * Tipos de POST:
+ *  - type: "verify"  → código al cliente
+ *  - type: "booking" → aviso de reserva al admin
+ */
+
+var SECRET = "barberhome-otp-2026";
+
+function doPost(e) {
+  try {
+    var raw = (e && e.postData && e.postData.contents) || "{}";
+    var data = JSON.parse(raw);
+
+    if (!data.secret || data.secret !== SECRET) {
+      return json_({ ok: false, message: "No autorizado" });
+    }
+
+    var type = String(data.type || "verify").toLowerCase();
+    if (type === "booking") {
+      return sendBookingAlert_(data);
+    }
+    return sendVerifyCode_(data);
+  } catch (err) {
+    return json_({ ok: false, message: String(err) });
+  }
+}
+
+function doGet() {
+  return json_({
+    ok: true,
+    message:
+      "BarberHome mail OK. Usa POST type=verify (código) o type=booking (aviso admin).",
+  });
+}
+
+function sendVerifyCode_(data) {
+  var to = String(data.to_email || "").trim();
+  var name = String(data.to_name || "cliente").trim();
+  var code = String(data.code || "").trim();
+  var fromName = String(data.from_name || "BarberHome").trim();
+
+  if (!to || !code) {
+    return json_({ ok: false, message: "Faltan to_email o code" });
+  }
+
+  var subject = "Tu código Puntos BarberHome: " + code;
+  var body =
+    "Hola " +
+    name +
+    ",\n\n" +
+    "Tu código de verificación de Puntos BarberHome es: " +
+    code +
+    "\n\n" +
+    "Escríbelo en la app para activar tu cuenta.\n" +
+    "Si no solicitaste este código, ignora este mensaje.\n\n" +
+    "— " +
+    fromName;
+
+  var html =
+    '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111827">' +
+    "<p>Hola <strong>" +
+    escapeHtml_(name) +
+    "</strong>,</p>" +
+    "<p>Tu código de verificación de <strong>Puntos BarberHome</strong> es:</p>" +
+    '<p style="font-size:32px;letter-spacing:6px;font-weight:700;margin:24px 0;color:#5b21b6">' +
+    escapeHtml_(code) +
+    "</p>" +
+    "<p>Escríbelo en la app para activar tu cuenta.</p>" +
+    '<p style="color:#6b7280;font-size:13px">Si no solicitaste este código, ignora este mensaje.</p>' +
+    "<p>— " +
+    escapeHtml_(fromName) +
+    "</p>" +
+    "</div>";
+
+  MailApp.sendEmail({
+    to: to,
+    subject: subject,
+    body: body,
+    htmlBody: html,
+    name: fromName,
+  });
+
+  return json_({ ok: true, message: "Código enviado" });
+}
+
+function sendBookingAlert_(data) {
+  var to = String(data.to_email || data.admin_email || "").trim();
+  var fromName = String(data.from_name || "BarberHome").trim();
+  var booking = data.booking || {};
+
+  if (!to) {
+    return json_({ ok: false, message: "Falta admin_email / to_email" });
+  }
+
+  var client = String(booking.name || data.client_name || "Cliente").trim();
+  var phone = String(booking.phone || data.client_phone || "—").trim();
+  var service = String(booking.serviceName || data.service || "Cita").trim();
+  var date = String(booking.date || data.date || "—").trim();
+  var time = String(booking.time || data.time || "—").trim();
+  var duration = String(booking.duration || data.duration || "—");
+  var price = booking.price != null ? booking.price : data.price;
+  var notes = String(booking.notes || data.notes || "").trim();
+  var status = String(booking.status || "pending_confirmation").trim();
+  var source = String(booking.source || "public").trim();
+  var business = String(booking.business || fromName).trim();
+  var bookingId = String(booking.id || "").trim();
+
+  var priceText =
+    price === "" || price == null
+      ? "—"
+      : "$ " + Number(price).toLocaleString("es-CO");
+
+  var subject =
+    "Nueva reserva · " + service + " · " + date + " " + time + " · " + client;
+
+  var body =
+    "Nueva reserva en " +
+    business +
+    "\n\n" +
+    "Cliente: " +
+    client +
+    "\n" +
+    "WhatsApp: " +
+    phone +
+    "\n" +
+    "Servicio: " +
+    service +
+    "\n" +
+    "Fecha: " +
+    date +
+    "\n" +
+    "Hora: " +
+    time +
+    "\n" +
+    "Duración: " +
+    duration +
+    " min\n" +
+    "Precio: " +
+    priceText +
+    "\n" +
+    "Estado: " +
+    status +
+    "\n" +
+    "Origen: " +
+    source +
+    "\n" +
+    (bookingId ? "ID: " + bookingId + "\n" : "") +
+    (notes ? "Notas: " + notes + "\n" : "") +
+    "\n— BarberCloud";
+
+  var html =
+    '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827">' +
+    '<p style="font-size:18px;font-weight:700;margin:0 0 8px">Nueva reserva</p>' +
+    '<p style="color:#6b7280;margin:0 0 20px">' +
+    escapeHtml_(business) +
+    "</p>" +
+    '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
+    row_("Cliente", client) +
+    row_("WhatsApp", phone) +
+    row_("Servicio", service) +
+    row_("Fecha", date) +
+    row_("Hora", time) +
+    row_("Duración", duration + " min") +
+    row_("Precio", priceText) +
+    row_("Estado", status) +
+    row_("Origen", source) +
+    (bookingId ? row_("ID", bookingId) : "") +
+    (notes ? row_("Notas", notes) : "") +
+    "</table>" +
+    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de BarberCloud</p>' +
+    "</div>";
+
+  MailApp.sendEmail({
+    to: to,
+    subject: subject,
+    body: body,
+    htmlBody: html,
+    name: fromName,
+  });
+
+  return json_({ ok: true, message: "Aviso de reserva enviado" });
+}
+
+function row_(label, value) {
+  return (
+    "<tr>" +
+    '<td style="padding:8px 0;border-bottom:1px solid #e5e7eb;color:#6b7280;width:34%">' +
+    escapeHtml_(label) +
+    "</td>" +
+    '<td style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:600">' +
+    escapeHtml_(value) +
+    "</td>" +
+    "</tr>"
+  );
+}
+
+function escapeHtml_(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
+    ContentService.MimeType.JSON
+  );
+}

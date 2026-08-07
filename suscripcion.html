@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Suscripción · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar__top">
+          <a class="brand" href="index.html" aria-label="BarberCloud">
+            <img class="brand__logo" src="assets/logo.png" alt="" width="32" height="32" />
+            <span class="brand__name">BarberCloud</span>
+          </a>
+          <button class="icon-btn notifications" type="button" aria-label="Notificaciones">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 9a6 6 0 1 1 12 0c0 3.2.8 4.8 1.5 6H4.5C5.2 13.8 6 12.2 6 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+            <span class="badge-count">49+</span>
+          </button>
+        </div>
+
+        <nav class="nav" aria-label="Principal">
+          <a class="nav__item" href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Inicio
+          </a>
+          <a class="nav__item" href="calendario.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Calendario
+          </a>
+          <a class="nav__item" href="contactos.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S14 16 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="17" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 19c.3-1.8 1.4-3 3.2-3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Contactos
+          </a>
+          <a class="nav__item" href="puntos.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4L4.2 8.7l5.4-.8L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Puntos
+          </a>
+          <a class="nav__item" href="autoagenda.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4h10v4H7V4Zm0 6h10v10H7V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 14h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Autoagenda
+          </a>
+          <a class="nav__item" href="marketplace.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5 6.2 4h11.6L20 8.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 8.5h16M9.5 11.5a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Marketplace
+          </a>
+          <a class="nav__item is-active" href="suscripcion.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17" stroke="currentColor" stroke-width="1.7"/></svg>
+            Suscripción
+          </a>
+          <a class="nav__item" href="reportes.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5m0 14 4-5 3.5 3L16 8l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reportes
+          </a>
+          <a class="nav__item" href="manual.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4h9l3 3v13H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 11h6M9 15h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Manual
+          </a>
+          <a class="nav__item" href="feedback.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18V8a2 2 0 0 1 2-2h8l4 4v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 13h5M8 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Feedback
+          </a>
+          <a class="nav__item" href="configuracion.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M18 6l-1.6 1.6M7.6 16.4 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Configuración
+          </a>
+        </nav>
+
+        <button class="user" type="button">
+          <span class="user__avatar" aria-hidden="true">I</span>
+          <span class="user__name">luis villadiego</span>
+        </button>
+      </aside>
+
+      <main class="main">
+        <header class="page-header">
+          <h1>Suscripción</h1>
+        </header>
+
+        <section class="panel config-panel plan-summary">
+          <div class="plan-summary__row">
+            <div>
+              <h2 class="plan-summary__title" id="plan-title">Tienes el plan de 100 citas al mes</h2>
+              <p class="section-lead" id="plan-next-charge">Próximo cargo: 17/08/2026</p>
+            </div>
+            <span class="status status--ok" id="plan-status">Activo</span>
+          </div>
+        </section>
+
+        <section class="panel config-panel">
+          <div class="config-panel__toolbar">
+            <h2 class="config-panel__title">Consumo de citas</h2>
+            <button class="btn btn--ghost" type="button" id="btn-faq">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M9.8 9.2a2.2 2.2 0 1 1 3.4 1.8c-.8.5-1.2 1-1.2 1.8M12 16.5h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+              Preguntas frecuentes
+            </button>
+          </div>
+          <p class="section-lead" id="billing-period">Período de facturación: 17 jul 2026 - 17 ago 2026</p>
+          <div class="usage-row">
+            <p class="usage-stat">
+              <strong id="usage-used">42</strong>
+              <span id="usage-label"> / 100 citas usadas este período</span>
+            </p>
+            <button class="btn btn--secondary" type="button" id="btn-history">Ver historial</button>
+          </div>
+          <div class="progress" aria-hidden="true">
+            <div class="progress__bar" id="usage-bar" style="width: 42%"></div>
+          </div>
+          <div class="progress__meta">
+            <span id="usage-pct">42% usado</span>
+            <span id="usage-limit">Límite del plan: 100</span>
+          </div>
+        </section>
+
+        <section class="panel config-panel" aria-labelledby="manage-title">
+          <h2 id="manage-title" class="config-panel__title">Gestiona tu suscripción</h2>
+          <div class="manage-list">
+            <button class="manage-item" type="button" id="btn-change-plan">
+              <span class="manage-item__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 8h12l-2.5-2.5M20 16H8l2.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="manage-item__text">
+                <strong>Cambiar de plan</strong>
+                <small>Sube o baja el número de citas incluidas en tu plan</small>
+              </span>
+              <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button class="manage-item" type="button" id="btn-payment">
+              <span class="manage-item__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/>
+                  <path d="M3 10h18" stroke="currentColor" stroke-width="1.7"/>
+                </svg>
+              </span>
+              <span class="manage-item__text">
+                <strong>Método de pago</strong>
+                <small>Actualiza la tarjeta con la que pagas tu plan</small>
+              </span>
+              <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button class="manage-item" type="button" id="btn-invoices">
+              <span class="manage-item__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 4v12m0 0 4-4m-4 4-4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M5 19h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="manage-item__text">
+                <strong>Descargar Facturas</strong>
+                <small>Consulta y descarga tus facturas en el portal de facturación</small>
+              </span>
+              <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button class="manage-item" type="button" id="btn-cancel">
+              <span class="manage-item__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/>
+                  <path d="M8.5 8.5 15.5 15.5M15.5 8.5 8.5 15.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="manage-item__text">
+                <strong>Cancelar Suscripción</strong>
+                <small>Cancela tu plan al final del período actual</small>
+              </span>
+              <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel config-panel" aria-labelledby="plan-info-title">
+          <h2 id="plan-info-title" class="config-panel__title">Información de tu plan actual</h2>
+          <dl class="plan-info">
+            <div class="plan-info__row">
+              <dt>Costo por cita adicional</dt>
+              <dd id="overage-cost">$ 800</dd>
+            </div>
+            <div class="plan-info__row">
+              <dt>Frecuencia de pago</dt>
+              <dd id="billing-frequency">Mensual</dd>
+            </div>
+          </dl>
+        </section>
+      </main>
+
+      <a class="help" href="https://wa.me/" target="_blank" rel="noreferrer">
+        <span class="help__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff">
+            <path d="M12 2.1A9.9 9.9 0 0 0 3.3 17L2 22l5.2-1.3A9.9 9.9 0 1 0 12 2.1Zm5.5 14.1c-.2.7-1.3 1.2-2.1 1.4-.6.1-1.3.2-3.7-.8-3.1-1.3-5.1-4.5-5.2-4.7-.2-.2-1.2-1.6-1.2-3.1 0-1.4.8-2.2 1.1-2.4.3-.3.7-.3.9-.3h.7c.2 0 .5-.1.7.6.3.8.9 2.1 1 2.3.1.1.1.3 0 .5l-.5.7c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.2.4-.2.7-.1l2.1 1c.3.1.4.3.4.4 0 .3 0 1.4-.3 2.1Z"/>
+          </svg>
+        </span>
+        ¿Necesitas ayuda?
+      </a>
+    </div>
+
+    <div class="modal" id="plan-modal" hidden>
+      <div class="modal__backdrop" data-close-plan></div>
+      <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title">
+        <h3 id="plan-modal-title">Cambiar de plan</h3>
+        <p class="modal__lead">Elige cuántas citas quieres incluir cada mes.</p>
+        <div class="plan-options" id="plan-options"></div>
+        <div class="modal__actions">
+          <button class="btn btn--secondary" type="button" data-close-plan>Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="payment-modal" hidden>
+      <div class="modal__backdrop" data-close-payment></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
+        <h3 id="payment-modal-title">Método de pago</h3>
+        <form class="form" id="payment-form">
+          <label class="field">
+            <span class="field__label">Nombre en la tarjeta</span>
+            <input name="holder" type="text" required placeholder="Luis Villadiego" />
+          </label>
+          <label class="field">
+            <span class="field__label">Número</span>
+            <input name="number" type="text" required inputmode="numeric" placeholder="4242 4242 4242 4242" maxlength="19" />
+          </label>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">Vence</span>
+              <input name="expiry" type="text" required placeholder="08/28" maxlength="5" />
+            </label>
+            <label class="field">
+              <span class="field__label">CVC</span>
+              <input name="cvc" type="text" required inputmode="numeric" placeholder="123" maxlength="4" />
+            </label>
+          </div>
+          <div class="modal__actions">
+            <button class="btn btn--secondary" type="button" data-close-payment>Cancelar</button>
+            <button class="btn btn--primary" type="submit">Guardar tarjeta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="history-modal" hidden>
+      <div class="modal__backdrop" data-close-history></div>
+      <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="history-modal-title">
+        <h3 id="history-modal-title">Historial de citas del período</h3>
+        <div class="diagnostic-list" id="history-list"></div>
+        <div class="modal__actions">
+          <button class="btn btn--primary" type="button" data-close-history>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="invoices-modal" hidden>
+      <div class="modal__backdrop" data-close-invoices></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="invoices-modal-title">
+        <h3 id="invoices-modal-title">Facturas</h3>
+        <div class="invoice-list" id="invoice-list"></div>
+        <div class="modal__actions">
+          <button class="btn btn--primary" type="button" data-close-invoices>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="faq-modal" hidden>
+      <div class="modal__backdrop" data-close-faq></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="faq-modal-title">
+        <h3 id="faq-modal-title">Preguntas frecuentes</h3>
+        <div class="faq-list">
+          <details open>
+            <summary>¿Qué cuenta como una cita?</summary>
+            <p>Cada reserva confirmada o enviada por WhatsApp en el período de facturación consume 1 cita de tu plan.</p>
+          </details>
+          <details>
+            <summary>¿Qué pasa si llego al límite?</summary>
+            <p>Puedes subir de plan en cualquier momento. Las citas extra se pausan hasta renovar o ampliar el cupo.</p>
+          </details>
+          <details>
+            <summary>¿Puedo pedir reembolso?</summary>
+            <p>Sí, dentro de los primeros 30 días de tu suscripción.</p>
+          </details>
+        </div>
+        <div class="modal__actions">
+          <button class="btn btn--primary" type="button" data-close-faq>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="cancel-modal" hidden>
+      <div class="modal__backdrop" data-close-cancel></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+        <h3 id="cancel-modal-title">Cancelar suscripción</h3>
+        <p class="modal__lead" id="cancel-lead">
+          Tu plan seguirá activo hasta el final del período actual. Después no se renovará automáticamente.
+        </p>
+        <div class="modal__actions">
+          <button class="btn btn--secondary" type="button" data-close-cancel>Mantener plan</button>
+          <button class="btn btn--danger" type="button" id="btn-confirm-cancel">Cancelar al final del período</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" hidden role="status"></div>
+    <button class="menu-toggle" type="button" aria-label="Abrir menú">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/suscripcion.js"></script>
+  </body>
+</html>

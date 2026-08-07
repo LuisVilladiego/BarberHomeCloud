@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Manual de BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="manual-body">
+    <header class="manual-top">
+      <a class="manual-brand" href="manual.html">
+        <img src="assets/logo.png" alt="" width="28" height="28" />
+        <span>Manual de BarberCloud</span>
+      </a>
+      <div class="manual-top__right">
+        <a class="manual-back" href="index.html">Volver a BarberCloud</a>
+        <label class="manual-search">
+          <input id="manual-search" type="search" placeholder="Buscar en el manual..." />
+          <kbd>⌘ K</kbd>
+        </label>
+      </div>
+    </header>
+
+    <div class="manual-layout">
+      <aside class="manual-nav" aria-label="Secciones del manual">
+        <button class="manual-nav__item is-active" type="button" data-section="intro">
+          Introducción a BarberCloud
+        </button>
+        <button class="manual-nav__item" type="button" data-section="pasos">
+          Pasos para usar BarberCloud
+        </button>
+        <button class="manual-nav__item" type="button" data-section="guardar">
+          Donde guardar las citas
+        </button>
+        <button class="manual-nav__item" type="button" data-section="google">
+          Integración con Google Calendar
+        </button>
+        <button class="manual-nav__item" type="button" data-section="mensajes">
+          Cómo personalizar los mensajes
+        </button>
+        <button class="manual-nav__item" type="button" data-section="respuesta">
+          Cómo maximizar la tasa de respuesta de tus clientes
+        </button>
+      </aside>
+
+      <main class="manual-content" id="manual-content">
+        <article class="manual-article" data-article="intro">
+          <h1>Introducción a BarberCloud</h1>
+          <p class="manual-lead">
+            ¡Bienvenido a BarberCloud! Con este manual descubrirás todo lo que puedes hacer con
+            BarberCloud y encontrarás respuestas a tus preguntas.
+          </p>
+
+          <h2>¿Qué es BarberCloud?</h2>
+          <p>
+            BarberCloud es una aplicación para confirmar y recordar citas, reuniones, turnos o
+            eventos de forma automática por WhatsApp. Reduce las ausencias (no-shows) y te ayuda a
+            mantener tu agenda bajo control sin escribir mensaje por mensaje.
+          </p>
+
+          <h2>¿Quién usa BarberCloud?</h2>
+          <ul>
+            <li>Profesionales con citas agendadas (médicos, dentistas, abogados, etc.).</li>
+            <li>Profesionales con reuniones online (Zoom, Google Meet, etc.).</li>
+            <li>Organizadores de eventos, talleres o cursos.</li>
+            <li>Personas que envían recordatorios de pagos, facturas o recibos.</li>
+          </ul>
+        </article>
+
+        <article class="manual-article" data-article="pasos" hidden>
+          <h1>¿Cómo agendar citas por WhatsApp con confirmación y recordatorios?</h1>
+
+          <h2>1. Regístrate en BarberCloud</h2>
+          <p>
+            Crea tu cuenta para acceder al panel y empezar a confirmar citas automáticamente.
+          </p>
+
+          <h2>2. Completa el tutorial</h2>
+          <p>
+            Después de registrarte, BarberCloud te muestra un tutorial corto para enviar tu primer
+            mensaje de confirmación automático por WhatsApp.
+          </p>
+
+          <div class="manual-preview">
+            <div class="tutorial-card" id="tutorial-card">
+              <div class="tutorial-card__progress" aria-hidden="true">
+                <span style="width: 20%"></span>
+              </div>
+              <div class="tutorial-card__brand">
+                <img src="assets/logo.png" alt="" width="28" height="28" />
+                <strong>BarberCloud</strong>
+              </div>
+              <h3>¡Bienvenido a BarberCloud!</h3>
+              <p class="tutorial-card__lead">
+                En este tutorial te enseñamos las bases de BarberCloud. Tomará 1 minuto.
+              </p>
+              <label class="field">
+                <span class="field__label">Primero, ¿Cuál es tu WhatsApp?</span>
+                <div class="phone-input">
+                  <button class="phone-input__cc" type="button" aria-label="Código de país">
+                    <span aria-hidden="true">🇨🇦</span>
+                    +1
+                  </button>
+                  <input
+                    id="tutorial-phone"
+                    type="tel"
+                    inputmode="tel"
+                    placeholder="Número de WhatsApp"
+                    autocomplete="tel"
+                  />
+                </div>
+              </label>
+              <div class="tutorial-card__actions">
+                <button class="btn btn--primary" type="button" id="tutorial-next" disabled>
+                  Siguiente
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <h2>Paso 3: Decide donde guardar las citas/turnos/eventos</h2>
+          <p>
+            Tienes que decidir donde guardar las citas/turnos/eventos que quieres confirmar.
+            BarberCloud te permite guardarlos en:
+          </p>
+          <ul>
+            <li>Calendario de BarberCloud</li>
+            <li>Google Calendar</li>
+          </ul>
+
+          <h2>Paso 4: (Opcional) Descarga la app móvil</h2>
+          <p>
+            BarberCloud funciona en la web y también esta disponible para
+            <a class="manual-link" href="https://apps.apple.com/app/barbercloud/id6450965833" target="_blank" rel="noreferrer">iOS</a>
+            y
+            <a class="manual-link" href="https://play.google.com/store/apps/details?id=com.barbercloud.app" target="_blank" rel="noreferrer">Android</a>.
+          </p>
+
+          <p>
+            <a class="manual-link" href="tutorial.html">Abrir tutorial interactivo →</a>
+          </p>
+        </article>
+
+        <article class="manual-article" data-article="guardar" hidden>
+          <p class="manual-eyebrow">Donde guardar las citas</p>
+          <h1>Escoge tu calendario para agendar citas</h1>
+
+          <p>El trabajo de BarberCloud es:</p>
+          <ul>
+            <li>Leer las citas de tu calendario</li>
+            <li>Enviar mensajes por WhatsApp para recordar/confirmar cada cita</li>
+          </ul>
+
+          <p>
+            Por eso, tienes que decidir donde guardar las citas/turnos/eventos que quieres
+            confirmar. BarberCloud te permite guardarlos en:
+          </p>
+          <ul>
+            <li>Calendario de BarberCloud</li>
+            <li>Google Calendar</li>
+          </ul>
+
+          <h2>Google Calendar vs Calendario de BarberCloud</h2>
+          <p>
+            Si ya usas Google Calendar, te recomiendo que uses Google Calendar. Si usas cualquier
+            otro calendario te recomiendo el calendario de BarberCloud.
+          </p>
+        </article>
+
+        <article class="manual-article" data-article="google" hidden>
+          <p class="manual-eyebrow">Integración con Google Calendar</p>
+          <p class="manual-lead">
+            En esta página te explicó cómo integrar tu Google Calendar con BarberCloud.
+          </p>
+
+          <h2>Cómo conectar tu Google Calendar</h2>
+          <ol>
+            <li>
+              Ve a
+              <a class="manual-link" href="index.html">https://barbercloud.com/app</a>
+            </li>
+            <li>Haz clic en "Agregar Calendario".</li>
+            <li>Selecciona el Google Calendar donde vas a guardar tus citas.</li>
+            <li>Edita la configuración de tu calendario y pulsa "Guardar".</li>
+            <li>
+              Listo, a partir de ese moment BarberCloud comenzará a enviar los mensajes por
+              WhatsApp de acuerdo a tu configuración.
+            </li>
+          </ol>
+
+          <h2>Cómo crear citas/eventos</h2>
+          <p>
+            Simplemente crea eventos en Google Calendar como siempre lo haz hecho. La única
+            diferencia es que si quieres que BarberCloud envíe el mensaje debes dejar el número de
+            WhatsApp de la persona.
+          </p>
+          <p>
+            El número lo puedes dejar tanto en el título como en la descripción del evento. Aquí un
+            ejemplo:
+          </p>
+
+          <div class="gcal-example" aria-label="Ejemplo de evento en Google Calendar">
+            <div class="gcal-example__window">
+              <div class="gcal-example__title">Cita con Luis Villadiego +15146326713</div>
+              <div class="gcal-example__tabs">
+                <span class="is-active">Evento</span>
+                <span>Tarea</span>
+                <span>Calendario de citas <em>Nueva</em></span>
+              </div>
+              <div class="gcal-example__when">
+                Jueves, 27 de julio · 5:00pm — 6:00pm
+              </div>
+              <div class="gcal-example__meta">Zona horaria · No se repite</div>
+              <a class="gcal-example__link" href="#">Encontrar un hueco</a>
+
+              <div class="gcal-example__row">
+                <span class="gcal-example__icon" aria-hidden="true">👥</span>
+                <span class="gcal-example__placeholder">Añade invitados</span>
+              </div>
+
+              <button class="gcal-example__meet" type="button">
+                <span class="gcal-example__meet-icon" aria-hidden="true"></span>
+                Añadir videollamada de Google Meet
+              </button>
+
+              <div class="gcal-example__row">
+                <span class="gcal-example__icon" aria-hidden="true">📍</span>
+                <span class="gcal-example__placeholder">Añadir ubicación</span>
+              </div>
+
+              <div class="gcal-example__editor">
+                <div class="gcal-example__toolbar" aria-hidden="true">
+                  <b>B</b><i>I</i><u>U</u>
+                  <span>1.</span><span>•</span><span>🔗</span><span>Tx</span>
+                </div>
+                <div class="gcal-example__textarea">También puedes dejar el número aquí</div>
+              </div>
+
+              <div class="gcal-example__row">
+                <span class="gcal-example__icon" aria-hidden="true">📎</span>
+                <span class="gcal-example__placeholder">Adjuntar archivo</span>
+              </div>
+
+              <div class="gcal-example__owner">
+                <span class="gcal-example__icon" aria-hidden="true">📅</span>
+                <div class="gcal-example__owner-box">
+                  <strong>Luis Villadiego <span class="gcal-example__dot"></span></strong>
+                  <small>No disponible · Visibilidad predeterminada · 2 notificaciones</small>
+                </div>
+              </div>
+
+              <div class="gcal-example__footer">
+                <button type="button" class="gcal-example__more">Más opciones</button>
+                <button type="button" class="gcal-example__save">Guardar</button>
+              </div>
+            </div>
+          </div>
+
+          <h2>Cómo saber el estado de una cita/evento</h2>
+          <p>
+            BarberCloud monitorea constantemente tu Google Calendar. Según tu configuración, cuando
+            una cita está a cierta cantidad de horas, BarberCloud envía automáticamente un mensaje
+            de confirmación.
+          </p>
+          <ul class="status-legend">
+            <li><span class="dot dot--yellow"></span> Mensaje enviado</li>
+            <li><span class="dot dot--green"></span> Cliente confirmó la cita</li>
+            <li><span class="dot dot--red"></span> Cliente canceló la cita</li>
+          </ul>
+
+          <h2>Por qué los mensajes no se envían puntual</h2>
+          <p>
+            El sistema no es perfectamente en tiempo real porque revisa tu Google Calendar
+            <strong>cada 20 minutos</strong>.
+          </p>
+          <p>
+            Por ejemplo: una cita a las 4:00 PM puede disparar el mensaje en cualquier momento
+            entre las 4:00 PM y las 4:20 PM. Si activas un <strong>Mensaje Post Cita</strong>, ese
+            retraso puede aumentar.
+          </p>
+
+          <h2>Multiples calendarios</h2>
+          <p>Puedes necesitar varios calendarios cuando:</p>
+          <ul>
+            <li>Cada empleado tiene su propio calendario.</li>
+            <li>Ofreces citas en distintas ubicaciones.</li>
+            <li>Ofreces citas para diferentes servicios.</li>
+          </ul>
+          <p>
+            La principal ventaja es que <strong>cada calendario tiene su propia configuración y
+            plantilla de WhatsApp</strong>.
+          </p>
+
+          <h2>BarberCloud shortcuts</h2>
+          <p>Los shortcuts sirven para dos acciones:</p>
+          <ol>
+            <li>Consultar el estado de una cita/evento.</li>
+            <li>Abrir una conversación directa de WhatsApp con el cliente.</li>
+          </ol>
+
+          <div class="gcal-popup-wrap">
+            <div class="shortcuts-card" aria-label="BarberCloud shortcuts en el evento">
+              <div class="shortcuts-card__header">----- BARBERCLOUD SHORTCUTS -----</div>
+              <p>
+                <strong>Status de mensajes de WhatsApp:</strong><br />
+                <a href="https://barbercloud.com/app/appointment/clkjsyr9n12940kmcqo3qtlgm" target="_blank" rel="noreferrer"
+                  >https://barbercloud.com/app/appointment/clkjsyr9n12940kmcqo3qtlgm</a
+                >
+              </p>
+              <p>
+                <strong>Hablar con cliente:</strong><br />
+                <a
+                  href="https://api.whatsapp.com/send?phone=15146326713&text=Hola%2C%20tienes%20una%20cita%20El%20mi%C3%A9rcoles%2C%2026%20de%20julio%2C%20a%20las%2013%3A09%20con%20Testing."
+                  target="_blank"
+                  rel="noreferrer"
+                  >https://api.whatsapp.com/send?phone=15146326713&amp;text=Hola%2C%20tienes%20una%20cita...</a
+                >
+              </p>
+              <div class="shortcuts-card__footer">
+                <span aria-hidden="true">📅</span>
+                <div>
+                  <strong>PROD TESTING BARBERCLOUD</strong>
+                  <small>Creado por: Luis Villadiego</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p>
+            Están diseñados para ahorrarte tiempo. BarberCloud los agrega automáticamente a tus
+            eventos cuando envía el primer mensaje de confirmación.
+          </p>
+        </article>
+
+        <article class="manual-article" data-article="mensajes" hidden>
+          <p class="manual-eyebrow">Cómo personalizar los mensajes</p>
+          <h1>Aprende a personalizar mensajes de WhatsApp con BarberCloud</h1>
+
+          <h2>Variables: La forma de personalizar los mensajes.</h2>
+          <p>
+            Las variables te permiten personalizar cada mensaje automáticamente. Por ejemplo,
+            puedes agregar:
+          </p>
+          <ul>
+            <li>El nombre de la persona.</li>
+            <li>El servicio de la cita.</li>
+            <li>El link de la videollamada.</li>
+            <li>El motivo de la reunión.</li>
+          </ul>
+
+          <h2>Agrega variables a los mensaje de WhatsApp.</h2>
+          <ol>
+            <li>Ve a la configuración de tu calendario.</li>
+            <li>Ubica el campo "Cuerpo del mensaje".</li>
+            <li>
+              Escribe el nombre de tu variable entre llaves. Ejemplo:
+              <code>{{nombre}}</code>
+            </li>
+          </ol>
+
+          <div class="msg-editor-wrap">
+            <div class="msg-editor" aria-label="Ejemplo de cuerpo del mensaje">
+              <label class="msg-editor__label"
+                >Cuerpo del mensaje (¿Con quién, de qué y donde es la cita?)</label
+              >
+              <div class="msg-editor__box">
+                <p>Hola <mark>{{nombre}}</mark></p>
+                <p>Tienes una cita con Luis Villadiego.</p>
+                <div class="msg-editor__arrow" aria-hidden="true">➜</div>
+              </div>
+              <div class="msg-editor__meta">
+                <span aria-hidden="true">✎</span>
+                <span>55/900</span>
+              </div>
+            </div>
+          </div>
+
+          <h2>Asigna valores a las variables</h2>
+          <p>
+            Las variables se reemplazan con datos reales al enviar el mensaje. Por ejemplo, si tu
+            plantilla dice:
+          </p>
+          <p><code>Hola {{nombre}}, recuerda tu cita.</code></p>
+          <p>
+            y la cita es para una persona llamada Diego, BarberCloud enviará:
+          </p>
+          <p><code>Hola Diego, recuerda tu cita.</code></p>
+          <p>
+            La forma de asignar esos valores depende de si usas el
+            <strong>Calendario de BarberCloud</strong> o <strong>Google Calendar</strong>.
+          </p>
+
+          <h2>Asignar valor en Calendario de BarberCloud</h2>
+          <p>
+            Al momento de crear la cita en el calendario de BarberCloud te saldrán campos para
+            darle valores a las variables:
+          </p>
+
+          <div class="cita-modal-wrap">
+            <div class="cita-modal" aria-label="Ejemplo de crear cita">
+              <div class="cita-modal__head">
+                <strong>Crear cita</strong>
+                <span aria-hidden="true">×</span>
+              </div>
+
+              <label class="field">
+                <span class="field__label">Clientes</span>
+                <span class="cita-modal__search">
+                  <span aria-hidden="true">🔍</span>
+                  Selecciona los clientes para esta cita
+                </span>
+              </label>
+
+              <div class="cita-modal__when">
+                <span class="cita-modal__date">📅 Martes, 28 Noviembre</span>
+                <span class="cita-modal__times">
+                  <span>12:30 PM</span>
+                  <span>—</span>
+                  <span>1:30 PM</span>
+                </span>
+              </div>
+
+              <label class="field">
+                <span class="field__label">Calendario</span>
+                <span class="cita-modal__select">Big data</span>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Notas</span>
+                <span class="cita-modal__notes"
+                  >Las notas son para ti. No se comparten con el cliente.</span
+                >
+              </label>
+
+              <div class="cita-modal__vars">
+                <span class="field__label">Variables</span>
+                <label class="cita-modal__var">
+                  <span>nombre</span>
+                  <input type="text" value="Diego" disabled />
+                  <span class="cita-modal__arrow" aria-hidden="true">➜</span>
+                </label>
+              </div>
+
+              <div class="cita-modal__actions">
+                <button class="btn btn--primary" type="button" tabindex="-1">Guardar</button>
+              </div>
+            </div>
+          </div>
+
+          <p>
+            En este caso, lo que escribas en el campo nombre será insertado para la variable
+            <code>{{nombre}}</code>.
+          </p>
+
+          <h2>Asignar valor en Google Calendar</h2>
+          <p>Si usas Google Calendar, sigue este formato:</p>
+          <ul>
+            <li>La variable se llama <code>{{nombre}}</code>.</li>
+            <li>
+              Para asignarle un valor, incluye en la descripción del evento:
+              <code>{{nombre:Diego}}</code>.
+            </li>
+            <li>
+              Fíjate que es el mismo formato que lo que escribimos en el cuerpo del mensaje pero le
+              ponemos dos puntos y luego el valor que tomará la variable.
+            </li>
+          </ul>
+
+          <div class="gcal-create-wrap" aria-label="Ejemplo: valor de variable en Google Calendar">
+            <div class="gcal-create">
+              <div class="gcal-create__title-row">
+                <span class="gcal-create__icon" aria-hidden="true">📅</span>
+                <div class="gcal-create__title">Cita con Diego +1514632673737</div>
+              </div>
+              <div class="gcal-create__tabs" role="tablist">
+                <span class="gcal-create__tab is-active">Evento</span>
+                <span class="gcal-create__tab">Tarea</span>
+                <span class="gcal-create__tab">Cita</span>
+              </div>
+              <div class="gcal-create__field">
+                <span class="gcal-create__field-icon" aria-hidden="true">🕐</span>
+                <span>jue, 12 de jun · 10:00 – 10:30</span>
+              </div>
+              <div class="gcal-create__field gcal-create__field--desc">
+                <span class="gcal-create__field-icon" aria-hidden="true">☰</span>
+                <div class="gcal-create__editor">
+                  <div class="gcal-create__toolbar" aria-hidden="true">
+                    <b>B</b><i>I</i><u>U</u><span>S</span>
+                  </div>
+                  <div class="gcal-create__desc">
+                    <code>{{nombre:Diego}}</code>
+                    <span class="gcal-create__arrow" aria-hidden="true">➜</span>
+                  </div>
+                </div>
+              </div>
+              <div class="gcal-create__field">
+                <span class="gcal-create__field-icon" aria-hidden="true">📅</span>
+                <span>Calendario · Principal</span>
+              </div>
+            </div>
+          </div>
+
+          <h2>Variables especiales: Enviar link a Google Meet o Reunión de Zoom</h2>
+          <p>
+            Si usas Google Calendar para llevar tu agenda y atiendes a tus clientes por Google Meet
+            o Zoom, puedes enviarles el link a la reunión automáticamente.
+          </p>
+
+          <h3>Enviar link a Google Meet por WhatsApp</h3>
+          <p>
+            Debes escribir esta variable en el cuerpo del mensaje:
+            <code>{{googleMeetLink}}</code>
+          </p>
+
+          <div class="msg-editor-wrap">
+            <div class="msg-editor" aria-label="Ejemplo con link de Google Meet">
+              <label class="msg-editor__label"
+                >Cuerpo del mensaje (¿Con quién, de qué y donde es la cita?)</label
+              >
+              <div class="msg-editor__box">
+                <p>Hola,</p>
+                <p>Te paso el link de la reunión. Puedes unirte cuando sea la hora:</p>
+                <p>
+                  <mark>{{googleMeetLink}}</mark>
+                  <span class="msg-editor__arrow msg-editor__arrow--inline" aria-hidden="true"
+                    >➜</span
+                  >
+                </p>
+              </div>
+              <div class="msg-editor__meta">
+                <span aria-hidden="true">🖌</span>
+                <span>91/900</span>
+              </div>
+            </div>
+          </div>
+
+          <h3>Enviar link a reunión de Zoom por WhatsApp</h3>
+          <p><strong>Requisitos:</strong></p>
+          <ul>
+            <li>Tener Zoom conectado a Google Calendar</li>
+            <li>
+              Escribir esta variable en el cuerpo del mensaje: <code>{{zoomLink}}</code>
+            </li>
+          </ul>
+
+          <div class="msg-editor-wrap">
+            <div class="msg-editor" aria-label="Ejemplo con link de Zoom">
+              <label class="msg-editor__label"
+                >Cuerpo del mensaje (¿Con quién, de qué y donde es la cita?)</label
+              >
+              <div class="msg-editor__box">
+                <p>Hola,</p>
+                <p>Te paso el link de la reunión. Puedes unirte cuando sea la hora:</p>
+                <p>
+                  <mark>{{zoomLink}}</mark>
+                  <span class="msg-editor__arrow msg-editor__arrow--inline" aria-hidden="true"
+                    >➜</span
+                  >
+                </p>
+              </div>
+              <div class="msg-editor__meta">
+                <span aria-hidden="true">🖌</span>
+                <span>85/900</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="manual-article" data-article="respuesta" hidden>
+          <h1>Cómo maximizar la tasa de respuesta de tus clientes</h1>
+          <p class="manual-lead">
+            Pequeños ajustes en timing y copy suelen subir bastante las confirmaciones.
+          </p>
+          <ul>
+            <li>Envía el primer mensaje 24–48 horas antes de la cita.</li>
+            <li>Haz un recordatorio el mismo día si aún no respondieron.</li>
+            <li>Usa el nombre del cliente y el servicio concreto.</li>
+            <li>Ofrece una forma fácil de cancelar para liberar el hueco a tiempo.</li>
+            <li>Revisa en <strong>Reportes</strong> qué días tienen más “esperando respuesta”.</li>
+          </ul>
+        </article>
+
+        <nav class="manual-pager" aria-label="Paginación del manual">
+          <button type="button" class="manual-pager__link" id="manual-prev"></button>
+          <button type="button" class="manual-pager__link manual-pager__link--next" id="manual-next"></button>
+        </nav>
+      </main>
+    </div>
+
+    <button class="manual-menu-toggle" type="button" aria-label="Abrir secciones">
+      Secciones
+    </button>
+
+    <script src="js/manual.js"></script>
+    <script src="js/tutorial.js"></script>
+  </body>
+</html>

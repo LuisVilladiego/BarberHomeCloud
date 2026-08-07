@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Configurar calendario · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar__top">
+          <a class="brand" href="index.html" aria-label="BarberCloud">
+            <img class="brand__logo" src="assets/logo.png" alt="" width="32" height="32" />
+            <span class="brand__name">BarberCloud</span>
+          </a>
+          <button class="icon-btn notifications" type="button" aria-label="Notificaciones">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 9a6 6 0 1 1 12 0c0 3.2.8 4.8 1.5 6H4.5C5.2 13.8 6 12.2 6 9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+              <path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+            <span class="badge-count">49+</span>
+          </button>
+        </div>
+
+        <nav class="nav" aria-label="Principal">
+          <a class="nav__item is-active" href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Inicio
+          </a>
+          <a class="nav__item" href="calendario.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Calendario
+          </a>
+          <a class="nav__item" href="contactos.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S14 16 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="17" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 19c.3-1.8 1.4-3 3.2-3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Contactos
+          </a>
+          <a class="nav__item" href="puntos.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m12 3 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 15.4 7.2 17.9l.9-5.4L4.2 8.7l5.4-.8L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            Puntos
+          </a>
+          <a class="nav__item" href="autoagenda.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4h10v4H7V4Zm0 6h10v10H7V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 14h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Autoagenda
+          </a>
+          <a class="nav__item" href="marketplace.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.5 6.2 4h11.6L20 8.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 8.5h16M9.5 11.5a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Marketplace
+          </a>
+          <a class="nav__item" href="suscripcion.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17" stroke="currentColor" stroke-width="1.7"/></svg>
+            Suscripción
+          </a>
+          <a class="nav__item" href="reportes.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5m0 14 4-5 3.5 3L16 8l4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reportes
+          </a>
+          <a class="nav__item" href="manual.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4h9l3 3v13H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 11h6M9 15h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Manual
+          </a>
+          <a class="nav__item" href="feedback.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18V8a2 2 0 0 1 2-2h8l4 4v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 13h5M8 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Feedback
+          </a>
+          <a class="nav__item" href="configuracion.html">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4 18 18M18 6l-1.6 1.6M7.6 16.4 6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Configuración
+          </a>
+        </nav>
+
+        <button class="user" type="button">
+          <span class="user__avatar" aria-hidden="true">I</span>
+          <span class="user__name">luis villadiego</span>
+        </button>
+      </aside>
+
+      <main class="main">
+        <header class="page-header">
+          <h1 id="cal-config-title">Configuración para BarberHome</h1>
+          <div class="page-header__actions">
+            <button class="btn btn--secondary" type="button" id="btn-view-scheduled">
+              Ver mensajes programados
+            </button>
+            <button class="btn btn--danger-soft" type="button" id="btn-delete-calendar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 7h14M10 7V5.5h4V7M8.5 7l.7 12h5.6l.7-12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Eliminar
+            </button>
+          </div>
+        </header>
+
+        <form id="calendar-config-form">
+          <section class="settings-card" aria-labelledby="general-title">
+            <div class="settings-card__left">
+              <h2 id="general-title">Configuración General</h2>
+              <p>Información general sobre tu negocio</p>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-field">
+                <span class="settings-field__label">Nombre de tu negocio/clínica/servicio</span>
+                <input
+                  class="settings-input"
+                  id="cfg-business-name"
+                  name="businessName"
+                  type="text"
+                  required
+                  autocomplete="organization"
+                />
+              </label>
+
+              <label class="settings-field">
+                <span class="settings-field__label"
+                  >¿A qué número de WhatsApp quieres que tus clientes te escriban?</span
+                >
+                <div class="phone-input">
+                  <select
+                    class="phone-input__select"
+                    id="cfg-wa-cc"
+                    name="whatsappCc"
+                    aria-label="Código de país"
+                  >
+                    <option value="+57" selected>🇨🇴 +57</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+52">🇲🇽 +52</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+54">🇦🇷 +54</option>
+                    <option value="+56">🇨🇱 +56</option>
+                    <option value="+51">🇵🇪 +51</option>
+                    <option value="+58">🇻🇪 +58</option>
+                  </select>
+                  <input
+                    id="cfg-wa-phone"
+                    name="whatsappPhone"
+                    type="tel"
+                    inputmode="tel"
+                    placeholder="311 6962326"
+                    autocomplete="tel-national"
+                  />
+                </div>
+                <p class="settings-field__hint">
+                  Tus clientes podrán escribirte a este número cuando tengan dudas sobre la
+                  cita/evento
+                </p>
+              </label>
+
+              <label class="settings-field">
+                <span class="settings-field__label">¿Qué formato quieres usar para la hora?</span>
+                <select class="settings-input" id="cfg-time-format" name="timeFormat">
+                  <option value="12">Sistema horario de 12 horas (Ejemplo: a la 1pm)</option>
+                  <option value="24">Sistema horario de 24 horas (Ejemplo: a las 13:00)</option>
+                </select>
+              </label>
+
+              <label class="settings-field">
+                <span class="settings-field__label">¿En qué idioma quieres enviar los mensajes?</span>
+                <select class="settings-input" id="cfg-language" name="language">
+                  <option value="es" selected>Español</option>
+                  <option value="en">English</option>
+                  <option value="pt">Português</option>
+                </select>
+                <p class="settings-field__hint">
+                  Los textos fijos de los mensajes se traducirán al guardar. El texto personalizado
+                  no se traduce automáticamente.
+                </p>
+              </label>
+
+              <label class="settings-field">
+                <span class="settings-field__label">¿Cuál es tu zona horaria?</span>
+                <select class="settings-input" id="cfg-timezone" name="timezone">
+                  <option value="America/Bogota" selected>America/Bogota</option>
+                  <option value="America/Mexico_City">America/Mexico_City</option>
+                  <option value="America/Lima">America/Lima</option>
+                  <option value="America/Santiago">America/Santiago</option>
+                  <option value="America/Buenos_Aires">America/Buenos_Aires</option>
+                  <option value="America/Caracas">America/Caracas</option>
+                  <option value="America/New_York">America/New_York</option>
+                  <option value="Europe/Madrid">Europe/Madrid</option>
+                </select>
+                <p class="settings-field__hint">(busca por tu ciudad o capital de tu país)</p>
+              </label>
+
+              <div class="settings-field">
+                <span class="settings-field__label">Enviar / Pausar mensajes</span>
+                <button
+                  class="msg-status-btn is-sending"
+                  type="button"
+                  id="btn-toggle-messages"
+                  aria-pressed="false"
+                >
+                  <svg class="msg-status-btn__icon msg-status-btn__icon--play" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M9 7.2 17.2 12 9 16.8V7.2Z" fill="currentColor"/>
+                  </svg>
+                  <svg class="msg-status-btn__icon msg-status-btn__icon--pause" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" hidden>
+                    <rect x="7" y="6.5" width="3.2" height="11" rx="1" fill="currentColor"/>
+                    <rect x="13.8" y="6.5" width="3.2" height="11" rx="1" fill="currentColor"/>
+                  </svg>
+                  <span id="msg-status-label">Enviando mensajes</span>
+                </button>
+                <p class="settings-field__hint" id="msg-status-hint">
+                  Se están enviando los mensajes para las citas de este calendario. Haz clic para
+                  pausar.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="wa-send-title">
+            <div class="settings-card__left">
+              <h2 id="wa-send-title">WhatsApp que enviará los mensajes</h2>
+              <p>Número de WhatsApp del cuál se enviarán tus mensajes</p>
+            </div>
+            <div class="settings-card__right settings-card__right--end">
+              <a class="btn btn--secondary" href="configuracion.html">Ver WhatsApp</a>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="msg-type-title">
+            <div class="settings-card__left">
+              <h2 id="msg-type-title">Tipo de mensaje</h2>
+              <p>Escoge el tipo de mensaje que enviarás desde BarberCloud</p>
+            </div>
+            <div class="settings-card__right">
+              <div class="msg-type-choices" role="radiogroup" aria-label="Tipo de mensaje">
+                <label class="msg-type-choice">
+                  <input type="radio" name="messageType" value="confirmation" />
+                  <span>
+                    <strong>Confirmación de asistencia</strong>
+                    <small>Preguntar a tu cliente si podrá asistir a tu cita</small>
+                  </span>
+                </label>
+                <label class="msg-type-choice">
+                  <input type="radio" name="messageType" value="reminder" checked />
+                  <span>
+                    <strong>Solo recordatorio</strong>
+                    <small>Solo recordar a tu cliente que tiene una cita</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="send-time-title">
+            <div class="settings-card__left">
+              <h2 id="send-time-title">Tiempo de envío</h2>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-field">
+                <span class="settings-field__label"
+                  >¿Cuántas horas antes de la cita quieres que se envíe el mensaje?</span
+                >
+                <select class="settings-input" id="cfg-send-hours" name="sendHoursBefore">
+                  <option value="1">1 hora antes</option>
+                  <option value="2">2 horas antes</option>
+                  <option value="3">3 horas antes</option>
+                  <option value="6">6 horas antes</option>
+                  <option value="12">12 horas antes</option>
+                  <option value="24" selected>24 horas antes (1 día antes)</option>
+                  <option value="48">48 horas antes (2 días antes)</option>
+                  <option value="72">72 horas antes (3 días antes)</option>
+                </select>
+              </label>
+
+              <label class="settings-check">
+                <input type="checkbox" id="cfg-same-time" name="sendSameTime" />
+                <span>
+                  <strong>Enviar todos los mensajes al mismo tiempo</strong>
+                  <small
+                    >Ejemplo: Los mensajes de las citas del martes se enviarán todos a la misma hora
+                    el lunes</small
+                  >
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="tpl-title" id="template-reminder-section">
+            <div class="settings-card__left">
+              <h2 id="tpl-title">Plantilla para mensaje de recordatorio</h2>
+              <p>Configura el mensaje que tus clientes recibirán para recordarles la cita.</p>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-field">
+                <span class="settings-field__label">Título del mensaje</span>
+                <input
+                  class="settings-input"
+                  id="cfg-msg-title"
+                  name="msgTitle"
+                  type="text"
+                  maxlength="60"
+                  value="Recordatorio de Cita BarberHome"
+                />
+                <p class="settings-field__counter" id="cfg-msg-title-count">0/60</p>
+              </label>
+
+              <label class="settings-field">
+                <span class="settings-field__label">Cuerpo del mensaje</span>
+                <textarea
+                  class="settings-textarea"
+                  id="cfg-msg-body"
+                  name="msgBody"
+                  maxlength="900"
+                  rows="6"
+                ></textarea>
+                <p class="settings-field__counter" id="cfg-msg-body-count">0/900</p>
+              </label>
+
+              <div class="tpl-actions">
+                <button class="btn btn--secondary btn--sm" type="button" id="btn-insert-client-name">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                    <path d="M5 19c1.2-3.2 3.6-5 7-5s5.8 1.8 7 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                  </svg>
+                  + Agregar nombre del cliente
+                </button>
+                <button class="btn btn--secondary btn--sm" type="button" id="btn-customize-msg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/>
+                    <path d="M8 9h8M8 12h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                  </svg>
+                  Personalizar mensaje
+                </button>
+              </div>
+
+              <label class="settings-field">
+                <span class="settings-field__label"
+                  >¿Quieres mostrar la fecha y hora de la cita en el mensaje?</span
+                >
+                <select class="settings-input" id="cfg-show-datetime" name="showDateTime">
+                  <option value="both" selected>Mostrar la fecha y la hora</option>
+                  <option value="date">Solo la fecha</option>
+                  <option value="time">Solo la hora</option>
+                  <option value="none">No mostrar fecha ni hora</option>
+                </select>
+              </label>
+
+              <div class="settings-field">
+                <span class="settings-field__label">Agregar logo o imagen a tu mensaje (opcional)</span>
+                <div class="tpl-logo">
+                  <input type="file" id="cfg-msg-logo" accept="image/*" hidden />
+                  <button class="btn btn--primary btn--sm" type="button" id="btn-pick-logo">
+                    Subir imagen
+                  </button>
+                  <button class="btn btn--secondary btn--sm" type="button" id="btn-clear-logo" hidden>
+                    Quitar imagen
+                  </button>
+                  <span class="tpl-logo__name" id="cfg-msg-logo-name"></span>
+                </div>
+              </div>
+
+              <div class="settings-field tpl-live">
+                <span class="settings-field__label">Así se ve tu plantilla:</span>
+                <div class="tpl-preview" aria-live="polite">
+                  <article class="tpl-preview__card">
+                    <img
+                      class="tpl-preview__logo"
+                      id="preview-logo"
+                      src="assets/barberhome-logo-full.png"
+                      alt=""
+                      hidden
+                    />
+                    <strong class="tpl-preview__title" id="preview-title">Recordatorio de Cita BarberHome</strong>
+                    <p class="tpl-preview__body" id="preview-body"></p>
+                    <p class="tpl-preview__datetime" id="preview-datetime"></p>
+                    <small class="tpl-preview__example" id="preview-datetime-hint">(Fecha de ejemplo)</small>
+                  </article>
+                </div>
+              </div>
+
+              <div class="settings-field tpl-test">
+                <div class="phone-input">
+                  <select
+                    class="phone-input__select"
+                    id="cfg-test-cc"
+                    aria-label="Código de país para prueba"
+                  >
+                    <option value="+57" selected>🇨🇴 +57</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+52">🇲🇽 +52</option>
+                    <option value="+34">🇪🇸 +34</option>
+                  </select>
+                  <input
+                    id="cfg-test-phone"
+                    type="tel"
+                    inputmode="tel"
+                    placeholder="Número de prueba"
+                    value="311 6962326"
+                  />
+                </div>
+                <button class="btn btn--secondary btn--block" type="button" id="btn-send-test" disabled>
+                  Enviar mensaje de prueba
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="second-reminder-title">
+            <div class="settings-card__left">
+              <h2 id="second-reminder-title">Segundo recordatorio el día de la cita</h2>
+              <p>Este mensaje se enviará el día de la cita para recordarle a tu cliente.</p>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-check">
+                <input type="checkbox" id="cfg-second-reminder" name="secondReminder" />
+                <span>
+                  <strong>Activar segundo recordatorio el día de la cita</strong>
+                </span>
+              </label>
+
+              <div id="second-reminder-fields" hidden>
+                <label class="settings-field">
+                  <span class="settings-field__label"
+                    >¿Cuánto tiempo antes de la cita quieres que enviemos el mensaje?</span
+                  >
+                  <select class="settings-input" id="cfg-second-hours" name="secondHoursBefore">
+                    <option value="1">1 hora antes</option>
+                    <option value="2">2 horas antes</option>
+                    <option value="3">3 horas antes</option>
+                    <option value="6">6 horas antes</option>
+                    <option value="12" selected>12 horas antes</option>
+                  </select>
+                  <p class="settings-field__hint">
+                    * Si el envío es antes de las 7:30am, se programará para las 7:30am para no
+                    molestar al cliente.
+                  </p>
+                </label>
+
+                <label class="settings-field">
+                  <span class="settings-field__label">Título del mensaje</span>
+                  <input
+                    class="settings-input"
+                    id="cfg-second-title"
+                    name="secondMsgTitle"
+                    type="text"
+                    maxlength="60"
+                    value="Recordatorio de cita de Barberia con Luis Villadiego"
+                  />
+                  <p class="settings-field__counter" id="cfg-second-title-count">0/60</p>
+                </label>
+
+                <label class="settings-field">
+                  <span class="settings-field__label">Cuerpo del mensaje</span>
+                  <textarea
+                    class="settings-textarea"
+                    id="cfg-second-body"
+                    name="secondMsgBody"
+                    maxlength="200"
+                    rows="3"
+                  >Tienes una cita con Barber Home</textarea>
+                  <p class="settings-field__counter" id="cfg-second-body-count">0/200</p>
+                </label>
+
+                <label class="settings-check">
+                  <input type="checkbox" id="cfg-second-include-time" name="secondIncludeTime" checked />
+                  <span>
+                    <strong>Incluir hora</strong>
+                  </span>
+                </label>
+
+                <label class="settings-check">
+                  <input type="checkbox" id="cfg-second-extra" name="secondExtraInfo" />
+                  <span>
+                    <strong>Agregar información extra</strong>
+                  </span>
+                </label>
+
+                <div class="settings-field tpl-live">
+                  <span class="settings-field__label">Así se ve tu plantilla:</span>
+                  <div class="tpl-preview" aria-live="polite">
+                    <article class="tpl-preview__card">
+                      <strong class="tpl-preview__title" id="second-preview-title"
+                        >Recordatorio de cita de Barberia con Luis Villadiego</strong
+                      >
+                      <p class="tpl-preview__body" id="second-preview-body"></p>
+                      <p class="tpl-preview__datetime" id="second-preview-time">
+                        ⏰ Hoy a las [aquí saldrá la hora de la cita]
+                      </p>
+                      <p class="tpl-preview__extra" id="second-preview-extra" hidden>
+                        Información adicional de la cita.
+                      </p>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="create-msg-title">
+            <div class="settings-card__left">
+              <h2 id="create-msg-title">Mensaje al crear cita</h2>
+              <p>
+                Este mensaje se envía cuando creas una cita en el calendario o cuando un cliente
+                reserva por el enlace de autoagenda.
+              </p>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-check">
+                <input type="checkbox" id="cfg-create-msg" name="createMsgEnabled" checked />
+                <span>
+                  <strong>Activar mensaje al crear cita</strong>
+                </span>
+              </label>
+
+              <div id="create-msg-fields">
+                <label class="settings-field">
+                  <span class="settings-field__label"
+                    >¿Cuántos minutos luego de crear la cita quieres que se envíe el mensaje?</span
+                  >
+                  <select class="settings-input" id="cfg-create-delay" name="createMsgDelay">
+                    <option value="0">Inmediatamente</option>
+                    <option value="1">1 minuto luego de crear la cita</option>
+                    <option value="5" selected>5 minutos luego de crear la cita</option>
+                    <option value="10">10 minutos luego de crear la cita</option>
+                    <option value="15">15 minutos luego de crear la cita</option>
+                    <option value="30">30 minutos luego de crear la cita</option>
+                    <option value="60">60 minutos luego de crear la cita</option>
+                  </select>
+                </label>
+
+                <label class="settings-field">
+                  <span class="settings-field__label">Título del mensaje</span>
+                  <input
+                    class="settings-input"
+                    id="cfg-create-title"
+                    name="createMsgTitle"
+                    type="text"
+                    maxlength="60"
+                    value="Confirmación de cita BarberHome"
+                  />
+                  <p class="settings-field__counter" id="cfg-create-title-count">0/60</p>
+                </label>
+
+                <label class="settings-field">
+                  <span class="settings-field__label">Cuerpo del mensaje</span>
+                  <textarea
+                    class="settings-textarea"
+                    id="cfg-create-body"
+                    name="createMsgBody"
+                    maxlength="200"
+                    rows="4"
+                  >Hola {{nombreCliente}}, se ha confirmado tu cita con BarberHome. Información de tu cita:</textarea>
+                  <p class="settings-field__counter" id="cfg-create-body-count">0/200</p>
+                </label>
+
+                <div class="tpl-actions">
+                  <button class="btn btn--secondary btn--sm" type="button" id="btn-insert-create-client">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                      <path d="M5 19c1.2-3.2 3.6-5 7-5s5.8 1.8 7 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                    Agregar nombre del cliente
+                  </button>
+                </div>
+
+                <label class="settings-field">
+                  <span class="settings-field__label"
+                    >¿Quieres mostrar la fecha y hora de la cita en el mensaje?</span
+                  >
+                  <select class="settings-input" id="cfg-create-datetime" name="createShowDateTime">
+                    <option value="both" selected>Mostrar la fecha y la hora</option>
+                    <option value="date">Solo la fecha</option>
+                    <option value="time">Solo la hora</option>
+                    <option value="none">No mostrar fecha ni hora</option>
+                  </select>
+                </label>
+
+                <label class="settings-check">
+                  <input type="checkbox" id="cfg-create-extra" name="createExtraInfo" />
+                  <span>
+                    <strong>Agregar información extra</strong>
+                  </span>
+                </label>
+
+                <div class="settings-field tpl-live">
+                  <span class="settings-field__label">Así se ve tu plantilla:</span>
+                  <div class="tpl-preview" aria-live="polite">
+                    <article class="tpl-preview__card">
+                      <strong class="tpl-preview__title" id="create-preview-title"
+                        >Confirmación de cita BarberHome</strong
+                      >
+                      <p class="tpl-preview__body" id="create-preview-body"></p>
+                      <div class="tpl-preview__meta" id="create-preview-meta">
+                        <p>📅 <strong>Fecha:</strong> <span>[aquí saldrá la fecha de la cita]</span></p>
+                        <p>⏰ <strong>Hora:</strong> <span>[aquí saldrá la hora de la cita]</span></p>
+                      </div>
+                      <p class="tpl-preview__extra" id="create-preview-extra" hidden>
+                        Información adicional de la cita.
+                      </p>
+                    </article>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="after-msg-title">
+            <div class="settings-card__left">
+              <h2 id="after-msg-title">Mensaje después de la cita</h2>
+              <p>
+                Este mensaje se envía luego de la cita. Úsalo para agradecer, pedir una reseña,
+                compartir redes o dejar el contacto para la próxima reserva.
+              </p>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-check">
+                <input type="checkbox" id="cfg-after-msg" name="afterMsgEnabled" checked />
+                <span>
+                  <strong>Activar mensaje después de la cita</strong>
+                </span>
+              </label>
+
+              <div id="after-msg-fields">
+                <label class="settings-field">
+                  <span class="settings-field__label"
+                    >¿Cuántas horas después de la cita quieres que enviemos el mensaje?</span
+                  >
+                  <select class="settings-input" id="cfg-after-delay" name="afterMsgDelay">
+                    <option value="0.5" selected>30 minutos después de la cita</option>
+                    <option value="1">1 hora después de la cita</option>
+                    <option value="2">2 horas después de la cita</option>
+                    <option value="3">3 horas después de la cita</option>
+                    <option value="6">6 horas después de la cita</option>
+                    <option value="12">12 horas después de la cita</option>
+                    <option value="24">24 horas después de la cita</option>
+                  </select>
+                </label>
+
+                <label class="settings-field">
+                  <span class="settings-field__label">Título del mensaje</span>
+                  <input
+                    class="settings-input"
+                    id="cfg-after-title"
+                    name="afterMsgTitle"
+                    type="text"
+                    maxlength="60"
+                    value="BarberHome"
+                  />
+                  <p class="settings-field__counter" id="cfg-after-title-count">0/60</p>
+                </label>
+
+                <label class="settings-field">
+                  <span class="settings-field__label">Cuerpo del mensaje</span>
+                  <textarea
+                    class="settings-textarea"
+                    id="cfg-after-body"
+                    name="afterMsgBody"
+                    maxlength="900"
+                    rows="8"
+                  >Gracias por confiar en BarberHome 💈
+
+Siempre es un gusto atenderte.
+
+🔥 Recomendación: agenda tu próxima cita desde ya para asegurar tu horario
+
+📅 Agenda tu próxima cita aquí:
+https://barbercloud.com/barberhomeluisvilladiego
+
+Te espero para el próximo corte 👊</textarea>
+                  <p class="settings-field__counter" id="cfg-after-body-count">0/900</p>
+                </label>
+
+                <div class="tpl-actions">
+                  <button class="btn btn--secondary btn--sm" type="button" id="btn-insert-after-client">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                      <path d="M5 19c1.2-3.2 3.6-5 7-5s5.8 1.8 7 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                    Agregar nombre del cliente
+                  </button>
+                </div>
+
+                <div class="settings-field tpl-live">
+                  <span class="settings-field__label">Así se ve tu plantilla:</span>
+                  <div class="tpl-preview" aria-live="polite">
+                    <article class="tpl-preview__card">
+                      <strong class="tpl-preview__title" id="after-preview-title">BarberHome</strong>
+                      <p class="tpl-preview__body tpl-preview__body--links" id="after-preview-body"></p>
+                    </article>
+                  </div>
+                </div>
+
+                <div class="settings-field tpl-test">
+                  <div class="phone-input">
+                    <select
+                      class="phone-input__select"
+                      id="cfg-after-test-cc"
+                      aria-label="Código de país para prueba"
+                    >
+                      <option value="+57" selected>🇨🇴 +57</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+52">🇲🇽 +52</option>
+                      <option value="+34">🇪🇸 +34</option>
+                    </select>
+                    <input
+                      id="cfg-after-test-phone"
+                      type="tel"
+                      inputmode="tel"
+                      placeholder="Número de prueba"
+                      value="311 6962326"
+                    />
+                  </div>
+                  <button class="btn btn--secondary btn--block" type="button" id="btn-send-after-test" disabled>
+                    Enviar mensaje de prueba
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card" aria-labelledby="advanced-title">
+            <div class="settings-card__left">
+              <h2 id="advanced-title">Opciones avanzadas</h2>
+            </div>
+            <div class="settings-card__right">
+              <label class="settings-check">
+                <input type="checkbox" id="cfg-add-timezone" name="addTimezone" />
+                <span>
+                  <strong>Agregar zona horaria al mensaje</strong>
+                  <small
+                    >Actívalo si tienes clientes en múltiples países/zonas horarias. BarberCloud
+                    adivina la zona horaria usando el código internacional del teléfono de tu
+                    cliente.</small
+                  >
+                </span>
+              </label>
+
+              <label class="settings-check">
+                <input type="checkbox" id="cfg-multi-whatsapp" name="multiWhatsapp" />
+                <span>
+                  <strong
+                    >Permitir múltiples números de WhatsApp en un mismo evento de Google
+                    Calendar</strong
+                  >
+                  <small
+                    >Por defecto BarberCloud solo envía el mensaje de confirmación al primer
+                    WhatsApp que consigue en el evento. Si enciendes esta opción se enviará el
+                    mensaje de confirmación a todos los números que se encuentren en el
+                    evento.</small
+                  >
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <div class="cal-config-save">
+            <button class="btn btn--primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      </main>
+
+      <a class="help" href="https://wa.me/" target="_blank" rel="noreferrer">
+        <span class="help__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#fff">
+            <path d="M12 2.1A9.9 9.9 0 0 0 3.3 17L2 22l5.2-1.3A9.9 9.9 0 1 0 12 2.1Zm5.5 14.1c-.2.7-1.3 1.2-2.1 1.4-.6.1-1.3.2-3.7-.8-3.1-1.3-5.1-4.5-5.2-4.7-.2-.2-1.2-1.6-1.2-3.1 0-1.4.8-2.2 1.1-2.4.3-.3.7-.3.9-.3h.7c.2 0 .5-.1.7.6.3.8.9 2.1 1 2.3.1.1.1.3 0 .5l-.5.7c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.2.4-.2.7-.1l2.1 1c.3.1.4.3.4.4 0 .3 0 1.4-.3 2.1Z"/>
+          </svg>
+        </span>
+        ¿Necesitas ayuda?
+      </a>
+    </div>
+
+    <div class="toast" id="toast" hidden role="status"></div>
+    <button class="menu-toggle" type="button" aria-label="Abrir menú">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/calendario-config.js"></script>
+  </body>
+</html>
