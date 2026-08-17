@@ -61,6 +61,17 @@
     bc?.postMessage(payload);
     listeners.forEach((fn) => fn(payload));
     window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
+    // Sync en segundo plano a Supabase (si está configurado)
+    if (window.SupabaseData?.enabled?.()) {
+      Promise.resolve()
+        .then(async () => {
+          const recent = (Array.isArray(list) ? list : []).slice(0, 40);
+          for (const b of recent) {
+            await window.SupabaseData.upsertCita(b);
+          }
+        })
+        .catch((err) => console.warn("[booking-store] sync Supabase", err));
+    }
   }
 
   function findConflicts(bookings, date, time, duration, excludeId) {
@@ -243,6 +254,11 @@
     saveBookings(fresh);
     localStorage.removeItem(key);
     try {
+      await window.SupabaseData?.upsertCita?.(booking);
+    } catch (err) {
+      console.warn("[booking-store] upsert cita remota", err);
+    }
+    try {
       const notifKey = "barbercloud.notifications";
       const notifs = safeParse(localStorage.getItem(notifKey), []);
       const list = Array.isArray(notifs) ? notifs : [];
@@ -291,4 +307,10 @@
     toMinutes,
     isActive,
   };
+
+  if (window.SupabaseData?.enabled?.()) {
+    window.SupabaseData.pullToLocalCache?.().catch((err) =>
+      console.warn("[booking-store] pull inicial", err)
+    );
+  }
 })();

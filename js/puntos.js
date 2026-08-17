@@ -60,6 +60,15 @@
 
   function saveUsers(users) {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    if (window.SupabaseData?.enabled?.()) {
+      Promise.resolve()
+        .then(async () => {
+          for (const u of (users || []).slice(0, 100)) {
+            await window.SupabaseData.upsertCliente(u);
+          }
+        })
+        .catch((err) => console.warn("[puntos] sync clientes", err));
+    }
   }
 
   function loadHistory() {

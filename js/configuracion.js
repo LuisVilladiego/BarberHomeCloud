@@ -218,6 +218,48 @@
     toast("Preferencias de notificaciones guardadas.");
   });
 
+  const supabaseStatus = document.getElementById("supabase-status");
+  function refreshSupabaseStatus() {
+    if (!supabaseStatus) return;
+    if (window.SupabaseData?.enabled?.()) {
+      supabaseStatus.textContent = "Estado: conectado · listo para sincronizar";
+    } else {
+      supabaseStatus.textContent =
+        "Estado: no configurado (completa url y anonKey en js/supabase-config.js)";
+    }
+  }
+  refreshSupabaseStatus();
+
+  document.getElementById("btn-supabase-pull")?.addEventListener("click", async () => {
+    if (!window.SupabaseData?.enabled?.()) {
+      toast("Configura Supabase primero.");
+      return;
+    }
+    toast("Bajando datos…");
+    const r = await window.SupabaseData.pullToLocalCache();
+    toast(
+      r?.ok
+        ? `Listo: ${r.citas || 0} citas, ${r.clientes || 0} clientes, ${r.productos || 0} productos`
+        : "No se pudo bajar"
+    );
+  });
+
+  document.getElementById("btn-supabase-migrate")?.addEventListener("click", async () => {
+    if (!window.SupabaseData?.enabled?.()) {
+      toast("Configura Supabase primero.");
+      return;
+    }
+    toast("Subiendo datos locales…");
+    const r = await window.SupabaseData.migrateFromLocalStorage();
+    if (!r?.ok) {
+      toast(r?.message || "Falló la migración");
+      return;
+    }
+    const rep = r.report || {};
+    toast(`Subido: ${rep.citas || 0} citas, ${rep.clientes || 0} clientes, ${rep.productos || 0} productos`);
+    if (rep.errores?.length) console.warn("[Supabase migrate]", rep.errores);
+  });
+
   fillForm();
 
   const initial = (location.hash || "").replace("#", "");

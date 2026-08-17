@@ -53,6 +53,15 @@
 
   function saveProducts(list) {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list));
+    if (window.SupabaseData?.enabled?.()) {
+      Promise.resolve()
+        .then(async () => {
+          for (const p of list.slice(0, 50)) {
+            await window.SupabaseData.upsertProducto(p, "sale");
+          }
+        })
+        .catch((err) => console.warn("[marketplace] sync sale", err));
+    }
   }
 
   function pointsCostFromPrice(price) {
@@ -86,6 +95,15 @@
 
   function saveRedeemProducts(list) {
     localStorage.setItem(REDEEM_PRODUCTS_KEY, JSON.stringify(list));
+    if (window.SupabaseData?.enabled?.()) {
+      Promise.resolve()
+        .then(async () => {
+          for (const p of list.slice(0, 50)) {
+            await window.SupabaseData.upsertProducto(p, "redeem");
+          }
+        })
+        .catch((err) => console.warn("[marketplace] sync redeem", err));
+    }
   }
 
   function loadSales() {
@@ -675,7 +693,7 @@
     renderThumbs();
   });
 
-  form?.addEventListener("submit", (e) => {
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     showError("");
     const kind = document.getElementById("product-kind")?.value === "redeem" ? "redeem" : "sale";
@@ -704,6 +722,16 @@
       return;
     }
 
+    const productId = editingId || uid();
+    let images = [...draftImages];
+    try {
+      if (window.SupabaseData?.enabled?.()) {
+        images = await window.SupabaseData.uploadProductImages(images, productId);
+      }
+    } catch (err) {
+      console.warn("[marketplace] upload imágenes", err);
+    }
+
     if (kind === "sale") {
       const list = loadProducts();
       if (editingId) {
@@ -715,18 +743,18 @@
             description,
             price,
             stock,
-            images: [...draftImages],
+            images,
             updatedAt: new Date().toISOString(),
           };
         }
       } else {
         list.unshift({
-          id: uid(),
+          id: productId,
           name,
           description,
           price,
           stock,
-          images: [...draftImages],
+          images,
           createdAt: new Date().toISOString(),
         });
       }
@@ -747,18 +775,18 @@
             description,
             pointsCost,
             stock,
-            images: [...draftImages],
+            images,
             updatedAt: new Date().toISOString(),
           };
         }
       } else {
         list.unshift({
-          id: uid(),
+          id: productId,
           name,
           description,
           pointsCost,
           stock,
-          images: [...draftImages],
+          images,
           createdAt: new Date().toISOString(),
         });
       }

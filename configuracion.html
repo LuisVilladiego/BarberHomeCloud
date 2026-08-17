@@ -246,6 +246,18 @@
 
           <section class="settings-card">
             <div class="settings-card__left">
+              <h2>Nube (Supabase)</h2>
+              <p>Sincroniza citas, clientes, productos e imágenes. Configura URL y anon key en <code>js/supabase-config.js</code>.</p>
+              <p id="supabase-status" class="settings-muted" style="margin-top:8px">Estado: comprobando…</p>
+            </div>
+            <div class="settings-card__right settings-card__right--end" style="display:flex;flex-direction:column;gap:8px;align-items:stretch">
+              <button class="btn btn--secondary" type="button" id="btn-supabase-pull">Bajar datos de la nube</button>
+              <button class="btn btn--primary" type="button" id="btn-supabase-migrate">Subir datos locales</button>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
               <h2>Eliminar cuenta</h2>
               <p>
                 Elimina tu cuenta de BarberCloud. Toda tu información será eliminada y no podrás
@@ -409,8 +421,12 @@
     </button>
     <div class="backdrop" aria-hidden="true"></div>
 
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="js/supabase-config.js?v=20260816s"></script>
+        <script src="js/supabase-client.js?v=20260816s"></script>
+        <script src="js/supabase-data.js?v=20260816s"></script>
         <script src="js/security.js?v=20260816"></script>
     <script src="js/app.js"></script>
-    <script src="js/configuracion.js"></script>
+    <script src="js/configuracion.js?v=20260816s"></script>
   </body>
 </html>
