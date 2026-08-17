@@ -1,6 +1,8 @@
 (function () {
   const PRODUCTS_KEY = "barbercloud.marketplace_products";
+  const REDEEM_PRODUCTS_KEY = "barbercloud.loyalty_redeem_products";
   const SALES_KEY = "barbercloud.marketplace_sales";
+  const PESOS_PER_POINT = 800;
   const MAX_IMAGES = 8;
   const LOW_STOCK = 5;
   const PLACEHOLDER =
@@ -10,16 +12,27 @@
     );
 
   const grid = document.getElementById("product-grid");
+  const redeemGrid = document.getElementById("redeem-product-grid");
   const catalogCount = document.getElementById("catalog-count");
+  const redeemCatalogCount = document.getElementById("redeem-catalog-count");
+  const saleCatalogPanel = document.getElementById("sale-catalog-panel");
+  const redeemCatalogPanel = document.getElementById("redeem-catalog-panel");
   const productModal = document.getElementById("product-modal");
   const form = document.getElementById("product-form");
   const errorEl = document.getElementById("product-error");
   const thumbsEl = document.getElementById("image-thumbs");
   const imagesInput = document.getElementById("product-images");
   const imagesHint = document.getElementById("images-hint");
+  const fieldPrice = document.getElementById("field-product-price");
+  const fieldPoints = document.getElementById("field-product-points");
+  const stockHint = document.getElementById("product-stock-hint");
+  const priceInput = document.getElementById("product-price");
+  const pointsInput = document.getElementById("product-points");
 
   let draftImages = [];
   let editingId = null;
+  let editingKind = "sale";
+  let activeTab = "sale";
 
   function safeParse(raw, fallback) {
     try {
@@ -40,6 +53,39 @@
 
   function saveProducts(list) {
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list));
+  }
+
+  function pointsCostFromPrice(price) {
+    return Math.max(1, Math.floor((Number(price) || 0) / PESOS_PER_POINT));
+  }
+
+  function loadRedeemProducts() {
+    const raw = localStorage.getItem(REDEEM_PRODUCTS_KEY);
+    if (raw === null) {
+      const migrated = loadProducts().map((p) => ({
+        id: `redeem-${p.id}`,
+        name: p.name,
+        description: p.description,
+        pointsCost: pointsCostFromPrice(p.price),
+        stock: Number.isFinite(Number(p.stock)) ? Math.max(0, Number(p.stock)) : 0,
+        images: Array.isArray(p.images) ? [...p.images] : [],
+        createdAt: p.createdAt || new Date().toISOString(),
+        migratedFromSale: true,
+      }));
+      localStorage.setItem(REDEEM_PRODUCTS_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    const list = safeParse(raw, []);
+    if (!Array.isArray(list)) return [];
+    return list.map((p) => ({
+      ...p,
+      stock: Number.isFinite(Number(p.stock)) ? Math.max(0, Number(p.stock)) : 0,
+      pointsCost: Math.max(1, Number(p.pointsCost) || 1),
+    }));
+  }
+
+  function saveRedeemProducts(list) {
+    localStorage.setItem(REDEEM_PRODUCTS_KEY, JSON.stringify(list));
   }
 
   function loadSales() {
@@ -289,18 +335,42 @@
     errorEl.textContent = msg || "";
   }
 
-  function openProductModal(product) {
+  function openProductModal(kind = "sale", product = null) {
+    editingKind = kind;
     editingId = product?.id || null;
     draftImages = Array.isArray(product?.images) ? [...product.images] : [];
+    document.getElementById("product-kind").value = kind;
     document.getElementById("product-modal-title").textContent = product
-      ? "Editar producto"
-      : "Agregar producto";
+      ? kind === "redeem"
+        ? "Editar producto canje"
+        : "Editar producto en venta"
+      : kind === "redeem"
+        ? "Agregar producto canje"
+        : "Agregar producto en venta";
     document.getElementById("product-id").value = product?.id || "";
     document.getElementById("product-name").value = product?.name || "";
     document.getElementById("product-desc").value = product?.description || "";
-    document.getElementById("product-price").value = product?.price ?? "";
-    document.getElementById("product-stock").value =
-      product?.stock != null ? product.stock : 10;
+    document.getElementById("product-stock").value = product?.stock != null ? product.stock : 10;
+
+    const isRedeem = kind === "redeem";
+    if (fieldPrice) fieldPrice.hidden = isRedeem;
+    if (fieldPoints) fieldPoints.hidden = !isRedeem;
+    if (priceInput) {
+      priceInput.required = !isRedeem;
+      priceInput.value = isRedeem ? "" : product?.price ?? "";
+    }
+    if (pointsInput) {
+      pointsInput.required = isRedeem;
+      pointsInput.value = isRedeem
+        ? product?.pointsCost ?? (product?.price ? pointsCostFromPrice(product.price) : "")
+        : "";
+    }
+    if (stockHint) {
+      stockHint.textContent = isRedeem
+        ? "Cantidad disponible para canjear con Puntos Barberhome."
+        : "Cantidad disponible para la venta en la agenda pública.";
+    }
+
     showError("");
     renderThumbs();
     productModal.hidden = false;
@@ -311,7 +381,21 @@
     form?.reset();
     draftImages = [];
     editingId = null;
+    editingKind = "sale";
+    if (fieldPrice) fieldPrice.hidden = false;
+    if (fieldPoints) fieldPoints.hidden = true;
     renderThumbs();
+  }
+
+  function setActiveTab(tab) {
+    activeTab = tab === "redeem" ? "redeem" : "sale";
+    document.querySelectorAll("[data-mkt-tab]").forEach((btn) => {
+      const active = btn.getAttribute("data-mkt-tab") === activeTab;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    if (saleCatalogPanel) saleCatalogPanel.hidden = activeTab !== "sale";
+    if (redeemCatalogPanel) redeemCatalogPanel.hidden = activeTab !== "redeem";
   }
 
   function renderThumbs() {
@@ -340,26 +424,39 @@
 
   function renderStats() {
     const products = loadProducts();
+    const redeemProducts = loadRedeemProducts();
     const sales = loadSales().filter((s) => isSameMonth(s.createdAt));
     const stockUnits = products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+    const redeemStockUnits = redeemProducts.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
     const low = products.filter((p) => (Number(p.stock) || 0) <= LOW_STOCK).length;
+    const redeemLow = redeemProducts.filter((p) => (Number(p.stock) || 0) <= LOW_STOCK).length;
     const revenue = sales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
     const unitsSold = sales.reduce((sum, s) => sum + (Number(s.units) || 0), 0);
 
     const skuEl = document.getElementById("kpi-sku");
     const stockEl = document.getElementById("kpi-stock");
     const stockHint = document.getElementById("kpi-stock-hint");
+    const redeemSkuEl = document.getElementById("kpi-redeem-sku");
+    const redeemStockEl = document.getElementById("kpi-redeem-stock");
+    const redeemStockHint = document.getElementById("kpi-redeem-stock-hint");
     const salesEl = document.getElementById("kpi-sales");
     const salesHint = document.getElementById("kpi-sales-hint");
     const lowEl = document.getElementById("kpi-low");
+    const redeemLowEl = document.getElementById("kpi-redeem-low");
 
     if (skuEl) skuEl.textContent = String(products.length);
     if (stockEl) stockEl.textContent = String(stockUnits);
     if (stockHint) {
       stockHint.textContent =
-        products.length === 1
-          ? "1 referencia en inventario"
-          : `${products.length} referencias en inventario`;
+        products.length === 1 ? "1 referencia en venta" : `${products.length} referencias en venta`;
+    }
+    if (redeemSkuEl) redeemSkuEl.textContent = String(redeemProducts.length);
+    if (redeemStockEl) redeemStockEl.textContent = String(redeemStockUnits);
+    if (redeemStockHint) {
+      redeemStockHint.textContent =
+        redeemProducts.length === 1
+          ? "1 referencia para canje"
+          : `${redeemProducts.length} referencias para canje`;
     }
     if (salesEl) salesEl.textContent = formatMoney(revenue);
     if (salesHint) {
@@ -368,6 +465,7 @@
       } · ${monthLabel()}`;
     }
     if (lowEl) lowEl.textContent = String(low);
+    if (redeemLowEl) redeemLowEl.textContent = String(redeemLow);
   }
 
   function carouselHtml(product) {
@@ -414,34 +512,18 @@
     return `<span class="mkt-stock">${n} en inventario</span>`;
   }
 
-  function renderCatalog() {
-    const products = loadProducts();
-    renderStats();
-    if (catalogCount) {
-      catalogCount.textContent =
-        products.length === 1 ? "1 producto" : `${products.length} productos`;
-    }
-
-    if (!products.length) {
-      grid.innerHTML = `
-        <div class="mkt-empty">
-          <strong>Aún no hay productos</strong>
-          <p>Agrega el primero con nombre, descripción, precio, inventario e imágenes.</p>
-          <button class="btn btn--primary" type="button" id="btn-empty-add">+ Agregar producto</button>
-        </div>`;
-      document.getElementById("btn-empty-add")?.addEventListener("click", () => openProductModal());
-      return;
-    }
-
-    grid.innerHTML = products
-      .map(
-        (p) => `
-      <article class="mkt-product" data-id="${escapeHtml(p.id)}">
+  function productCardHtml(p, kind) {
+    const priceLine =
+      kind === "redeem"
+        ? `<strong class="mkt-product__price">${Number(p.pointsCost) || 0} pts</strong>`
+        : `<strong class="mkt-product__price">${formatMoney(p.price)}</strong>`;
+    return `
+      <article class="mkt-product" data-id="${escapeHtml(p.id)}" data-kind="${kind}">
         ${carouselHtml(p)}
         <div class="mkt-product__body">
           <div class="mkt-product__top">
             <h3>${escapeHtml(p.name)}</h3>
-            <strong class="mkt-product__price">${formatMoney(p.price)}</strong>
+            ${priceLine}
           </div>
           ${stockBadge(p.stock)}
           <p class="mkt-product__desc">${escapeHtml(p.description)}</p>
@@ -450,12 +532,69 @@
             <button class="btn btn--secondary btn--sm" type="button" data-delete>Eliminar</button>
           </div>
         </div>
-      </article>`
-      )
-      .join("");
+      </article>`;
   }
 
-  document.getElementById("btn-new-product")?.addEventListener("click", () => openProductModal());
+  function renderCatalog() {
+    const products = loadProducts();
+    renderStats();
+    if (catalogCount) {
+      catalogCount.textContent =
+        products.length === 1 ? "1 producto" : `${products.length} productos`;
+    }
+
+    if (!grid) return;
+    if (!products.length) {
+      grid.innerHTML = `
+        <div class="mkt-empty">
+          <strong>Aún no hay productos en venta</strong>
+          <p>Agrega artículos con precio e inventario para la tienda pública.</p>
+          <button class="btn btn--primary" type="button" id="btn-empty-add">+ Agregar producto en venta</button>
+        </div>`;
+      document.getElementById("btn-empty-add")?.addEventListener("click", () => openProductModal("sale"));
+      return;
+    }
+
+    grid.innerHTML = products.map((p) => productCardHtml(p, "sale")).join("");
+  }
+
+  function renderRedeemCatalog() {
+    const products = loadRedeemProducts();
+    renderStats();
+    if (redeemCatalogCount) {
+      redeemCatalogCount.textContent =
+        products.length === 1 ? "1 producto" : `${products.length} productos`;
+    }
+
+    if (!redeemGrid) return;
+    if (!products.length) {
+      redeemGrid.innerHTML = `
+        <div class="mkt-empty">
+          <strong>Aún no hay productos para canje</strong>
+          <p>Publica artículos con costo en puntos e inventario separado del catálogo de venta.</p>
+          <button class="btn btn--primary" type="button" id="btn-empty-add-redeem">+ Agregar producto canje</button>
+        </div>`;
+      document.getElementById("btn-empty-add-redeem")?.addEventListener("click", () =>
+        openProductModal("redeem")
+      );
+      return;
+    }
+
+    redeemGrid.innerHTML = products.map((p) => productCardHtml(p, "redeem")).join("");
+  }
+
+  function renderAllCatalogs() {
+    renderCatalog();
+    renderRedeemCatalog();
+  }
+
+  document.getElementById("btn-new-product")?.addEventListener("click", () => openProductModal("sale"));
+  document.getElementById("btn-new-redeem-product")?.addEventListener("click", () =>
+    openProductModal("redeem")
+  );
+  document.querySelectorAll("[data-mkt-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => setActiveTab(btn.getAttribute("data-mkt-tab")));
+  });
   document.querySelectorAll("[data-close-product]").forEach((el) => {
     el.addEventListener("click", closeProductModal);
   });
@@ -539,17 +678,25 @@
   form?.addEventListener("submit", (e) => {
     e.preventDefault();
     showError("");
+    const kind = document.getElementById("product-kind")?.value === "redeem" ? "redeem" : "sale";
     const name = document.getElementById("product-name").value.trim();
     const description = document.getElementById("product-desc").value.trim();
     const price = parsePrice(document.getElementById("product-price").value);
+    const pointsCost = Number(document.getElementById("product-points").value);
     const stock = Number(document.getElementById("product-stock").value);
     if (!name || !description) {
       showError("Completa nombre y descripción.");
       return;
     }
-    if (!Number.isFinite(price) || price < 0) {
-      showError("Ingresa un precio válido (ej. 35000).");
-      document.getElementById("product-price")?.focus();
+    if (kind === "sale") {
+      if (!Number.isFinite(price) || price < 0) {
+        showError("Ingresa un precio válido (ej. 35000).");
+        document.getElementById("product-price")?.focus();
+        return;
+      }
+    } else if (!Number.isFinite(pointsCost) || pointsCost < 1 || !Number.isInteger(pointsCost)) {
+      showError("El costo en puntos debe ser un entero ≥ 1.");
+      document.getElementById("product-points")?.focus();
       return;
     }
     if (!Number.isFinite(stock) || stock < 0 || !Number.isInteger(stock)) {
@@ -557,59 +704,102 @@
       return;
     }
 
-    const list = loadProducts();
-    if (editingId) {
-      const idx = list.findIndex((p) => p.id === editingId);
-      if (idx >= 0) {
-        list[idx] = {
-          ...list[idx],
+    if (kind === "sale") {
+      const list = loadProducts();
+      if (editingId) {
+        const idx = list.findIndex((p) => p.id === editingId);
+        if (idx >= 0) {
+          list[idx] = {
+            ...list[idx],
+            name,
+            description,
+            price,
+            stock,
+            images: [...draftImages],
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      } else {
+        list.unshift({
+          id: uid(),
           name,
           description,
           price,
           stock,
           images: [...draftImages],
-          updatedAt: new Date().toISOString(),
-        };
+          createdAt: new Date().toISOString(),
+        });
+      }
+      try {
+        saveProducts(list);
+      } catch {
+        showError("No se pudo guardar. Prueba con menos imágenes o fotos más livianas.");
+        return;
       }
     } else {
-      list.unshift({
-        id: uid(),
-        name,
-        description,
-        price,
-        stock,
-        images: [...draftImages],
-        createdAt: new Date().toISOString(),
-      });
-    }
-
-    try {
-      saveProducts(list);
-    } catch {
-      showError("No se pudo guardar. Prueba con menos imágenes o fotos más livianas.");
-      return;
+      const list = loadRedeemProducts();
+      if (editingId) {
+        const idx = list.findIndex((p) => p.id === editingId);
+        if (idx >= 0) {
+          list[idx] = {
+            ...list[idx],
+            name,
+            description,
+            pointsCost,
+            stock,
+            images: [...draftImages],
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      } else {
+        list.unshift({
+          id: uid(),
+          name,
+          description,
+          pointsCost,
+          stock,
+          images: [...draftImages],
+          createdAt: new Date().toISOString(),
+        });
+      }
+      try {
+        saveRedeemProducts(list);
+      } catch {
+        showError("No se pudo guardar. Prueba con menos imágenes o fotos más livianas.");
+        return;
+      }
     }
 
     closeProductModal();
-    renderCatalog();
-    window.AppShell?.toast(editingId ? "Producto actualizado" : "Producto publicado");
+    renderAllCatalogs();
+    window.AppShell?.toast(
+      editingId
+        ? kind === "redeem"
+          ? "Producto canje actualizado"
+          : "Producto actualizado"
+        : kind === "redeem"
+          ? "Producto canje publicado"
+          : "Producto publicado"
+    );
   });
 
-  grid?.addEventListener("click", (e) => {
+  function handleCatalogClick(e, kind) {
     const card = e.target.closest(".mkt-product");
     if (!card) return;
     const id = card.getAttribute("data-id");
-    const products = loadProducts();
+    const products = kind === "redeem" ? loadRedeemProducts() : loadProducts();
     const product = products.find((p) => p.id === id);
 
     if (e.target.closest("[data-edit]") && product) {
-      openProductModal(product);
+      openProductModal(kind, product);
       return;
     }
     if (e.target.closest("[data-delete]")) {
-      if (!confirm("¿Eliminar este producto?")) return;
-      saveProducts(products.filter((p) => p.id !== id));
-      renderCatalog();
+      const label = kind === "redeem" ? "producto de canje" : "producto en venta";
+      if (!confirm(`¿Eliminar este ${label}?`)) return;
+      if (kind === "redeem") saveRedeemProducts(products.filter((p) => p.id !== id));
+      else saveProducts(products.filter((p) => p.id !== id));
+      renderAllCatalogs();
       window.AppShell?.toast("Producto eliminado");
       return;
     }
@@ -624,11 +814,15 @@
     }
     const dot = e.target.closest("[data-dot]");
     if (dot) setCarouselIndex(carousel, Number(dot.getAttribute("data-dot")));
-  });
+  }
+
+  grid?.addEventListener("click", (e) => handleCatalogClick(e, "sale"));
+  redeemGrid?.addEventListener("click", (e) => handleCatalogClick(e, "redeem"));
 
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) renderCatalog();
+    if (!document.hidden) renderAllCatalogs();
   });
 
-  renderCatalog();
+  setActiveTab("sale");
+  renderAllCatalogs();
 })();

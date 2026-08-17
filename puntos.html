@@ -11,6 +11,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
   <body>
     <div class="app">
@@ -107,47 +109,11 @@
           <h2 class="config-panel__title">Reglas BarberHome</h2>
           <ul class="section-lead" style="margin: 8px 0 0; padding-left: 1.2rem; max-width: none">
             <li>Acumulación: 5 puntos por cada servicio (tú los cargas aquí cuando el cliente te lo pida)</li>
-            <li>Canje: el cliente canjea por productos del marketplace según los puntos de cada producto</li>
+            <li>Canje: el cliente canjea por productos del inventario de canje según los puntos de cada producto</li>
             <li>Al canjear, los puntos se descuentan solos; el cliente te escribe por WhatsApp</li>
             <li>Tú entregas el producto y marcas “Entregado” en Canjes de productos</li>
             <li>Los puntos vencen a los 12 meses</li>
           </ul>
-        </section>
-
-        <section class="panel config-panel" aria-labelledby="redeem-title">
-          <h2 id="redeem-title" class="config-panel__title">Validar código antiguo (opcional)</h2>
-          <p class="section-lead">
-            Los canjes nuevos se hacen en la cuenta del cliente por productos. Usa esto solo si queda un código pendiente del sistema anterior.
-          </p>
-          <form class="points-redeem-form" id="points-redeem-form">
-            <label class="field">
-              <span class="field__label">Código del cliente</span>
-              <input
-                name="code"
-                id="admin-redeem-code"
-                type="text"
-                required
-                placeholder="Ej. BH-9133-A1B2"
-                autocomplete="off"
-                spellcheck="false"
-              />
-            </label>
-            <div class="points-admin-form__actions">
-              <button class="btn btn--primary" type="submit">Validar y descontar</button>
-            </div>
-          </form>
-          <div class="points-lookup" id="redeem-result" hidden>
-            <div class="points-lookup__card">
-              <div>
-                <strong id="redeem-result-name">Cliente</strong>
-                <p id="redeem-result-meta" class="section-lead"></p>
-              </div>
-              <div class="points-lookup__balance">
-                <span>Nuevo saldo</span>
-                <strong id="redeem-result-points">0</strong>
-              </div>
-            </div>
-          </div>
         </section>
 
         <section class="panel config-panel" aria-labelledby="assign-title">
@@ -170,8 +136,11 @@
                   id="admin-doc-number"
                   type="text"
                   required
+                  inputmode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Ej. 1001234567"
                   autocomplete="off"
+                  data-doc-number
                 />
               </label>
               <label class="field">
@@ -259,9 +228,10 @@
     </button>
     <div class="backdrop" aria-hidden="true"></div>
 
-    <script src="js/email-config.js?v=20260807"></script>
+    <script src="js/email-config.js?v=20260816c"></script>
     <script src="js/email-service.js?v=20260807"></script>
+        <script src="js/security.js?v=20260816"></script>
     <script src="js/app.js"></script>
-    <script src="js/puntos.js?v=20260807b"></script>
+    <script src="js/puntos.js?v=20260808"></script>
   </body>
 </html>

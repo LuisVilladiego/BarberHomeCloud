@@ -24,8 +24,10 @@ window.EmailConfig = {
 
   /* —— Google Apps Script —— */
   appsScriptUrl:
-    "https://script.google.com/macros/s/AKfycbxba-kYtY2NgCt5s-80-RK9mcVrP9NFPVaByFDMK6J82wouKvvTox-V3jrex4KUtjzq/exec",
-  /** Debe coincidir con SECRET en gmail-apps-script.gs */
+    "https://script.google.com/macros/s/AKfycbwsVDbUSq96kp9Pas6BQT0WL32Xal4N55uj1LPhsjPyMXhHJQFyu3xiOyrb2JEUIGIB/exec",
+  /** Debe coincidir con SECRET en gmail-apps-script.gs.
+   *  Nota de seguridad: cualquier secreto en frontend es visible.
+   *  Rótalo si lo filtraste y vuelve a desplegar el Apps Script. */
   appsScriptSecret: "barberhome-otp-2026",
 
   /* —— EmailJS (opcional) —— */

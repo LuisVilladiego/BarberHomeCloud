@@ -34,7 +34,11 @@
 
   async function postAppsScript(payload) {
     const c = cfg();
-    const res = await fetch(c.appsScriptUrl, {
+    const url = String(c.appsScriptUrl || "").trim();
+    if (!/^https:\/\/script\.google\.com\//i.test(url)) {
+      throw new Error("URL de Apps Script inválida");
+    }
+    const res = await fetch(url, {
       method: "POST",
       redirect: "follow",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -174,6 +178,10 @@
         status: booking?.status || "pending_confirmation",
         source: booking?.source || "public",
         business: booking?.business || c.fromName || "BarberHome",
+        clientFingerprint:
+          booking?.clientFingerprint ||
+          (typeof window !== "undefined" && window.Security?.getDeviceId?.()) ||
+          "",
       };
       console.info("[EmailService] Enviando aviso admin a", admin, payloadBooking);
       await postAppsScript({
@@ -183,6 +191,7 @@
         // Campos planos por compatibilidad + objeto booking
         client_name: payloadBooking.name,
         client_phone: payloadBooking.phone,
+        client_fingerprint: payloadBooking.clientFingerprint,
         service: payloadBooking.serviceName,
         date: payloadBooking.date,
         time: payloadBooking.time,

@@ -334,10 +334,14 @@ Te espero para el próximo corte 👊`,
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
-    return escaped.replace(
-      /(https?:\/\/[^\s<]+)/g,
-      '<a href="$1" target="_blank" rel="noreferrer">$1</a>'
-    );
+    return escaped.replace(/(https?:\/\/[^\s<]+)/g, (match) => {
+      const safe =
+        window.Security?.safeExternalHref?.(match) ||
+        (/^https?:\/\//i.test(match) ? match : "");
+      if (!safe) return match;
+      const href = window.Security?.escapeAttr?.(safe) || safe.replace(/"/g, "&quot;");
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${match}</a>`;
+    });
   }
 
   function updateAfterPreview() {

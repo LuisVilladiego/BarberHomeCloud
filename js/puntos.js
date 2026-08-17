@@ -13,8 +13,41 @@
   const productRedeemsEl = document.getElementById("product-redeems-list");
   const productRedeemsBadge = document.getElementById("product-redeems-badge");
 
-  function normalizeDoc(value) {
-    return String(value || "").replace(/\s+/g, "").toUpperCase();
+  function normalizeDoc(value, docType) {
+    const type = String(docType || "CC").toUpperCase();
+    const cleaned = String(value || "").replace(/\s+/g, "");
+    if (type === "PAS") return cleaned.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    return cleaned.replace(/\D/g, "");
+  }
+
+  function bindDocNumberInputs(root = document) {
+    root.querySelectorAll("[data-doc-number], input[name='docNumber']").forEach((input) => {
+      const scope = input.closest("form") || input.closest(".points-admin-form") || document;
+      const typeEl = () => scope.querySelector("[name='docType'], #admin-doc-type");
+      const sync = () => {
+        const next = normalizeDoc(input.value, typeEl()?.value || "CC");
+        if (input.value !== next) input.value = next;
+        const docType = typeEl()?.value || "CC";
+        input.inputMode = docType === "PAS" ? "text" : "numeric";
+        input.pattern = docType === "PAS" ? "[A-Za-z0-9]*" : "[0-9]*";
+      };
+      input.addEventListener("input", sync);
+      typeEl()?.addEventListener("change", sync);
+      sync();
+    });
+  }
+
+  function validateDocNumber(docType, docNumber) {
+    if (!docNumber) return "El número de documento es obligatorio.";
+    if (docType === "PAS") {
+      if (!/^[A-Z0-9]{4,20}$/i.test(docNumber)) {
+        return "Ingresa un pasaporte válido (letras y números, sin espacios).";
+      }
+      return "";
+    }
+    if (!/^\d+$/.test(docNumber)) return "El número de documento solo puede contener números.";
+    if (docNumber.length < 5) return "El número de documento es demasiado corto.";
+    return "";
   }
 
   function loadUsers() {
@@ -276,9 +309,9 @@
   }
 
   function findUser(docType, docNumber) {
-    const doc = normalizeDoc(docNumber);
+    const doc = normalizeDoc(docNumber, docType);
     const users = reconcileAllUsers();
-    return users.find((u) => u.docType === docType && normalizeDoc(u.docNumber) === doc);
+    return users.find((u) => u.docType === docType && normalizeDoc(u.docNumber, docType) === doc);
   }
 
   function showLookup(user) {
@@ -360,103 +393,11 @@
       .join("");
   }
 
-  function normalizeRedeemCode(value) {
-    return String(value || "")
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g, "");
-  }
-
-  function findRedemptionByCode(code) {
-    const target = normalizeRedeemCode(code);
-    if (!target) return null;
-    const users = reconcileAllUsers();
-    for (let i = 0; i < users.length; i += 1) {
-      const user = users[i];
-      const list = Array.isArray(user.redemptions) ? user.redemptions : [];
-      const rIdx = list.findIndex((r) => normalizeRedeemCode(r?.code) === target);
-      if (rIdx >= 0) {
-        return { user, userIndex: i, redemption: list[rIdx], redemptionIndex: rIdx, users };
-      }
-    }
-    return null;
-  }
-
-  function alreadyDeductedForCode(user, code) {
-    const history = historyForUser(user);
-    const needle = normalizeRedeemCode(code);
-    return history.some(
-      (h) =>
-        (Number(h.amount) || 0) < 0 &&
-        normalizeRedeemCode(h.note || "").includes(needle)
-    );
-  }
-
-  /** Valida código pendiente: descuenta puntos y marca el canje como usado. */
-  function redeemCode(code) {
-    const found = findRedemptionByCode(code);
-    if (!found) return { ok: false, reason: "not_found" };
-
-    const { user, redemption, redemptionIndex, users } = found;
-    if (redemption.used) return { ok: false, reason: "used", user, redemption };
-
-    const cost = Number(redemption.points) || 500;
-    const valueCop = Number(redemption.valueCop) || 20000;
-    const history = loadHistory();
-    let current = reconcileUser(user, history);
-
-    const already = alreadyDeductedForCode(current, redemption.code);
-    if (!already) {
-      if ((current.points || 0) < cost) {
-        return { ok: false, reason: "insufficient", user: current, redemption };
-      }
-      const now = new Date().toISOString();
-      const histItem = {
-        id: crypto.randomUUID(),
-        userId: current.id,
-        name: current.name,
-        docType: current.docType,
-        docNumber: current.docNumber,
-        amount: -cost,
-        note: `Canje validado · código ${redemption.code}`,
-        at: now,
-      };
-      history.unshift(histItem);
-      saveHistory(history);
-      current = reconcileUser(current, history);
-      histItem.balance = current.points;
-      saveHistory(history);
-    }
-
-    current.redemptions = Array.isArray(current.redemptions) ? current.redemptions : [];
-    current.redemptions[redemptionIndex] = {
-      ...current.redemptions[redemptionIndex],
-      used: true,
-      status: "used",
-      usedAt: new Date().toISOString(),
-      valueCop,
-    };
-
-    const idx = users.findIndex((u) => u.id === current.id);
-    if (idx >= 0) users[idx] = current;
-    else users.push(current);
-    saveUsers(users);
-
-    return {
-      ok: true,
-      user: current,
-      redemption: current.redemptions[redemptionIndex],
-      deducted: !already,
-      cost,
-      valueCop,
-    };
-  }
-
   function applyPoints({ docType, docNumber, amount, note, createIfMissing }) {
     const history = loadHistory();
     let users = loadUsers();
-    const doc = normalizeDoc(docNumber);
-    let idx = users.findIndex((u) => u.docType === docType && normalizeDoc(u.docNumber) === doc);
+    const doc = normalizeDoc(docNumber, docType);
+    let idx = users.findIndex((u) => u.docType === docType && normalizeDoc(u.docNumber, docType) === doc);
 
     if (idx < 0) {
       if (!createIfMissing) return { ok: false, reason: "not_found" };
@@ -503,52 +444,12 @@
     return { ok: true, user: users[idx] };
   }
 
-  const redeemForm = document.getElementById("points-redeem-form");
-  const redeemResult = document.getElementById("redeem-result");
-
-  redeemForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const code = document.getElementById("admin-redeem-code")?.value || "";
-    if (!normalizeRedeemCode(code)) {
-      window.AppShell?.toast("Escribe el código de canje.");
-      return;
-    }
-
-    const result = redeemCode(code);
-    if (!result.ok) {
-      if (redeemResult) redeemResult.hidden = true;
-      const messages = {
-        not_found: "No encontramos ese código. Verifica e intenta de nuevo.",
-        used: "Ese código ya fue utilizado.",
-        insufficient: `El cliente no tiene puntos suficientes (necesita ${result.redemption?.points || 500}).`,
-      };
-      window.AppShell?.toast(messages[result.reason] || "No se pudo validar el código.");
-      return;
-    }
-
-    if (redeemResult) {
-      redeemResult.hidden = false;
-      document.getElementById("redeem-result-name").textContent = result.user.name || "Cliente";
-      document.getElementById("redeem-result-meta").textContent =
-        `${result.user.docType} ${result.user.docNumber} · Canje de ${result.cost} pts · $${result.valueCop.toLocaleString("es-CO")}`;
-      document.getElementById("redeem-result-points").textContent = String(result.user.points || 0);
-    }
-
-    redeemForm.reset();
-    renderClients(searchInput?.value || "");
-    renderHistory();
-    window.AppShell?.toast(
-      result.deducted
-        ? `Código validado · −${result.cost} puntos · saldo ${result.user.points}`
-        : `Código marcado como usado · saldo ${result.user.points}`
-    );
-  });
-
   document.getElementById("btn-lookup-client")?.addEventListener("click", () => {
     const docType = document.getElementById("admin-doc-type").value;
-    const docNumber = document.getElementById("admin-doc-number").value.trim();
-    if (!docNumber) {
-      window.AppShell?.toast("Escribe el número de documento.");
+    const docNumber = normalizeDoc(document.getElementById("admin-doc-number").value, docType);
+    const docError = validateDocNumber(docType, docNumber);
+    if (docError) {
+      window.AppShell?.toast(docError);
       return;
     }
     const user = findUser(docType, docNumber);
@@ -568,12 +469,13 @@
     e.preventDefault();
     const fd = new FormData(form);
     const docType = String(fd.get("docType") || "CC");
-    const docNumber = String(fd.get("docNumber") || "").trim();
+    const docNumber = normalizeDoc(String(fd.get("docNumber") || ""), docType);
     const amount = Number(fd.get("amount") || 0);
     const note = String(fd.get("note") || "").trim();
 
-    if (!docNumber) {
-      window.AppShell?.toast("La cédula es obligatoria.");
+    const docError = validateDocNumber(docType, docNumber);
+    if (docError) {
+      window.AppShell?.toast(docError);
       return;
     }
     if (!amount || Number.isNaN(amount)) {
@@ -641,4 +543,5 @@
   renderProductRedeems();
   renderClients();
   renderHistory();
+  bindDocNumberInputs();
 })();

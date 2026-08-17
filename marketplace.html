@@ -11,6 +11,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
   <body>
     <div class="app">
@@ -87,45 +89,83 @@
           <div>
             <h1>Marketplace</h1>
             <p class="page-lead">
-              Publica productos e inventario. Los clientes también pueden canjearlos con Puntos.
+              Administra dos inventarios: productos en venta y productos canjeables con Puntos.
             </p>
           </div>
           <div class="mkt-header__actions">
             <button class="btn btn--primary" type="button" id="btn-new-product">
-              + Agregar producto
+              + Agregar producto en venta
+            </button>
+            <button class="btn btn--secondary" type="button" id="btn-new-redeem-product">
+              + Agregar producto canje
             </button>
           </div>
         </header>
 
         <section class="kpi-grid mkt-kpi-grid" aria-label="Resumen marketplace">
           <article class="kpi-card">
-            <p class="kpi-card__label">Productos en catálogo</p>
+            <p class="kpi-card__label">Productos en venta</p>
             <p class="kpi-card__value" id="kpi-sku">0</p>
-            <p class="kpi-card__hint">Referencias publicadas</p>
+            <p class="kpi-card__hint">Referencias publicadas en la tienda</p>
           </article>
           <article class="kpi-card">
-            <p class="kpi-card__label">Unidades en inventario</p>
+            <p class="kpi-card__label">Stock venta</p>
             <p class="kpi-card__value" id="kpi-stock">0</p>
-            <p class="kpi-card__hint" id="kpi-stock-hint">Stock total disponible</p>
+            <p class="kpi-card__hint" id="kpi-stock-hint">Unidades disponibles para compra</p>
           </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Productos para canje</p>
+            <p class="kpi-card__value" id="kpi-redeem-sku">0</p>
+            <p class="kpi-card__hint">Catálogo de Puntos Barberhome</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Stock canje</p>
+            <p class="kpi-card__value" id="kpi-redeem-stock">0</p>
+            <p class="kpi-card__hint" id="kpi-redeem-stock-hint">Unidades disponibles para canjear</p>
+          </article>
+        </section>
+
+        <section class="kpi-grid mkt-kpi-grid mkt-kpi-grid--secondary" aria-label="Ventas del mes">
           <article class="kpi-card">
             <p class="kpi-card__label">Ventas del mes</p>
             <p class="kpi-card__value kpi-card__value--sm" id="kpi-sales">$ 0</p>
             <p class="kpi-card__hint" id="kpi-sales-hint">0 pedidos · 0 unidades</p>
           </article>
           <article class="kpi-card">
-            <p class="kpi-card__label">Stock bajo</p>
+            <p class="kpi-card__label">Stock bajo (venta)</p>
             <p class="kpi-card__value" id="kpi-low">0</p>
-            <p class="kpi-card__hint">Productos con 5 o menos unidades</p>
+            <p class="kpi-card__hint">Productos en venta con 5 o menos unidades</p>
+          </article>
+          <article class="kpi-card">
+            <p class="kpi-card__label">Stock bajo (canje)</p>
+            <p class="kpi-card__value" id="kpi-redeem-low">0</p>
+            <p class="kpi-card__hint">Productos canje con 5 o menos unidades</p>
           </article>
         </section>
 
-        <section class="panel config-panel" aria-labelledby="catalog-title">
+        <div class="auth-tabs mkt-tabs" role="tablist" aria-label="Tipo de inventario">
+          <button class="auth-tabs__btn is-active" type="button" data-mkt-tab="sale" role="tab" aria-selected="true">
+            Venta
+          </button>
+          <button class="auth-tabs__btn" type="button" data-mkt-tab="redeem" role="tab" aria-selected="false">
+            Canje con puntos
+          </button>
+        </div>
+
+        <section class="panel config-panel" id="sale-catalog-panel" aria-labelledby="catalog-title">
           <div class="mkt-section-head">
-            <h2 id="catalog-title" class="config-panel__title">Inventario / Catálogo</h2>
+            <h2 id="catalog-title" class="config-panel__title">Inventario de venta</h2>
             <p class="section-lead" id="catalog-count">0 productos</p>
           </div>
           <div class="mkt-grid" id="product-grid"></div>
+        </section>
+
+        <section class="panel config-panel" id="redeem-catalog-panel" hidden aria-labelledby="redeem-catalog-title">
+          <div class="mkt-section-head">
+            <h2 id="redeem-catalog-title" class="config-panel__title">Inventario para canje</h2>
+            <p class="section-lead" id="redeem-catalog-count">0 productos</p>
+          </div>
+          <div class="mkt-grid" id="redeem-product-grid"></div>
         </section>
       </main>
 
@@ -157,6 +197,7 @@
         </div>
         <form class="modal__body" id="product-form" novalidate>
           <input type="hidden" id="product-id" name="id" />
+          <input type="hidden" id="product-kind" name="kind" value="sale" />
           <label class="field">
             <span class="field__label">Nombre del producto</span>
             <input id="product-name" name="name" type="text" required maxlength="80" placeholder="Ej. Cera mate BarberHome" />
@@ -165,7 +206,7 @@
             <span class="field__label">Descripción</span>
             <textarea id="product-desc" name="description" rows="4" required maxlength="500" placeholder="Detalles, uso, beneficios…"></textarea>
           </label>
-          <label class="field">
+          <label class="field" id="field-product-price">
             <span class="field__label">Precio (COP)</span>
             <input
               id="product-price"
@@ -178,10 +219,22 @@
             />
             <span class="field__hint">Escribe solo números, sin puntos (ej. 35000).</span>
           </label>
+          <label class="field" id="field-product-points" hidden>
+            <span class="field__label">Costo en puntos</span>
+            <input
+              id="product-points"
+              name="pointsCost"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="Ej. 44"
+            />
+            <span class="field__hint">Cuántos puntos necesita el cliente para canjear este producto.</span>
+          </label>
           <label class="field">
             <span class="field__label">Inventario (unidades)</span>
             <input id="product-stock" name="stock" type="number" required min="0" step="1" value="10" placeholder="10" />
-            <span class="field__hint">Cantidad disponible para la venta en la agenda pública.</span>
+            <span class="field__hint" id="product-stock-hint">Cantidad disponible para la venta en la agenda pública.</span>
           </label>
           <div class="field">
             <span class="field__label">Carrusel de imágenes (opcional)</span>
@@ -220,7 +273,8 @@
     <div class="backdrop" aria-hidden="true"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+        <script src="js/security.js?v=20260816"></script>
     <script src="js/app.js"></script>
-    <script src="js/marketplace.js?v=20260807b"></script>
+    <script src="js/marketplace.js?v=20260810a"></script>
   </body>
 </html>

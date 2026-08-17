@@ -456,7 +456,16 @@
       ${booking.notes ? `<p><strong>Notas:</strong> ${escapeHtml(booking.notes)}</p>` : ""}
       ${
         isGoogle && booking.htmlLink
-          ? `<p><a href="${escapeHtml(booking.htmlLink)}" target="_blank" rel="noreferrer">Abrir en Google Calendar</a></p>`
+          ? (() => {
+              const href =
+                window.Security?.safeExternalHref?.(booking.htmlLink) ||
+                (/^https:\/\//i.test(String(booking.htmlLink || ""))
+                  ? String(booking.htmlLink)
+                  : "");
+              return href
+                ? `<p><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Abrir en Google Calendar</a></p>`
+                : "";
+            })()
           : ""
       }
     `;

@@ -22,13 +22,19 @@ var SECRET = "barberhome-otp-2026";
 function doPost(e) {
   try {
     var raw = (e && e.postData && e.postData.contents) || "{}";
+    if (raw.length > 50000) {
+      return json_({ ok: false, message: "Payload demasiado grande" });
+    }
     var data = JSON.parse(raw);
 
-    if (!data.secret || data.secret !== SECRET) {
+    if (!secretsMatch_(data.secret, SECRET)) {
       return json_({ ok: false, message: "No autorizado" });
     }
 
     var type = String(data.type || "verify").toLowerCase();
+    if (["verify", "recover", "booking", "redeem"].indexOf(type) < 0) {
+      return json_({ ok: false, message: "Tipo no permitido" });
+    }
     if (type === "booking") {
       return sendBookingAlert_(data);
     }
@@ -40,7 +46,7 @@ function doPost(e) {
     }
     return sendVerifyCode_(data);
   } catch (err) {
-    return json_({ ok: false, message: String(err) });
+    return json_({ ok: false, message: "Error interno" });
   }
 }
 
@@ -60,6 +66,12 @@ function sendVerifyCode_(data) {
 
   if (!to || !code) {
     return json_({ ok: false, message: "Faltan to_email o code" });
+  }
+  if (!isValidEmail_(to)) {
+    return json_({ ok: false, message: "Correo inválido" });
+  }
+  if (!/^\d{4,8}$/.test(code)) {
+    return json_({ ok: false, message: "Código inválido" });
   }
 
   var subject = "Tu código Puntos BarberHome: " + code;
@@ -110,6 +122,12 @@ function sendRecoverCode_(data) {
 
   if (!to || !code) {
     return json_({ ok: false, message: "Faltan to_email o code" });
+  }
+  if (!isValidEmail_(to)) {
+    return json_({ ok: false, message: "Correo inválido" });
+  }
+  if (!/^\d{4,8}$/.test(code)) {
+    return json_({ ok: false, message: "Código inválido" });
   }
 
   var subject = "Recupera tu contraseña Puntos BarberHome: " + code;
@@ -164,6 +182,9 @@ function sendBookingAlert_(data) {
 
   var client = String(booking.name || data.client_name || "Cliente").trim();
   var phone = String(booking.phone || data.client_phone || "—").trim();
+  var fingerprint = String(
+    booking.clientFingerprint || data.client_fingerprint || ""
+  ).trim();
   var service = String(booking.serviceName || data.service || "Cita").trim();
   var date = String(booking.date || data.date || "—").trim();
   var time = String(booking.time || data.time || "—").trim();
@@ -174,6 +195,32 @@ function sendBookingAlert_(data) {
   var source = String(booking.source || "public").trim();
   var business = String(booking.business || fromName).trim();
   var bookingId = String(booking.id || "").trim();
+
+  // Rate limit server-side (Apps Script no expone IP real de forma fiable):
+  // máx. 3 avisos de reserva / 2h por WhatsApp y por dispositivo (fingerprint).
+  var phoneKey = phoneTail_(phone);
+  if (phoneKey) {
+    var phoneLimit = consumeRateLimit_("bk_phone:" + phoneKey, 3, 7200);
+    if (!phoneLimit.ok) {
+      return json_({
+        ok: false,
+        code: "phone_limit",
+        message:
+          "Límite de 3 citas seguidas por WhatsApp. Cancela una o espera un rato.",
+      });
+    }
+  }
+  if (fingerprint && fingerprint !== "anonymous") {
+    var deviceLimit = consumeRateLimit_("bk_dev:" + fingerprint, 3, 7200);
+    if (!deviceLimit.ok) {
+      return json_({
+        ok: false,
+        code: "device_limit",
+        message:
+          "Límite de 3 citas seguidas desde este dispositivo. Espera un rato.",
+      });
+    }
+  }
 
   var priceText =
     price === "" || price == null
@@ -215,6 +262,7 @@ function sendBookingAlert_(data) {
     source +
     "\n" +
     (bookingId ? "ID: " + bookingId + "\n" : "") +
+    (fingerprint ? "Dispositivo: " + fingerprint + "\n" : "") +
     (notes ? "Notas: " + notes + "\n" : "") +
     "\n— BarberCloud";
 
@@ -235,6 +283,7 @@ function sendBookingAlert_(data) {
     row_("Estado", status) +
     row_("Origen", source) +
     (bookingId ? row_("ID", bookingId) : "") +
+    (fingerprint ? row_("Dispositivo", fingerprint) : "") +
     (notes ? row_("Notas", notes) : "") +
     "</table>" +
     '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de BarberCloud</p>' +
@@ -349,6 +398,62 @@ function escapeHtml_(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/** Comparación resistente a timing básico (Apps Script) */
+function secretsMatch_(provided, expected) {
+  var a = String(provided || "");
+  var b = String(expected || "");
+  if (!a || !b) return false;
+  var len = Math.max(a.length, b.length);
+  var diff = a.length === b.length ? 0 : 1;
+  for (var i = 0; i < len; i++) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  }
+  return diff === 0;
+}
+
+function isValidEmail_(value) {
+  var email = String(value || "").trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+}
+
+/** Últimos dígitos del WhatsApp para clave de rate-limit */
+function phoneTail_(phone) {
+  var digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.slice(-10);
+}
+
+/**
+ * Rate limit con CacheService.
+ * maxHits en windowSec segundos. Devuelve { ok, count }.
+ */
+function consumeRateLimit_(key, maxHits, windowSec) {
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get(key);
+  var now = Date.now();
+  var hits = [];
+  if (raw) {
+    try {
+      hits = JSON.parse(raw) || [];
+    } catch (e) {
+      hits = [];
+    }
+  }
+  if (!Array.isArray(hits)) hits = [];
+  var cutoff = now - windowSec * 1000;
+  hits = hits.filter(function (t) {
+    return Number(t) > cutoff;
+  });
+  if (hits.length >= maxHits) {
+    return { ok: false, count: hits.length };
+  }
+  hits.push(now);
+  // CacheService max ~6h; usamos el window pedido (máx 21600)
+  var ttl = Math.min(Math.max(windowSec, 60), 21600);
+  cache.put(key, JSON.stringify(hits), ttl);
+  return { ok: true, count: hits.length };
 }
 
 function json_(obj) {

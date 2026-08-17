@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Feedback · BarberCloud</title>
+    <title>Contactos · BarberCloud</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -40,7 +40,7 @@
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Calendario
           </a>
-          <a class="nav__item" href="contactos.html">
+          <a class="nav__item is-active" href="contactos.html">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S14 16 14.5 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="17" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 19c.3-1.8 1.4-3 3.2-3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Contactos
           </a>
@@ -68,7 +68,7 @@
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 4h9l3 3v13H6V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 11h6M9 15h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Manual
           </a>
-          <a class="nav__item is-active" href="feedback.html">
+          <a class="nav__item" href="feedback.html">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18V8a2 2 0 0 1 2-2h8l4 4v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 13h5M8 16h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             Feedback
           </a>
@@ -85,34 +85,96 @@
       </aside>
 
       <main class="main">
-        <header class="page-header">
-          <h1>Feedback</h1>
+        <header class="page-header page-header--stack">
+          <h1>Contactos</h1>
+          <p class="page-lead">
+            Clientes de tus citas y señales automáticas para saber a quién retener, premiar o recuperar.
+          </p>
         </header>
 
-        <section class="panel feedback-intro" aria-labelledby="feedback-title">
-          <h2 id="feedback-title" class="feedback-intro__title">
-            Hola <span id="feedback-name">Luis</span>. ¿Cómo puedo mejorar BarberCloud?
-          </h2>
-          <p class="feedback-intro__text">
-            Déjame tu opinión, ideas y críticas. Tu mensaje irá directo a mi email y haré todo lo
-            posible por implementar lo que pides.
-          </p>
+        <section class="panel config-panel intel-panel" aria-labelledby="intel-title">
+          <div class="config-panel__toolbar">
+            <div>
+              <h2 id="intel-title" class="config-panel__title">Inteligencia del cliente</h2>
+              <p class="section-lead">
+                BarberCloud calcula automáticamente el estado de cada cliente según sus reservas.
+              </p>
+            </div>
+            <label class="points-search">
+              <span class="sr-only">Buscar cliente</span>
+              <input type="search" id="intel-search" placeholder="Buscar por nombre, correo o WhatsApp…" />
+            </label>
+          </div>
+
+          <div class="intel-legend" aria-label="Leyenda de estados">
+            <article class="intel-legend__card intel-legend__card--frequent">
+              <span class="intel-badge intel-badge--frequent">🔥 Frecuente</span>
+              <p>4 o más servicios en los últimos 60 días</p>
+            </article>
+            <article class="intel-legend__card intel-legend__card--inactive">
+              <span class="intel-badge intel-badge--inactive">⚠️ Inactivo</span>
+              <p>No ha reservado en 45 días</p>
+            </article>
+            <article class="intel-legend__card intel-legend__card--lost">
+              <span class="intel-badge intel-badge--lost">💤 Perdido</span>
+              <p>No ha reservado en 90 días</p>
+            </article>
+            <article class="intel-legend__card intel-legend__card--vip">
+              <span class="intel-badge intel-badge--vip">⭐ VIP</span>
+              <p>Más de 20 servicios en total</p>
+            </article>
+          </div>
+
+          <div class="intel-kpis" aria-label="Resumen por estado">
+            <button type="button" class="intel-kpi is-active" data-intel-filter="all">
+              <span class="intel-kpi__label">Todos</span>
+              <strong id="intel-count-all">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="frequent">
+              <span class="intel-kpi__label">🔥 Frecuentes</span>
+              <strong id="intel-count-frequent">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="inactive">
+              <span class="intel-kpi__label">⚠️ Inactivos</span>
+              <strong id="intel-count-inactive">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="lost">
+              <span class="intel-kpi__label">💤 Perdidos</span>
+              <strong id="intel-count-lost">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="vip">
+              <span class="intel-kpi__label">⭐ VIP</span>
+              <strong id="intel-count-vip">0</strong>
+            </button>
+          </div>
+
+          <div class="intel-list" id="intel-list" aria-live="polite"></div>
         </section>
 
-        <form class="feedback-form" id="feedback-form">
-          <label class="sr-only" for="feedback-message">Tu feedback</label>
-          <textarea
-            id="feedback-message"
-            name="message"
-            class="feedback-form__input"
-            rows="10"
-            placeholder="Hola me gustaría que..."
-            required
-          ></textarea>
-          <div class="feedback-form__actions">
-            <button class="btn btn--primary" type="submit">Enviar feedback</button>
+        <section class="panel config-panel" aria-labelledby="contacts-title">
+          <div class="config-panel__toolbar">
+            <div>
+              <h2 id="contacts-title" class="config-panel__title">Directorio de contactos</h2>
+              <p class="section-lead">
+                Clientes de citas y cuentas de Puntos (incluye correo de registro o Google).
+              </p>
+            </div>
+            <label class="points-search">
+              <span class="sr-only">Buscar en directorio</span>
+              <input type="search" id="contacts-search" placeholder="Buscar por nombre, correo o WhatsApp…" />
+            </label>
           </div>
-        </form>
+          <div class="table contacts-table" role="table" id="contacts-table">
+            <div class="table__head" role="row">
+              <div role="columnheader">Cliente</div>
+              <div role="columnheader">Correo</div>
+              <div role="columnheader">WhatsApp</div>
+              <div role="columnheader">Citas</div>
+              <div role="columnheader">Última visita</div>
+              <div role="columnheader" class="sr-only">Acciones</div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <a class="help" href="https://wa.me/" target="_blank" rel="noreferrer">
@@ -135,6 +197,7 @@
 
         <script src="js/security.js?v=20260816"></script>
     <script src="js/app.js"></script>
-    <script src="js/feedback.js"></script>
+    <script src="js/booking-store.js?v=20260806"></script>
+    <script src="js/contactos.js?v=20260815f"></script>
   </body>
 </html>

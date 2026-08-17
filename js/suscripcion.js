@@ -21,7 +21,6 @@
     periodStart: "2026-07-17",
     periodEnd: "2026-08-17",
     nextCharge: "2026-08-17",
-    demoUsed: 42,
     payment: {
       holder: "Luis Villadiego",
       last4: "4242",
@@ -45,6 +44,7 @@
   function load() {
     try {
       const raw = { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+      delete raw.demoUsed;
       if (raw.currency !== "COP") {
         raw.currency = "COP";
         raw.overageCost = defaults.overageCost;
@@ -61,6 +61,7 @@
   }
 
   function save(state) {
+    delete state.demoUsed;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
@@ -76,26 +77,75 @@
     return PLANS.find((p) => p.id === state.planId) || PLANS[1];
   }
 
-  function bookingsInPeriod(state) {
+  function toIsoDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function billingAnchorDay(state) {
+    const charge = state.nextCharge || defaults.nextCharge;
+    const parsed = new Date(`${charge}T12:00:00`);
+    const day = parsed.getDate();
+    return Number.isFinite(day) && day > 0 ? day : 17;
+  }
+
+  /** Ajusta el período para que siempre incluya la fecha de hoy. */
+  function normalizeBillingPeriod(state) {
+    const anchorDay = billingAnchorDay(state);
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const today = now.getDate();
+
+    let endYear = y;
+    let endMonth = m;
+    if (today >= anchorDay) endMonth += 1;
+    if (endMonth > 11) {
+      endMonth = 0;
+      endYear += 1;
+    }
+
+    const periodEnd = new Date(endYear, endMonth, anchorDay);
+    const periodStart = new Date(endYear, endMonth - 1, anchorDay);
+    state.periodStart = toIsoDate(periodStart);
+    state.periodEnd = toIsoDate(periodEnd);
+    if (!state.cancelAtPeriodEnd) state.nextCharge = state.periodEnd;
+    return state;
+  }
+
+  function loadBookings() {
+    if (window.BookingStore?.loadBookings) return window.BookingStore.loadBookings();
     try {
       const list = JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
-      const start = state.periodStart;
-      const end = state.periodEnd;
-      return list.filter((b) => {
-        const day = (b.date || b.createdAt || "").slice(0, 10);
-        return day >= start && day <= end;
-      });
+      return Array.isArray(list) ? list : [];
     } catch {
       return [];
     }
   }
 
-  function usedCount(state) {
-    const real = bookingsInPeriod(state).length;
-    return Math.max(real, Number(state.demoUsed) || 0);
+  function isActiveBooking(booking) {
+    if (window.BookingStore?.isActive) return window.BookingStore.isActive(booking);
+    const status = String(booking?.status || "").toLowerCase();
+    return status !== "cancelled" && status !== "canceled" && status !== "rejected";
   }
 
-  let state = load();
+  function bookingsInPeriod(state) {
+    const start = state.periodStart;
+    const end = state.periodEnd;
+    return loadBookings().filter((b) => {
+      if (!isActiveBooking(b)) return false;
+      const day = String(b.date || b.createdAt || "").slice(0, 10);
+      return day >= start && day <= end;
+    });
+  }
+
+  function usedCount(state) {
+    return bookingsInPeriod(state).length;
+  }
+
+  let state = normalizeBillingPeriod(load());
   save(state);
 
   const planTitle = document.getElementById("plan-title");
@@ -110,10 +160,26 @@
   const overageCost = document.getElementById("overage-cost");
   const billingFrequency = document.getElementById("billing-frequency");
 
+  function renderUsage(used) {
+    const plan = currentPlan(state);
+    const pct = Math.min(100, Math.round((used / plan.limit) * 100));
+    usageUsed.textContent = String(used);
+    usageLabel.textContent = ` / ${plan.limit} citas usadas este período`;
+    usageBar.style.width = `${pct}%`;
+    usagePct.textContent = `${pct}% usado`;
+    usageLimit.textContent = `Límite del plan: ${plan.limit}`;
+  }
+
+  function refreshUsage() {
+    state = normalizeBillingPeriod(state);
+    save(state);
+    billingPeriod.textContent = `Período de facturación: ${formatDate(state.periodStart, "long")} - ${formatDate(state.periodEnd, "long")}`;
+    renderUsage(usedCount(state));
+  }
+
   function render() {
     const plan = currentPlan(state);
     const used = usedCount(state);
-    const pct = Math.min(100, Math.round((used / plan.limit) * 100));
 
     planTitle.textContent = `Tienes el plan de ${plan.limit} citas al mes`;
     if (state.cancelAtPeriodEnd) {
@@ -127,13 +193,10 @@
     }
 
     billingPeriod.textContent = `Período de facturación: ${formatDate(state.periodStart, "long")} - ${formatDate(state.periodEnd, "long")}`;
-    usageUsed.textContent = String(used);
-    usageLabel.textContent = ` / ${plan.limit} citas usadas este período`;
-    usageBar.style.width = `${pct}%`;
-    usagePct.textContent = `${pct}% usado`;
-    usageLimit.textContent = `Límite del plan: ${plan.limit}`;
+    renderUsage(used);
     if (overageCost) overageCost.textContent = formatMoney(state.overageCost);
     if (billingFrequency) billingFrequency.textContent = state.billingFrequency || "Mensual";
+    refreshUsage();
   }
 
   function openModal(id) {
@@ -203,24 +266,25 @@
 
   document.getElementById("btn-history")?.addEventListener("click", () => {
     const list = document.getElementById("history-list");
+    openModal("history-modal");
     const bookings = bookingsInPeriod(state);
     if (!bookings.length) {
-      list.innerHTML = `<p class="empty-hint">Aún no hay citas registradas en este período. El consumo demo muestra ${state.demoUsed} citas.</p>`;
+      list.innerHTML = `<p class="empty-hint">Aún no hay citas agendadas en este período de facturación.</p>`;
     } else {
       list.innerHTML = bookings
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)))
         .map(
           (b) => `
           <article class="diagnostic-item">
             <div class="diagnostic-item__top">
               <strong>${b.serviceName || b.name || "Cita"}</strong>
-              <span class="status status--ok">${b.status || "ok"}</span>
+              <span class="status status--ok">${b.status || "agendada"}</span>
             </div>
             <p>${b.date || ""} ${b.time || ""} · ${b.phone || ""}</p>
           </article>`
         )
         .join("");
     }
-    openModal("history-modal");
   });
 
   document.getElementById("btn-invoices")?.addEventListener("click", () => {
@@ -305,6 +369,17 @@
   document.querySelectorAll("[data-close-cancel]").forEach((el) =>
     el.addEventListener("click", () => closeModal("cancel-modal"))
   );
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === BOOKINGS_KEY) refreshUsage();
+  });
+
+  window.addEventListener("barbercloud:bookings-changed", refreshUsage);
+  window.BookingStore?.subscribe?.(refreshUsage);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshUsage();
+  });
 
   render();
 })();

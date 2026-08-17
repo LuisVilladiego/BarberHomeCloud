@@ -413,7 +413,8 @@ a {
   top: calc(100% + 6px);
   right: 0;
   z-index: 40;
-  min-width: 248px;
+  min-width: min(248px, calc(100vw - 32px));
+  max-width: calc(100vw - 24px);
   padding: 6px;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -1060,6 +1061,10 @@ body.nav-open .backdrop {
   font: inherit;
   text-align: left;
   transition: border-color 140ms ease, background 140ms ease;
+}
+
+.service-row > svg {
+  flex-shrink: 0;
 }
 
 .service-row:hover {
@@ -3791,10 +3796,13 @@ body.nav-open .backdrop {
   display: grid;
   place-items: start center;
   padding: 40px 16px 48px;
+  overflow-x: clip;
 }
 
 .public-card {
   width: min(480px, 100%);
+  max-width: 100%;
+  min-width: 0;
   background: #fff;
   border: 1px solid #e8eaee;
   border-radius: 16px;
@@ -3857,6 +3865,7 @@ body.nav-open .backdrop {
 #puntos-auth[hidden],
 #puntos-verify[hidden],
 #puntos-dashboard[hidden],
+#puntos-google-complete[hidden],
 #loyalty-login-form[hidden],
 #loyalty-register-form[hidden],
 #loyalty-recover-request-form[hidden],
@@ -3937,6 +3946,7 @@ body.nav-open .backdrop {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 6px;
 }
@@ -3944,12 +3954,85 @@ body.nav-open .backdrop {
 .booking-summary__row strong {
   font-size: 0.98rem;
   color: #111827;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .booking-summary__when {
   margin: 0;
   color: #6b7280;
   font-size: 0.92rem;
+}
+
+.booking-summary__note {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.86rem;
+  color: #4b5563;
+  line-height: 1.45;
+}
+
+.booking-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.booking-loading[hidden] {
+  display: none !important;
+}
+
+.booking-loading__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #c7d2fe;
+  border-top-color: var(--primary, #5248e7);
+  border-radius: 50%;
+  animation: booking-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes booking-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.public-form.is-submitting .field input,
+.public-form.is-submitting .field select,
+.public-form.is-submitting .book-nav__back {
+  opacity: 0.65;
+}
+
+.public-form.is-submitting .book-nav__back {
+  pointer-events: none;
+}
+
+#booking-submit-btn.is-loading {
+  cursor: wait;
+  justify-content: center;
+}
+
+#booking-submit-btn.is-loading .booking-submit__label::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: booking-spin 0.75s linear infinite;
+  vertical-align: -2px;
 }
 
 .public-form .phone-input {
@@ -3991,6 +4074,55 @@ body.nav-open .backdrop {
   background: #fff;
   color: #5248e7;
   box-shadow: inset 0 -2px 0 #5248e7;
+}
+
+.btn--google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  margin-bottom: 14px;
+}
+
+.btn--google:hover {
+  background: #f9fafb;
+  border-color: #cbd5e1;
+}
+
+.btn--google:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.btn--google__icon {
+  flex-shrink: 0;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-divider span {
+  flex-shrink: 0;
 }
 
 .auth-error {
@@ -4152,6 +4284,65 @@ body.nav-open .backdrop {
   margin: 0 0 4px;
 }
 
+.loyalty-hero {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border: 1px solid #ddd6fe;
+}
+
+.loyalty-hero__title {
+  margin: 0 0 6px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #4c1d95;
+  line-height: 1.35;
+}
+
+.loyalty-hero__lead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #5b21b6;
+  line-height: 1.45;
+}
+
+.loyalty-redeem-shop__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.loyalty-redeem-shop__head > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.loyalty-redeem-cart-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.redeem-cart-balance {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.mkt-cart-item__points {
+  display: block;
+  font-size: 0.84rem;
+  color: #6b7280;
+}
+
+.loyalty-redeem-item.is-in-cart {
+  border-color: #c4b5fd;
+  background: #faf5ff;
+}
+
 .loyalty-redeem-shop__title {
   margin: 0 0 6px;
   font-size: 1.05rem;
@@ -4165,9 +4356,27 @@ body.nav-open .backdrop {
   line-height: 1.4;
 }
 
+.loyalty-redeem-shop__head .loyalty-redeem-shop__lead {
+  margin-bottom: 0;
+}
+
 .loyalty-redeem-grid {
   display: grid;
   gap: 12px;
+}
+
+.loyalty-redeem-grid--scroll-hint {
+  position: relative;
+}
+
+.loyalty-redeem-grid--scroll-hint::after {
+  content: "Desliza para ver más →";
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
 }
 
 .loyalty-redeem-empty {
@@ -4210,14 +4419,39 @@ body.nav-open .backdrop {
   overflow: hidden;
   background: #f3f4f6;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+
+.loyalty-redeem-item__media .mkt-carousel {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: inherit;
+  background: transparent;
+}
+
+.loyalty-redeem-item__media:has(.mkt-carousel) {
+  padding: 0;
+  display: block;
+}
+
+.loyalty-redeem-item__media .mkt-carousel__slide {
+  object-fit: contain;
+  padding: 6px;
+  box-sizing: border-box;
 }
 
 .loyalty-redeem-item__img {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
   max-width: 100%;
-  object-fit: cover;
+  max-height: 100%;
+  object-fit: contain;
   object-position: center;
 }
 
@@ -4262,6 +4496,8 @@ body.nav-open .backdrop {
   margin-top: 2px;
   min-height: 36px;
   font-size: 0.88rem;
+  width: 100%;
+  justify-content: center;
 }
 
 .redeem-success {
@@ -4587,11 +4823,52 @@ body.public-confirm-open {
   font-size: 1rem;
   color: #111827;
   line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .book-cal {
   position: relative;
   min-height: 280px;
+}
+
+.book-cal__loading {
+  position: absolute;
+  inset: 44px 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(2px);
+  border-radius: 12px;
+  color: #3730a3;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 16px;
+}
+
+.book-cal__loading[hidden] {
+  display: none !important;
+}
+
+.book-cal.is-loading .book-cal__grid,
+.book-cal.is-loading .book-cal__weekdays {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.book-cal.is-loading .book-cal__nav-btn {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.book-cal.is-loading.is-picking-time .book-times {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .book-cal__toolbar {
@@ -4790,18 +5067,6 @@ body.public-confirm-open {
 }
 
 /* —— Admin Puntos —— */
-.points-redeem-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px 16px;
-  align-items: end;
-  margin-top: 12px;
-}
-
-.points-redeem-form .points-admin-form__actions {
-  margin-top: 0;
-}
-
 .points-admin-form__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4967,6 +5232,8 @@ body.public-confirm-open {
   margin-top: 2px;
   color: #6b7280;
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .points-table__pts {
@@ -5018,10 +5285,6 @@ body.public-confirm-open {
 }
 
 @media (max-width: 800px) {
-  .points-redeem-form {
-    grid-template-columns: 1fr;
-  }
-
   .points-admin-form__grid {
     grid-template-columns: 1fr;
   }
@@ -5034,10 +5297,37 @@ body.public-confirm-open {
   .points-lookup__balance {
     text-align: left;
   }
+}
 
-  .points-table .table__head,
+/* points-table: no heredar áreas del listado de calendarios (cal/status/conf) */
+@media (max-width: 900px) {
   .points-table .table__row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "client actions"
+      "doc doc"
+      "pts pts";
+  }
+
+  .points-table .table__row > :nth-child(1) {
+    grid-area: client;
+    min-width: 0;
+  }
+
+  .points-table .table__row > :nth-child(2) {
+    grid-area: doc;
+  }
+
+  .points-table .table__row > :nth-child(3) {
+    grid-area: pts;
+  }
+
+  .points-table .table__row > :nth-child(4) {
+    grid-area: actions;
+  }
+
+  .points-table .row-actions .btn {
+    min-height: 40px;
   }
 }
 
@@ -5842,6 +6132,15 @@ a.notifications {
   margin-bottom: 4px;
 }
 
+.mkt-kpi-grid--secondary {
+  margin-bottom: 16px;
+}
+
+.mkt-tabs {
+  margin: 8px 0 16px;
+  max-width: 420px;
+}
+
 .mkt-stock {
   display: inline-flex;
   align-items: center;
@@ -5918,9 +6217,30 @@ body {
   overflow-x: hidden;
 }
 
+img {
+  max-width: 100%;
+}
+
+/* Evitar que fotos de producto/canje se desborden del contenedor */
+.loyalty-redeem-item__img,
+.mkt-carousel__slide,
+.mkt-thumb img,
+.mkt-cart-item img,
+.public-avatar {
+  max-width: 100%;
+}
+
+.table {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 900px) {
   .main {
     padding: 68px 14px calc(104px + env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+    overflow-x: clip;
   }
 
   .page-header h1 {
@@ -6115,7 +6435,6 @@ body {
     height: 44px;
   }
 
-  .points-redeem-form,
   .points-admin-form__grid {
     grid-template-columns: 1fr;
   }
@@ -6147,6 +6466,21 @@ body {
     min-height: 44px;
   }
 
+  .phone-input__select {
+    flex: 1 1 96px;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .phone-input input {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+
+  .public-form .phone-input__select {
+    max-width: none;
+  }
+
   .notif-filters {
     gap: 6px;
     overflow-x: auto;
@@ -6167,6 +6501,54 @@ body {
     grid-template-columns: 36px minmax(0, 1fr) auto;
     gap: 8px;
     padding: 10px;
+  }
+
+  .mkt-section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .modal__actions,
+  .modal__actions--split,
+  .mkt-modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal__actions .btn,
+  .modal__actions-right .btn,
+  .mkt-modal-actions .btn {
+    flex: 1 1 140px;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .settings-field__row--stack {
+    grid-template-columns: 1fr;
+  }
+
+  .points-search {
+    width: 100%;
+  }
+
+  .points-search input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .points-history__item {
+    flex-wrap: wrap;
+  }
+
+  .public-cart-sheet,
+  .public-confirm-sheet {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .public-confirm-sheet--tall {
+    max-height: min(88dvh, 88vh);
   }
 }
 
@@ -6217,6 +6599,21 @@ body {
     gap: 8px;
   }
 
+  .book-cal__month {
+    font-size: 0.98rem;
+    min-width: 0;
+  }
+
+  .book-nav {
+    gap: 10px;
+  }
+
+  .book-nav__back {
+    width: 40px;
+    height: 40px;
+    padding-right: 10px;
+  }
+
   .auth-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -6224,11 +6621,63 @@ body {
 
   .auth-tabs__btn {
     min-height: 44px;
+    padding: 12px 8px;
+    font-size: 0.92rem;
   }
 
   .public-form .btn,
-  .public-ok-wrap .btn {
+  .public-ok-wrap .btn,
+  .loyalty-actions .btn {
     min-height: 48px;
+  }
+
+  .loyalty-redeem-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .loyalty-redeem-grid {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 4px 2px 12px;
+    margin: 0 -4px;
+  }
+
+  .loyalty-redeem-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .loyalty-redeem-grid .loyalty-redeem-item {
+    flex: 0 0 min(78vw, 280px);
+    scroll-snap-align: start;
+    grid-template-columns: 1fr;
+  }
+
+  .loyalty-redeem-grid .loyalty-redeem-empty {
+    flex: 1 0 100%;
+  }
+
+  .loyalty-redeem-item__media {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    min-height: 140px;
+    max-height: 200px;
+    padding: 0;
+  }
+
+  .loyalty-redeem-item__media .mkt-carousel {
+    min-height: 140px;
+    max-height: 200px;
   }
 
   .kpi-grid,
@@ -6239,6 +6688,26 @@ body {
 
   .reports-toolbar .btn {
     width: 100%;
+  }
+
+  .public-confirm-sheet__actions {
+    gap: 8px;
+  }
+
+  .public-confirm-sheet__actions .btn {
+    min-width: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .mkt-cart-footer .btn {
+    white-space: normal;
+    text-align: center;
+    height: auto;
+    min-height: 48px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    line-height: 1.25;
   }
 }
 
@@ -6289,6 +6758,429 @@ body {
   .mkt-product__actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .loyalty-redeem-item {
+    grid-template-columns: 1fr;
+  }
+
+  .loyalty-redeem-item__media {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    min-height: 168px;
+    max-height: 240px;
+    padding: 14px;
+  }
+
+  .loyalty-redeem-item__media:has(.mkt-carousel) {
+    padding: 0;
+  }
+
+  .loyalty-redeem-item__media .mkt-carousel {
+    min-height: 168px;
+    max-height: 240px;
+  }
+
+  .loyalty-redeem-item__media .mkt-carousel__slide {
+    padding: 12px;
+  }
+
+  .public-shop-item .mkt-carousel {
+    aspect-ratio: 1 / 1;
+  }
+
+  .public-shop-item .mkt-carousel__slide {
+    object-fit: contain;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  .points-card__value {
+    font-size: 1.7rem;
+  }
+
+  .public-confirm-sheet__actions:not(.public-confirm-sheet__actions--single) {
+    grid-template-columns: 1fr;
+  }
+
+  .mkt-product__top {
+    flex-wrap: wrap;
+  }
+
+  .mkt-product__price {
+    white-space: normal;
+  }
+}
+
+/* —— Inteligencia del cliente (Contactos) —— */
+.intel-panel .config-panel__toolbar {
+  margin-bottom: 14px;
+}
+
+.intel-legend {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.intel-legend__card {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.intel-legend__card p {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.intel-legend__card--frequent {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.intel-legend__card--inactive {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.intel-legend__card--lost {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.intel-legend__card--vip {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.intel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.intel-badge--frequent {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.intel-badge--inactive {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.intel-badge--lost {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.intel-badge--vip {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.intel-badge--active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.intel-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.intel-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.intel-kpi:hover {
+  border-color: #c7d2fe;
+  background: #f8fafc;
+}
+
+.intel-kpi.is-active {
+  border-color: #5248e7;
+  box-shadow: 0 0 0 2px rgba(82, 72, 231, 0.15);
+  background: #eef2ff;
+}
+
+.intel-kpi__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.intel-kpi strong {
+  font-size: 1.25rem;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.intel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.intel-empty {
+  margin: 0;
+  padding: 18px 16px;
+  border-radius: 12px;
+  border: 1px dashed #d1d5db;
+  background: #f8fafc;
+  color: #6b7280;
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+.intel-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.intel-card--inactive {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.intel-card--lost {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.intel-card--vip {
+  border-color: #ddd6fe;
+  background: #faf5ff;
+}
+
+.intel-card--frequent {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.intel-card__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.intel-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.intel-card__name {
+  font-size: 1.02rem;
+  color: #111827;
+}
+
+.intel-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.intel-card__insight {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.intel-card__meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.intel-card__actions {
+  flex-shrink: 0;
+}
+
+.intel-card__no-phone {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.contacts-table {
+  overflow-x: auto;
+}
+
+.contacts-table .table__head,
+.contacts-table .table__row,
+.contacts-table__head,
+.contacts-table__row {
+  grid-template-columns:
+    minmax(160px, 1.1fr)
+    minmax(180px, 1.3fr)
+    minmax(130px, 0.9fr)
+    64px
+    minmax(110px, 0.85fr)
+    110px;
+  align-items: center;
+  column-gap: 12px;
+}
+
+.contacts-sort {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  text-align: left;
+  cursor: pointer;
+}
+
+.contacts-sort:hover {
+  color: #4338ca;
+}
+
+.contacts-cell {
+  min-width: 0;
+}
+
+.contacts-cell--name strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contacts-cell--email,
+.contacts-cell--phone,
+.contacts-cell--date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.contacts-cell--total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+}
+
+.contacts-cell--actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.contacts-table__tags {
+  margin-top: 4px;
+}
+
+.contacts-table__email {
+  color: #4338ca;
+  text-decoration: none;
+}
+
+.contacts-table__email:hover {
+  text-decoration: underline;
+}
+
+.contacts-muted {
+  color: #9ca3af;
+}
+
+@media (max-width: 900px) {
+  .intel-legend {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .intel-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .intel-kpi:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .intel-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .intel-card__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .contacts-table .table__head,
+  .contacts-table__head {
+    display: none;
+  }
+
+  .contacts-table .table__row,
+  .contacts-table__row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  .contacts-cell--phone,
+  .contacts-cell--email,
+  .contacts-cell--date {
+    white-space: normal;
+  }
+
+  .contacts-cell--total {
+    text-align: left;
+  }
+
+  .contacts-cell--actions {
+    justify-content: stretch;
+  }
+
+  .contacts-cell--actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .intel-legend {
+    grid-template-columns: 1fr;
   }
 }
 

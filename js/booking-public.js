@@ -4,7 +4,6 @@
   const LOYALTY_USERS_KEY = "barbercloud.loyalty_users";
   const LOYALTY_SESSION_KEY = "barbercloud.loyalty_session";
   const LOYALTY_HISTORY_KEY = "barbercloud.loyalty_history";
-  const POINTS_KEY = "barbercloud.points";
   const LOYALTY = {
     /** Usado solo para calcular el costo en pts de cada producto al canjear */
     pesosPerPoint: 800,
@@ -105,6 +104,7 @@
   const phoneFullInput = document.getElementById("public-phone-full");
   const bookingCc = document.getElementById("booking-cc");
   const bookingPhoneLocal = document.getElementById("booking-phone-local");
+  const bookingNameInput = document.getElementById("booking-name");
   const summaryService = document.getElementById("summary-service");
   const summaryDuration = document.getElementById("summary-duration");
   const summaryWhen = document.getElementById("summary-when");
@@ -115,6 +115,8 @@
   const timesGrid = document.getElementById("times-grid");
   const calPrev = document.getElementById("cal-prev");
   const calNext = document.getElementById("cal-next");
+  const calLoading = document.getElementById("cal-loading");
+  const calLoadingText = calLoading?.querySelector(".book-cal__loading-text");
 
   if (config.title) title.textContent = config.title;
   if (config.description) description.textContent = config.description;
@@ -126,6 +128,10 @@
   viewMonth.setDate(1);
   let selectedDate = null;
   let selectedTime = null;
+  let isBookingSubmitting = false;
+  const bookingSubmitBtn = document.getElementById("booking-submit-btn");
+  const bookingLoading = document.getElementById("booking-loading");
+  const bookingSubmitLabel = bookingSubmitBtn?.querySelector(".booking-submit__label");
 
   function formatSummaryWhen(dateIso, time) {
     try {
@@ -184,8 +190,14 @@
     document.getElementById("calendar-service-duration").textContent = `${
       selectedType?.duration || 60
     } min`;
-    await refreshGoogleBusyIfNeeded({ force: true });
+    setCalendarLoading(true, "Cargando días disponibles…");
     closeTimesOverlay();
+    try {
+      await refreshGoogleBusyIfNeeded({ force: true });
+      renderCalendar();
+    } finally {
+      setCalendarLoading(false);
+    }
     startAvailabilityPolling();
   }
 
@@ -236,7 +248,21 @@
   let busySyncPromise = null;
   let availabilityPollId = null;
   let lastBusyFingerprint = "";
+  let calendarLoadingCount = 0;
   const AVAILABILITY_POLL_MS = 5000;
+
+  function setCalendarLoading(active, message) {
+    if (active) {
+      calendarLoadingCount += 1;
+      if (message && calLoadingText) calLoadingText.textContent = message;
+    } else {
+      calendarLoadingCount = Math.max(0, calendarLoadingCount - 1);
+    }
+    const isLoading = calendarLoadingCount > 0;
+    if (calLoading) calLoading.hidden = !isLoading;
+    bookCal?.classList.toggle("is-loading", isLoading);
+    if (calPrev) calPrev.disabled = isLoading || calPrev.classList.contains("is-disabled");
+  }
 
   function busyFingerprint() {
     try {
@@ -489,14 +515,24 @@
   calPrev.addEventListener("click", async () => {
     if (calPrev.disabled) return;
     viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1);
-    await refreshGoogleBusyIfNeeded();
-    renderCalendar();
+    setCalendarLoading(true, "Cargando días disponibles…");
+    try {
+      await refreshGoogleBusyIfNeeded();
+      renderCalendar();
+    } finally {
+      setCalendarLoading(false);
+    }
   });
 
   calNext.addEventListener("click", async () => {
     viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1);
-    await refreshGoogleBusyIfNeeded();
-    renderCalendar();
+    setCalendarLoading(true, "Cargando días disponibles…");
+    try {
+      await refreshGoogleBusyIfNeeded();
+      renderCalendar();
+    } finally {
+      setCalendarLoading(false);
+    }
   });
 
   calGrid.addEventListener("click", async (e) => {
@@ -508,10 +544,15 @@
     timeInput.value = "";
     form.hidden = true;
     ok.hidden = true;
-    await refreshGoogleBusyIfNeeded({ force: true });
-    lastBusyFingerprint = busyFingerprint();
-    renderCalendar();
-    renderTimes();
+    setCalendarLoading(true, "Cargando horarios disponibles…");
+    try {
+      await refreshGoogleBusyIfNeeded({ force: true });
+      lastBusyFingerprint = busyFingerprint();
+      renderCalendar();
+      renderTimes();
+    } finally {
+      setCalendarLoading(false);
+    }
     startAvailabilityPolling();
   });
 
@@ -540,7 +581,9 @@
 
   /* —— Tienda pública (productos del Marketplace admin) —— */
   const PRODUCTS_KEY = "barbercloud.marketplace_products";
+  const REDEEM_PRODUCTS_KEY = "barbercloud.loyalty_redeem_products";
   const CART_KEY = "barbercloud.marketplace_cart";
+  const REDEEM_CART_KEY = "barbercloud.loyalty_redeem_cart";
   const SALES_KEY = "barbercloud.marketplace_sales";
   const PRODUCT_REDEEMS_KEY = "barbercloud.loyalty_product_redemptions";
   const PLACEHOLDER =
@@ -553,6 +596,11 @@
   const publicCartList = document.getElementById("public-cart-list");
   const publicCartTotal = document.getElementById("public-cart-total");
   const publicCartBadge = document.getElementById("public-cart-badge");
+  const redeemCartPanel = document.getElementById("redeem-cart-panel");
+  const redeemCartList = document.getElementById("redeem-cart-list");
+  const redeemCartTotal = document.getElementById("redeem-cart-total");
+  const redeemCartBadge = document.getElementById("redeem-cart-badge");
+  const redeemCartBalanceHint = document.getElementById("redeem-cart-balance-hint");
 
   function loadShopProducts() {
     try {
@@ -565,6 +613,36 @@
     } catch {
       return [];
     }
+  }
+
+  function loadRedeemProducts() {
+    try {
+      const raw = localStorage.getItem(REDEEM_PRODUCTS_KEY);
+      if (raw === null) {
+        return loadShopProducts().map((p) => ({
+          id: `redeem-${p.id}`,
+          name: p.name,
+          description: p.description,
+          pointsCost: pointsCostForProduct(p.price),
+          stock: Number.isFinite(Number(p.stock)) ? Math.max(0, Number(p.stock)) : 0,
+          images: Array.isArray(p.images) ? [...p.images] : [],
+          createdAt: p.createdAt || new Date().toISOString(),
+        }));
+      }
+      const list = JSON.parse(raw || "[]");
+      if (!Array.isArray(list)) return [];
+      return list.map((p) => ({
+        ...p,
+        stock: Number.isFinite(Number(p.stock)) ? Math.max(0, Number(p.stock)) : 0,
+        pointsCost: Math.max(1, Number(p.pointsCost) || 1),
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  function saveRedeemProducts(list) {
+    localStorage.setItem(REDEEM_PRODUCTS_KEY, JSON.stringify(list));
   }
 
   function saveShopProducts(list) {
@@ -657,6 +735,51 @@
     slides.forEach((el, i) => el.classList.toggle("is-active", i === next));
     dots.forEach((el, i) => el.classList.toggle("is-active", i === next));
     root.dataset.index = String(next);
+  }
+
+  function handlePublicCarouselClick(e) {
+    const carousel = e.target.closest(".mkt-carousel");
+    if (!carousel) return false;
+    const current = Number(carousel.dataset.index || 0);
+    const dirBtn = e.target.closest("[data-dir]");
+    if (dirBtn) {
+      setPublicCarouselIndex(carousel, current + Number(dirBtn.getAttribute("data-dir")));
+      return true;
+    }
+    const dot = e.target.closest("[data-dot]");
+    if (dot) {
+      setPublicCarouselIndex(carousel, Number(dot.getAttribute("data-dot")));
+      return true;
+    }
+    return false;
+  }
+
+  function initCarouselSwipe(container) {
+    if (!container || container.dataset.carouselSwipe) return;
+    container.dataset.carouselSwipe = "1";
+    container.addEventListener(
+      "touchstart",
+      (e) => {
+        const carousel = e.target.closest(".mkt-carousel");
+        if (!carousel) return;
+        carousel.dataset.touchStart = String(e.changedTouches[0].clientX);
+      },
+      { passive: true }
+    );
+    container.addEventListener(
+      "touchend",
+      (e) => {
+        const carousel = e.target.closest(".mkt-carousel");
+        if (!carousel || carousel.dataset.touchStart == null) return;
+        const dx = e.changedTouches[0].clientX - Number(carousel.dataset.touchStart);
+        delete carousel.dataset.touchStart;
+        const slides = carousel.querySelectorAll(".mkt-carousel__slide");
+        if (slides.length <= 1 || Math.abs(dx) < 36) return;
+        const current = Number(carousel.dataset.index || 0);
+        setPublicCarouselIndex(carousel, current + (dx < 0 ? 1 : -1));
+      },
+      { passive: true }
+    );
   }
 
   function renderPublicShop() {
@@ -780,17 +903,9 @@
       return;
     }
 
-    const carousel = e.target.closest(".mkt-carousel");
-    if (!carousel) return;
-    const current = Number(carousel.dataset.index || 0);
-    const dirBtn = e.target.closest("[data-dir]");
-    if (dirBtn) {
-      setPublicCarouselIndex(carousel, current + Number(dirBtn.getAttribute("data-dir")));
-      return;
-    }
-    const dot = e.target.closest("[data-dot]");
-    if (dot) setPublicCarouselIndex(carousel, Number(dot.getAttribute("data-dot")));
+    handlePublicCarouselClick(e);
   });
+  initCarouselSwipe(publicShopGrid);
 
   function openPublicCart() {
     if (!publicCartPanel) return;
@@ -879,8 +994,18 @@
 
   function openShopWhatsApp(lines, total) {
     const phone = resolveShopWhatsApp();
-    const text = encodeURIComponent(buildShopWhatsAppMessage(lines, total));
-    const url = `https://wa.me/${phone}?text=${text}`;
+    const message = buildShopWhatsAppMessage(lines, total);
+    const url =
+      window.Security?.buildWhatsAppUrl?.(phone, message) ||
+      (() => {
+        const digits = String(phone || "").replace(/\D/g, "");
+        if (digits.length < 7) return "";
+        return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+      })();
+    if (!url) {
+      window.AppShell?.toast?.("WhatsApp del negocio no configurado");
+      return;
+    }
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
@@ -892,13 +1017,24 @@
     const lines = [
       `Hola, canjeé puntos en ${business} y quiero coordinar la entrega:`,
       "",
-      `Producto: ${payload?.productName || "Producto"}`,
-      `Puntos canjeados: ${payload?.pointsCost ?? "—"}`,
-      `Saldo restante: ${payload?.balance ?? "—"} pts`,
-      `Cliente: ${c.name || "—"}`,
-      `Documento: ${c.docType || "CC"} ${c.docNumber || "—"}`,
-      `Teléfono: ${c.phone || "—"}`,
     ];
+    if (Array.isArray(payload?.items) && payload.items.length) {
+      lines.push("Productos:");
+      payload.items.forEach((item) => {
+        const label =
+          item.qty > 1 ? `${item.productName} x${item.qty}` : item.productName;
+        lines.push(`• ${label} — ${item.pointsCost} pts`);
+      });
+      lines.push("");
+      lines.push(`Total puntos: ${payload.totalPoints ?? "—"}`);
+    } else {
+      lines.push(`Producto: ${payload?.productName || "Producto"}`);
+      lines.push(`Puntos canjeados: ${payload?.pointsCost ?? "—"}`);
+    }
+    lines.push(`Saldo restante: ${payload?.balance ?? "—"} pts`);
+    lines.push(`Cliente: ${c.name || "—"}`);
+    lines.push(`Documento: ${c.docType || "CC"} ${c.docNumber || "—"}`);
+    lines.push(`Teléfono: ${c.phone || "—"}`);
     if (payload?.id) lines.push(`ID canje: ${payload.id}`);
     lines.push("", "¿Me indicas cómo y cuándo puedo reclamarlo?");
     return lines.join("\n");
@@ -911,8 +1047,18 @@
       return;
     }
     const phone = resolveShopWhatsApp();
-    const text = encodeURIComponent(buildRedeemWhatsAppMessage(data));
-    const url = `https://wa.me/${phone}?text=${text}`;
+    const message = buildRedeemWhatsAppMessage(data);
+    const url =
+      window.Security?.buildWhatsAppUrl?.(phone, message) ||
+      (() => {
+        const digits = String(phone || "").replace(/\D/g, "");
+        if (digits.length < 7) return "";
+        return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+      })();
+    if (!url) {
+      window.AppShell?.toast?.("WhatsApp del negocio no configurado");
+      return;
+    }
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
@@ -1007,13 +1153,17 @@
   const puntosVerify = document.getElementById("puntos-verify");
   const puntosRecover = document.getElementById("puntos-recover");
   const puntosDashboard = document.getElementById("puntos-dashboard");
+  const puntosGoogleComplete = document.getElementById("puntos-google-complete");
   const loginForm = document.getElementById("loyalty-login-form");
   const registerForm = document.getElementById("loyalty-register-form");
+  const googleCompleteForm = document.getElementById("loyalty-google-complete-form");
   const verifyForm = document.getElementById("loyalty-verify-form");
   const recoverRequestForm = document.getElementById("loyalty-recover-request-form");
   const recoverResetForm = document.getElementById("loyalty-recover-reset-form");
   let pendingVerifyUserId = null;
   let pendingRecoverUserId = null;
+  let pendingGoogleProfile = null;
+  let pendingGoogleUserId = null;
 
   const PASSWORD_ITERATIONS = 100000;
 
@@ -1039,7 +1189,6 @@
     if (!/[a-z]/.test(pw)) return "Debe incluir al menos una letra minúscula.";
     if (!/[A-Z]/.test(pw)) return "Debe incluir al menos una letra mayúscula.";
     if (!/\d/.test(pw)) return "Debe incluir al menos un número.";
-    if (!/[^A-Za-z0-9]/.test(pw)) return "Debe incluir al menos un símbolo (!@#$…).";
     return "";
   }
 
@@ -1071,6 +1220,9 @@
   async function verifyPassword(password, saltB64, hashB64) {
     if (!saltB64 || !hashB64) return false;
     const { hash } = await hashPassword(password, saltB64);
+    if (window.Security?.constantTimeEqual) {
+      return window.Security.constantTimeEqual(hash, hashB64);
+    }
     return hash === hashB64;
   }
 
@@ -1101,16 +1253,68 @@
   }
 
   function getSessionUserId() {
-    return localStorage.getItem(LOYALTY_SESSION_KEY) || "";
+    const raw = localStorage.getItem(LOYALTY_SESSION_KEY) || "";
+    if (window.Security?.readSessionPayload) {
+      const session = window.Security.readSessionPayload(raw);
+      if (!session?.userId) {
+        localStorage.removeItem(LOYALTY_SESSION_KEY);
+        return "";
+      }
+      // Migrar sesión legacy a payload con expiración
+      if (session.legacy) setSession(session.userId);
+      return session.userId;
+    }
+    return raw;
   }
 
   function setSession(userId) {
-    if (userId) localStorage.setItem(LOYALTY_SESSION_KEY, userId);
-    else localStorage.removeItem(LOYALTY_SESSION_KEY);
+    if (!userId) {
+      localStorage.removeItem(LOYALTY_SESSION_KEY);
+      return;
+    }
+    if (window.Security?.createSessionPayload) {
+      const payload = window.Security.createSessionPayload(userId);
+      localStorage.setItem(LOYALTY_SESSION_KEY, JSON.stringify(payload));
+      return;
+    }
+    localStorage.setItem(LOYALTY_SESSION_KEY, userId);
   }
 
-  function normalizeDoc(value) {
-    return String(value || "").replace(/\s+/g, "").toUpperCase();
+  function normalizeDoc(value, docType) {
+    const type = String(docType || "CC").toUpperCase();
+    const cleaned = String(value || "").replace(/\s+/g, "");
+    if (type === "PAS") return cleaned.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    return cleaned.replace(/\D/g, "");
+  }
+
+  function bindDocNumberInputs(root = document) {
+    root.querySelectorAll("[data-doc-number], input[name='docNumber']").forEach((input) => {
+      const scope = input.closest("form") || input.closest(".points-admin-form") || document;
+      const typeEl = () => scope.querySelector("[name='docType'], #admin-doc-type");
+      const sync = () => {
+        const next = normalizeDoc(input.value, typeEl()?.value || "CC");
+        if (input.value !== next) input.value = next;
+        const docType = typeEl()?.value || "CC";
+        input.inputMode = docType === "PAS" ? "text" : "numeric";
+        input.pattern = docType === "PAS" ? "[A-Za-z0-9]*" : "[0-9]*";
+      };
+      input.addEventListener("input", sync);
+      typeEl()?.addEventListener("change", sync);
+      sync();
+    });
+  }
+
+  function validateDocNumber(docType, docNumber) {
+    if (!docNumber) return "El número de documento es obligatorio.";
+    if (docType === "PAS") {
+      if (!/^[A-Z0-9]{4,20}$/i.test(docNumber)) {
+        return "Ingresa un pasaporte válido (letras y números, sin espacios).";
+      }
+      return "";
+    }
+    if (!/^\d+$/.test(docNumber)) return "El número de documento solo puede contener números.";
+    if (docNumber.length < 5) return "El número de documento es demasiado corto.";
+    return "";
   }
 
   function normalizeEmail(value) {
@@ -1137,6 +1341,102 @@
     if (puntosVerify) puntosVerify.hidden = view !== "verify";
     if (puntosRecover) puntosRecover.hidden = view !== "recover";
     if (puntosDashboard) puntosDashboard.hidden = view !== "dashboard";
+    if (puntosGoogleComplete) puntosGoogleComplete.hidden = view !== "google-complete";
+  }
+
+  function userNeedsProfileCompletion(user) {
+    if (!user) return true;
+    return !user.docNumber || !user.phone || !user.acceptedTermsAt;
+  }
+
+  function showGoogleCompleteForm(profile, existingUser = null) {
+    pendingGoogleProfile = profile;
+    pendingGoogleUserId = existingUser?.id || null;
+    showAuthError("google-complete-error", "");
+
+    const nameInput = document.getElementById("google-complete-name");
+    const emailInput = document.getElementById("google-complete-email");
+    const lead = document.getElementById("google-complete-lead");
+    if (nameInput) nameInput.value = existingUser?.name || profile.name || "";
+    if (emailInput) emailInput.value = existingUser?.email || profile.email || "";
+    if (lead) {
+      lead.textContent = existingUser
+        ? "Tu cuenta de Google está conectada. Completa los datos que faltan para canjear puntos."
+        : "Iniciaste con Google. Confirma tu documento y WhatsApp para activar tu cuenta.";
+    }
+
+    if (googleCompleteForm) {
+      const docType = googleCompleteForm.querySelector("[name='docType']");
+      const docNumber = googleCompleteForm.querySelector("[name='docNumber']");
+      const phone = googleCompleteForm.querySelector("[name='phone']");
+      const terms = document.getElementById("google-complete-accept-terms");
+      if (docType) docType.value = existingUser?.docType || "CC";
+      if (docNumber) docNumber.value = existingUser?.docNumber || "";
+      if (phone) phone.value = existingUser?.phone || "";
+      if (terms) terms.checked = !!existingUser?.acceptedTermsAt;
+    }
+
+    bindDocNumberInputs(puntosGoogleComplete || document);
+    showPuntosView("google-complete");
+  }
+
+  async function processGoogleProfile(profile) {
+    const users = loadLoyaltyUsers();
+    let user = users.find((u) => u.googleId === profile.sub);
+
+    if (!user) {
+      user = users.find((u) => normalizeEmail(u.email) === normalizeEmail(profile.email));
+      if (user) {
+        if (user.googleId && user.googleId !== profile.sub) {
+          showAuthError("login-error", "Ese correo ya está vinculado a otra cuenta de Google.");
+          return;
+        }
+        user.googleId = profile.sub;
+        user.authProvider = user.authProvider || "google";
+        if (!user.emailVerified) user.emailVerified = true;
+        if (profile.name && !user.name) user.name = profile.name;
+        user.googlePicture = profile.picture || user.googlePicture || "";
+        saveLoyaltyUsers(users);
+      }
+    }
+
+    if (user && !userNeedsProfileCompletion(user)) {
+      setSession(user.id);
+      pendingGoogleProfile = null;
+      pendingGoogleUserId = null;
+      renderDashboard(user);
+      return;
+    }
+
+    showGoogleCompleteForm(profile, user || null);
+  }
+
+  async function handleGoogleAuth() {
+    const btn = document.getElementById("btn-google-auth");
+    showAuthError("login-error", "");
+    showAuthError("register-error", "");
+    showAuthError("google-complete-error", "");
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute("aria-busy", "true");
+    }
+    try {
+      if (!window.GoogleAuth?.signIn) {
+        throw new Error("Google Auth no cargó. Recarga la página.");
+      }
+      const profile = await window.GoogleAuth.signIn({ prompt: "select_account" });
+      await processGoogleProfile(profile);
+    } catch (err) {
+      const msg = String(err?.message || err || "No se pudo conectar con Google.");
+      const cancelled =
+        /popup_closed|access_denied|cancel/i.test(msg) || msg === "popup_closed_by_user";
+      showAuthError("login-error", cancelled ? "Inicio con Google cancelado." : msg);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute("aria-busy");
+      }
+    }
   }
 
   function showRecoverStep(step) {
@@ -1300,12 +1600,163 @@
     saveLoyaltyUsers(users);
   }
 
+  function productPointsCost(product) {
+    return Math.max(1, Number(product.pointsCost) || pointsCostForProduct(product.price));
+  }
+
+  function loadRedeemCart() {
+    const sessionId = getSessionUserId();
+    if (!sessionId) return [];
+    try {
+      const raw = JSON.parse(localStorage.getItem(REDEEM_CART_KEY) || "null");
+      if (!raw || raw.userId !== sessionId || !Array.isArray(raw.items)) return [];
+      return raw.items;
+    } catch {
+      return [];
+    }
+  }
+
+  function saveRedeemCart(items) {
+    const sessionId = getSessionUserId();
+    if (!sessionId) return;
+    localStorage.setItem(
+      REDEEM_CART_KEY,
+      JSON.stringify({ userId: sessionId, items: items || [] })
+    );
+  }
+
+  function clearRedeemCart() {
+    saveRedeemCart([]);
+    updateRedeemCartBadge();
+  }
+
+  function redeemCartPointsTotal(cart, productsById) {
+    return cart.reduce((sum, item) => {
+      const product = productsById[item.productId];
+      if (!product) return sum;
+      return sum + productPointsCost(product) * (Number(item.qty) || 0);
+    }, 0);
+  }
+
+  function updateRedeemCartBadge() {
+    const qty = loadRedeemCart().reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    if (!redeemCartBadge) return;
+    redeemCartBadge.hidden = qty <= 0;
+    redeemCartBadge.textContent = String(qty);
+  }
+
+  function renderRedeemCart(user) {
+    const cart = loadRedeemCart();
+    const products = loadRedeemProducts();
+    const byId = Object.fromEntries(products.map((p) => [p.id, p]));
+    updateRedeemCartBadge();
+
+    const points = user?.points || 0;
+    const totalPts = redeemCartPointsTotal(cart, byId);
+
+    if (!cart.length) {
+      if (redeemCartList) {
+        redeemCartList.innerHTML = `<p class="public-desc public-desc--block">Tu carrito de canje está vacío.</p>`;
+      }
+      if (redeemCartTotal) redeemCartTotal.textContent = "0 pts";
+      if (redeemCartBalanceHint) redeemCartBalanceHint.textContent = `Tienes ${points} pts disponibles.`;
+      return;
+    }
+
+    if (redeemCartList) {
+      redeemCartList.innerHTML = cart
+        .map((item) => {
+          const product = byId[item.productId];
+          if (!product) return "";
+          const unitCost = productPointsCost(product);
+          const linePts = unitCost * (item.qty || 1);
+          const img = product.images?.[0] || PLACEHOLDER;
+          return `
+            <article class="mkt-cart-item" data-redeem-cart-id="${escapeShopHtml(item.productId)}">
+              <img src="${img}" alt="" />
+              <div class="mkt-cart-item__body">
+                <strong>${escapeShopHtml(product.name)}</strong>
+                <span class="mkt-cart-item__points">${unitCost} pts c/u</span>
+                <div class="mkt-qty">
+                  <button type="button" data-redeem-qty="-1" aria-label="Menos">−</button>
+                  <span>${item.qty}</span>
+                  <button type="button" data-redeem-qty="1" aria-label="Más">+</button>
+                </div>
+              </div>
+              <div class="mkt-cart-item__side">
+                <strong>${linePts} pts</strong>
+                <button type="button" class="btn btn--secondary btn--sm" data-remove-redeem-cart>Quitar</button>
+              </div>
+            </article>`;
+        })
+        .join("");
+    }
+
+    if (redeemCartTotal) redeemCartTotal.textContent = `${totalPts} pts`;
+    if (redeemCartBalanceHint) {
+      const remaining = points - totalPts;
+      redeemCartBalanceHint.textContent =
+        remaining >= 0
+          ? `Usarás ${totalPts} pts · Te quedarán ${remaining} pts.`
+          : `Te faltan ${Math.abs(remaining)} pts para completar este canje.`;
+    }
+  }
+
+  function addToRedeemCart(productId, user) {
+    const products = loadRedeemProducts();
+    const product = products.find((p) => p.id === productId);
+    if (!product || (Number(product.stock) || 0) <= 0) {
+      window.AppShell?.toast?.("Producto sin stock");
+      return;
+    }
+
+    const cart = loadRedeemCart();
+    const existing = cart.find((c) => c.productId === productId);
+    const nextQty = (existing?.qty || 0) + 1;
+    if (nextQty > (Number(product.stock) || 0)) {
+      window.AppShell?.toast?.("No hay más unidades disponibles");
+      return;
+    }
+
+    const cartTotal = redeemCartPointsTotal(cart, Object.fromEntries(products.map((p) => [p.id, p])));
+    const unitCost = productPointsCost(product);
+    const points = user?.points || 0;
+    if (cartTotal + unitCost > points) {
+      showAuthError(
+        "redeem-error",
+        `No alcanzan tus puntos. Te faltan ${cartTotal + unitCost - points} pts para agregar ${product.name}.`
+      );
+      return;
+    }
+
+    showAuthError("redeem-error", "");
+    if (existing) existing.qty = nextQty;
+    else cart.push({ productId, qty: 1 });
+    saveRedeemCart(cart);
+    updateRedeemCartBadge();
+    renderRedeemProducts(user);
+    window.AppShell?.toast?.("Agregado al carrito de canje");
+  }
+
+  function openRedeemCart(user) {
+    if (!redeemCartPanel) return;
+    renderRedeemCart(user);
+    redeemCartPanel.hidden = false;
+    document.body.classList.add("public-cart-open");
+  }
+
+  function closeRedeemCart() {
+    if (!redeemCartPanel) return;
+    redeemCartPanel.hidden = true;
+    document.body.classList.remove("public-cart-open");
+  }
+
   function redeemableProducts() {
-    return loadShopProducts()
+    return loadRedeemProducts()
       .filter((p) => (Number(p.stock) || 0) > 0)
       .map((p) => ({
         ...p,
-        pointsCost: pointsCostForProduct(p.price),
+        pointsCost: Math.max(1, Number(p.pointsCost) || pointsCostForProduct(p.price)),
       }))
       .sort((a, b) => a.pointsCost - b.pointsCost || String(a.name).localeCompare(String(b.name)));
   }
@@ -1317,49 +1768,65 @@
 
     const points = user.points || 0;
     const products = redeemableProducts();
-    const affordable = products.filter((p) => p.pointsCost <= points).length;
+    const cart = loadRedeemCart();
+    const cartTotal = redeemCartPointsTotal(
+      cart,
+      Object.fromEntries(products.map((p) => [p.id, p]))
+    );
+    const remaining = points - cartTotal;
+    const affordable = products.filter((p) => productPointsCost(p) <= remaining).length;
 
     if (lead) {
       lead.textContent = products.length
-        ? affordable
-          ? `Puedes canjear ${affordable} producto${affordable === 1 ? "" : "s"} con tus ${points} puntos.`
-          : `Aún no alcanzas ningún producto. Recuerda pedirle al barbero cargar tus ${LOYALTY.earnPerService} pts por servicio.`
+        ? cart.length
+          ? `Tienes ${cart.length} producto${cart.length === 1 ? "" : "s"} en el carrito (${cartTotal} pts).`
+          : affordable
+            ? `Puedes agregar ${affordable} producto${affordable === 1 ? "" : "s"} con tus ${points} puntos.`
+            : `Sigue acumulando puntos. Recuerda pedirle al barbero cargar tus ${LOYALTY.earnPerService} pts por servicio.`
         : "Por ahora no hay productos con stock para canjear.";
     }
 
+    updateRedeemCartBadge();
+
     if (!products.length) {
       grid.innerHTML =
-        `<p class="loyalty-redeem-empty">Cuando haya productos en el marketplace, aparecerán aquí.</p>`;
+        `<p class="loyalty-redeem-empty">Cuando haya productos en el inventario de canje, aparecerán aquí.</p>`;
+      grid.classList.remove("loyalty-redeem-grid--scroll-hint");
       return;
     }
 
+    grid.classList.toggle("loyalty-redeem-grid--scroll-hint", products.length > 1);
+
     grid.innerHTML = products
       .map((p) => {
-        const missing = Math.max(0, p.pointsCost - points);
+        const cost = productPointsCost(p);
+        const inCart = cart.find((c) => c.productId === p.id);
+        const missing = Math.max(0, cost - remaining);
         const can = missing === 0;
-        const thumb = p.images?.length ? p.images[0] : PLACEHOLDER;
         return `
-          <article class="loyalty-redeem-item ${can ? "is-ready" : "is-locked"}" data-product-id="${escapeShopHtml(p.id)}">
+          <article class="loyalty-redeem-item ${can ? "is-ready" : "is-locked"} ${inCart ? "is-in-cart" : ""}" data-product-id="${escapeShopHtml(p.id)}">
             <div class="loyalty-redeem-item__media">
-              <img class="loyalty-redeem-item__img" src="${thumb}" alt="${escapeShopHtml(p.name)}" loading="lazy" />
+              ${publicCarouselHtml(p)}
             </div>
             <div class="loyalty-redeem-item__body">
               <h4>${escapeShopHtml(p.name)}</h4>
-              <p class="loyalty-redeem-item__price"><strong>${p.pointsCost}</strong> puntos</p>
+              <p class="loyalty-redeem-item__price"><strong>${cost}</strong> puntos</p>
               <p class="loyalty-redeem-item__status">
                 ${
-                  can
-                    ? "Listo para canjear"
-                    : `Te faltan <strong>${missing}</strong> punto${missing === 1 ? "" : "s"}`
+                  inCart
+                    ? `${inCart.qty} en carrito`
+                    : can
+                      ? "Listo para agregar"
+                      : `Te faltan <strong>${missing}</strong> punto${missing === 1 ? "" : "s"}`
                 }
               </p>
               <button
                 type="button"
-                class="btn ${can ? "btn--primary" : "btn--secondary"} btn--block btn-redeem-product"
+                class="btn ${can ? "btn--primary" : "btn--secondary"} btn--block btn-add-redeem-cart"
                 data-product-id="${escapeShopHtml(p.id)}"
                 ${can ? "" : "disabled"}
               >
-                ${can ? "Canjear ahora" : `Faltan ${missing} pts`}
+                ${inCart ? "Agregar otro" : can ? "Agregar al carrito" : `Faltan ${missing} pts`}
               </button>
             </div>
           </article>`;
@@ -1372,83 +1839,195 @@
     const hint = document.getElementById("points-progress-hint");
     if (!products.length) {
       if (bar) bar.style.width = "0%";
-      if (hint) hint.textContent = "Sin productos disponibles para canjear por ahora.";
+      if (hint) hint.textContent = "Cada servicio te acerca a un nuevo beneficio.";
       return;
     }
 
-    const next = products.find((p) => p.pointsCost > points) || products[products.length - 1];
-    const need = next.pointsCost;
-    const pct = Math.min(100, Math.round((points / need) * 100));
+    const cart = loadRedeemCart();
+    const byId = Object.fromEntries(products.map((p) => [p.id, p]));
+    const cartTotal = redeemCartPointsTotal(cart, byId);
+    const available = Math.max(0, points - cartTotal);
+    const next = products.find((p) => productPointsCost(p) > available) || products[products.length - 1];
+    const need = productPointsCost(next);
+    const pct = Math.min(100, Math.round((available / need) * 100));
     if (bar) bar.style.width = `${pct}%`;
     if (hint) {
-      if (points >= products[0].pointsCost) {
-        const ready = products.filter((p) => p.pointsCost <= points).length;
-        hint.textContent =
-          points >= need
-            ? `Tienes puntos para canjear ${ready} producto${ready === 1 ? "" : "s"}.`
-            : `Puedes canjear ${ready} producto${ready === 1 ? "" : "s"}. Te faltan ${need - points} pts para ${next.name}.`;
+      if (cart.length) {
+        hint.textContent = `Carrito: ${cartTotal} pts · Disponibles: ${available} pts.`;
+      } else if (available >= need) {
+        const ready = products.filter((p) => productPointsCost(p) <= available).length;
+        hint.textContent = `Tu fidelidad tiene recompensa: puedes canjear ${ready} producto${ready === 1 ? "" : "s"}.`;
       } else {
-        hint.textContent = `Te faltan ${need - points} puntos para canjear ${next.name} (${need} pts).`;
+        hint.textContent = `Cada servicio te acerca a un nuevo beneficio. Faltan ${need - available} pts para ${next.name}.`;
       }
     }
   }
 
-  function redeemProductWithPoints(productId) {
-    const users = loadLoyaltyUsers();
-    const sessionId = getSessionUserId();
-    const idx = users.findIndex((u) => u.id === sessionId && u.emailVerified);
-    if (idx < 0) {
-      showAuthError("redeem-error", "Debes iniciar sesión para canjear.");
-      return;
+  async function redeemCartWithPoints(user) {
+    const cart = loadRedeemCart();
+    if (!cart.length) {
+      window.AppShell?.toast?.("El carrito de canje está vacío");
+      return null;
     }
 
-    let user = syncUserPoints(users[idx]);
-    const products = loadShopProducts();
-    const pIdx = products.findIndex((p) => p.id === productId);
-    if (pIdx < 0) {
-      showAuthError("redeem-error", "Ese producto ya no está disponible.");
-      renderDashboard(user);
-      return;
+    let products = loadRedeemProducts();
+    const byId = Object.fromEntries(products.map((p) => [p.id, p]));
+    const lines = [];
+    let totalPoints = 0;
+
+    for (const item of cart) {
+      const product = byId[item.productId];
+      const qty = Number(item.qty) || 0;
+      if (!product || qty <= 0) continue;
+      const stock = Number(product.stock) || 0;
+      if (qty > stock) {
+        showAuthError("redeem-error", `${product.name} ya no tiene stock suficiente.`);
+        return null;
+      }
+      const unitCost = productPointsCost(product);
+      totalPoints += unitCost * qty;
+      lines.push({ product, qty, unitCost, linePoints: unitCost * qty });
     }
 
-    const product = products[pIdx];
-    const stock = Number(product.stock) || 0;
-    if (stock <= 0) {
-      showAuthError("redeem-error", "Ese producto está agotado.");
-      renderDashboard(user);
-      return;
+    if (!lines.length) {
+      showAuthError("redeem-error", "No hay productos válidos en el carrito.");
+      return null;
     }
 
-    const cost = pointsCostForProduct(product.price);
-    if ((user.points || 0) < cost) {
+    if ((user.points || 0) < totalPoints) {
       showAuthError(
         "redeem-error",
-        `Te faltan ${cost - (user.points || 0)} puntos para canjear ${product.name}.`
+        `Te faltan ${totalPoints - (user.points || 0)} puntos para este canje.`
       );
-      renderDashboard(user);
-      return;
+      return null;
     }
+
+    const ok = await openPublicConfirm({
+      title: "Confirmar canje",
+      message: `Vas a canjear ${lines.length} producto${lines.length === 1 ? "" : "s"} por ${totalPoints} puntos. Se descontarán al instante; luego coordina la entrega por WhatsApp.`,
+      confirmLabel: "Sí, canjear",
+      cancelLabel: "Cancelar",
+    });
+    if (!ok) return null;
 
     const now = new Date().toISOString();
     ensureLedger(user);
+    const productNames = lines.map((line) =>
+      line.qty > 1 ? `${line.product.name} x${line.qty}` : line.product.name
+    );
     appendAdminHistory({
       id: crypto.randomUUID(),
       userId: user.id,
       name: user.name,
       docType: user.docType,
       docNumber: user.docNumber,
-      amount: -cost,
-      note: `Canje producto · ${product.name}`,
+      amount: -totalPoints,
+      note: `Canje carrito · ${productNames.join(", ")}`,
       at: now,
     });
     user.ledger.push({
       type: "redeem",
-      amount: -cost,
+      amount: -totalPoints,
       at: now,
-      note: `Canje producto · ${product.name}`,
-      productId: product.id,
+      note: `Canje carrito · ${productNames.join(", ")}`,
     });
     syncUserPoints(user);
+
+    const customer = {
+      userId: user.id,
+      name: user.name,
+      docType: user.docType,
+      docNumber: user.docNumber,
+      phone: user.phone,
+      email: user.email || "",
+    };
+
+    const batchId = `predeem-${Date.now().toString(36)}`;
+    const redeemedItems = [];
+
+    lines.forEach((line) => {
+      const pIdx = products.findIndex((p) => p.id === line.product.id);
+      if (pIdx < 0) return;
+      products[pIdx] = {
+        ...products[pIdx],
+        stock: (Number(products[pIdx].stock) || 0) - line.qty,
+      };
+
+      const redeemId = `${batchId}-${line.product.id.slice(-6)}`;
+      redeemedItems.push({
+        id: redeemId,
+        productName: line.product.name,
+        pointsCost: line.linePoints,
+        qty: line.qty,
+      });
+
+      const sales = loadShopSales();
+      sales.unshift({
+        id: `sale-${redeemId}`,
+        createdAt: now,
+        total: (Number(line.product.price) || 0) * line.qty,
+        units: line.qty,
+        items: [
+          {
+            productId: line.product.id,
+            name: line.product.name,
+            price: line.product.price,
+            qty: line.qty,
+            lineTotal: (Number(line.product.price) || 0) * line.qty,
+            pointsCost: line.linePoints,
+          },
+        ],
+        source: "loyalty-points",
+        redeemId,
+        customer,
+      });
+      saveShopSales(sales);
+
+      try {
+        const redemptions = JSON.parse(localStorage.getItem(PRODUCT_REDEEMS_KEY) || "[]");
+        const list = Array.isArray(redemptions) ? redemptions : [];
+        list.unshift({
+          id: redeemId,
+          saleId: `sale-${redeemId}`,
+          createdAt: now,
+          productId: line.product.id,
+          productName: line.product.name,
+          pointsCost: line.linePoints,
+          valueCop: (Number(line.product.price) || 0) * line.qty,
+          status: "pending",
+          deliveredAt: null,
+          pointsDeducted: true,
+          customer,
+          qty: line.qty,
+        });
+        localStorage.setItem(PRODUCT_REDEEMS_KEY, JSON.stringify(list.slice(0, 200)));
+      } catch {
+        /* ignore */
+      }
+
+      try {
+        const alertFn = window.EmailService?.sendRedeemAdminAlert;
+        if (typeof alertFn === "function") {
+          alertFn({
+            id: redeemId,
+            productName: line.qty > 1 ? `${line.product.name} x${line.qty}` : line.product.name,
+            pointsCost: line.linePoints,
+            valueCop: (Number(line.product.price) || 0) * line.qty,
+            createdAt: now,
+            customer,
+          }).catch((err) => {
+            console.warn("[loyalty] No se pudo avisar al admin del canje", err);
+          });
+        }
+      } catch (err) {
+        console.warn("[loyalty] No se pudo avisar al admin del canje", err);
+      }
+    });
+
+    saveRedeemProducts(products);
+    clearRedeemCart();
+    closeRedeemCart();
+
     try {
       const list = JSON.parse(localStorage.getItem(LOYALTY_HISTORY_KEY) || "[]");
       if (list[0]) {
@@ -1459,94 +2038,12 @@
       /* ignore */
     }
 
-    products[pIdx] = { ...product, stock: stock - 1 };
-    saveShopProducts(products);
-
-    const saleId = `sale-${Date.now().toString(36)}`;
-    const redeemId = `predeem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    const customer = {
-      userId: user.id,
-      name: user.name,
-      docType: user.docType,
-      docNumber: user.docNumber,
-      phone: user.phone,
-      email: user.email || "",
-    };
-
-    const sales = loadShopSales();
-    sales.unshift({
-      id: saleId,
-      createdAt: now,
-      total: Number(product.price) || 0,
-      units: 1,
-      items: [
-        {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          qty: 1,
-          lineTotal: Number(product.price) || 0,
-          pointsCost: cost,
-        },
-      ],
-      source: "loyalty-points",
-      redeemId,
-      customer,
-    });
-    saveShopSales(sales);
-
-    try {
-      const redemptions = JSON.parse(localStorage.getItem(PRODUCT_REDEEMS_KEY) || "[]");
-      const list = Array.isArray(redemptions) ? redemptions : [];
-      list.unshift({
-        id: redeemId,
-        saleId,
-        createdAt: now,
-        productId: product.id,
-        productName: product.name,
-        pointsCost: cost,
-        valueCop: Number(product.price) || 0,
-        status: "pending",
-        deliveredAt: null,
-        pointsDeducted: true,
-        customer,
-      });
-      localStorage.setItem(PRODUCT_REDEEMS_KEY, JSON.stringify(list.slice(0, 200)));
-    } catch {
-      /* ignore */
-    }
-
-    users[idx] = user;
-    saveLoyaltyUsers(users);
-    try {
-      renderPublicShop();
-    } catch {
-      /* ignore */
-    }
-
-    const alertPayload = {
-      id: redeemId,
-      productName: product.name,
-      pointsCost: cost,
-      valueCop: Number(product.price) || 0,
-      createdAt: now,
-      customer,
-    };
-    try {
-      const alertFn = window.EmailService?.sendRedeemAdminAlert;
-      if (typeof alertFn === "function") {
-        alertFn(alertPayload).catch((err) => {
-          console.warn("[loyalty] No se pudo avisar al admin del canje", err);
-        });
-      }
-    } catch (err) {
-      console.warn("[loyalty] No se pudo avisar al admin del canje", err);
-    }
+    persistUser(user);
 
     lastRedeemWhatsApp = {
-      id: redeemId,
-      productName: product.name,
-      pointsCost: cost,
+      id: batchId,
+      items: redeemedItems,
+      totalPoints,
       balance: user.points,
       customer,
     };
@@ -1554,12 +2051,20 @@
     const success = document.getElementById("redeem-success");
     const successText = document.getElementById("redeem-success-text");
     if (successText) {
-      successText.textContent = `Canjeaste ${product.name} por ${cost} puntos. Te quedan ${user.points} pts. Coordina la entrega por WhatsApp.`;
+      successText.textContent = `Canjeaste ${lines.length} producto${lines.length === 1 ? "" : "s"} por ${totalPoints} puntos. Te quedan ${user.points} pts. Coordina la entrega por WhatsApp.`;
     }
     if (success) success.hidden = false;
     showAuthError("redeem-error", "");
-    renderDashboard(user, { keepRedeemSuccess: true });
-    window.AppShell?.toast?.(`Canje exitoso: ${product.name}`);
+    window.AppShell?.toast?.("Canje realizado con éxito");
+    return user;
+  }
+
+  function getLoggedInUser() {
+    const users = loadLoyaltyUsers();
+    const sessionId = getSessionUserId();
+    const idx = users.findIndex((u) => u.id === sessionId && u.emailVerified);
+    if (idx < 0) return null;
+    return syncUserPoints(users[idx]);
   }
 
   function renderDashboard(user, opts = {}) {
@@ -1571,11 +2076,12 @@
     const products = redeemableProducts();
     updatePointsProgress(points, products);
     renderRedeemProducts(user);
+    updateRedeemCartBadge();
 
     document.getElementById("loyalty-meta").innerHTML = `
-      <p><strong>Documento:</strong> ${user.docType} ${user.docNumber}</p>
-      <p><strong>Correo:</strong> ${user.email}</p>
-      <p><strong>Teléfono:</strong> ${user.phone}</p>
+      <p><strong>Documento:</strong> ${escapeShopHtml(user.docType)} ${escapeShopHtml(user.docNumber)}</p>
+      <p><strong>Correo:</strong> ${escapeShopHtml(user.email)}</p>
+      <p><strong>Teléfono:</strong> ${escapeShopHtml(user.phone)}</p>
     `;
 
     const success = document.getElementById("redeem-success");
@@ -1615,6 +2121,7 @@
     if (idx >= 0) {
       users[idx].verifyCode = code;
       users[idx].verifySentAt = new Date().toISOString();
+      users[idx].verifyExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
       saveLoyaltyUsers(users);
     }
 
@@ -1666,6 +2173,18 @@
     e.preventDefault();
     openLoyaltyTerms();
   });
+  document.getElementById("btn-open-terms-google")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    openLoyaltyTerms();
+  });
+  document.getElementById("btn-google-auth")?.addEventListener("click", handleGoogleAuth);
+  document.getElementById("btn-google-complete-back")?.addEventListener("click", () => {
+    pendingGoogleProfile = null;
+    pendingGoogleUserId = null;
+    googleCompleteForm?.reset();
+    showAuthError("google-complete-error", "");
+    showPuntosView("auth");
+  });
   document.getElementById("loyalty-terms-accept")?.addEventListener("click", () => {
     const box = document.getElementById("register-accept-terms");
     if (box) box.checked = true;
@@ -1696,6 +2215,7 @@
     if (idx < 0) return { ok: false, message: "Cuenta no encontrada." };
     users[idx].recoverCode = code;
     users[idx].recoverSentAt = new Date().toISOString();
+    users[idx].recoverExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     saveLoyaltyUsers(users);
 
     const lead = document.getElementById("recover-lead");
@@ -1743,7 +2263,7 @@
     const data = Object.fromEntries(new FormData(registerForm).entries());
     const name = String(data.name || "").trim();
     const docType = String(data.docType || "CC");
-    const docNumber = normalizeDoc(data.docNumber);
+    const docNumber = normalizeDoc(data.docNumber, docType);
     const email = normalizeEmail(data.email);
     const phone = normalizePhone(data.phone);
     const password = String(data.password || "");
@@ -1752,6 +2272,11 @@
 
     if (!name || !docNumber || !email || !phone || !password) {
       showAuthError("register-error", "Completa todos los campos.");
+      return;
+    }
+    const docError = validateDocNumber(docType, docNumber);
+    if (docError) {
+      showAuthError("register-error", docError);
       return;
     }
     if (!acceptTerms) {
@@ -1769,7 +2294,7 @@
     }
 
     const users = loadLoyaltyUsers();
-    if (users.some((u) => normalizeDoc(u.docNumber) === docNumber && u.docType === docType)) {
+    if (users.some((u) => normalizeDoc(u.docNumber, docType) === docNumber && u.docType === docType)) {
       showAuthError("register-error", "Ese documento ya está registrado. Inicia sesión.");
       return;
     }
@@ -1837,18 +2362,31 @@
     e.preventDefault();
     const data = Object.fromEntries(new FormData(loginForm).entries());
     const docType = String(data.docType || "CC");
-    const docNumber = normalizeDoc(data.docNumber);
+    const docNumber = normalizeDoc(data.docNumber, docType);
     const email = normalizeEmail(data.email);
     const password = String(data.password || "");
+    const throttleScope = `loyalty:${docType}:${docNumber}:${email}`;
+
+    if (window.Security?.isLoginBlocked?.(throttleScope)) {
+      showAuthError("login-error", window.Security.loginBlockMessage(throttleScope));
+      return;
+    }
+
+    const docError = validateDocNumber(docType, docNumber);
+    if (docError) {
+      showAuthError("login-error", docError);
+      return;
+    }
     const users = loadLoyaltyUsers();
     const user = users.find(
       (u) =>
         u.docType === docType &&
-        normalizeDoc(u.docNumber) === docNumber &&
+        normalizeDoc(u.docNumber, docType) === docNumber &&
         normalizeEmail(u.email) === email
     );
 
     if (!user) {
+      window.Security?.registerLoginFailure?.(throttleScope);
       showAuthError("login-error", "No encontramos esa cuenta. Revisa los datos o regístrate.");
       return;
     }
@@ -1859,6 +2397,10 @@
     }
 
     if (!user.passwordHash || !user.passwordSalt) {
+      if (user.googleId || user.authProvider === "google") {
+        showAuthError("login-error", "Esta cuenta usa Google. Pulsa «Continuar con Google».");
+        return;
+      }
       showAuthError(
         "login-error",
         "Tu cuenta aún no tiene contraseña. Usa Recuperar contraseña para crear una."
@@ -1868,10 +2410,12 @@
 
     const ok = await verifyPassword(password, user.passwordSalt, user.passwordHash);
     if (!ok) {
+      window.Security?.registerLoginFailure?.(throttleScope);
       showAuthError("login-error", "Contraseña incorrecta.");
       return;
     }
 
+    window.Security?.clearLoginFailures?.(throttleScope);
     setSession(user.id);
     renderDashboard(user);
   });
@@ -1881,13 +2425,18 @@
     const submitBtn = recoverRequestForm.querySelector('button[type="submit"]');
     const data = Object.fromEntries(new FormData(recoverRequestForm).entries());
     const docType = String(data.docType || "CC");
-    const docNumber = normalizeDoc(data.docNumber);
+    const docNumber = normalizeDoc(data.docNumber, docType);
     const email = normalizeEmail(data.email);
     const users = loadLoyaltyUsers();
+    const docError = validateDocNumber(docType, docNumber);
+    if (docError) {
+      showAuthError("recover-request-error", docError);
+      return;
+    }
     const user = users.find(
       (u) =>
         u.docType === docType &&
-        normalizeDoc(u.docNumber) === docNumber &&
+        normalizeDoc(u.docNumber, docType) === docNumber &&
         normalizeEmail(u.email) === email
     );
     if (!user) {
@@ -1924,6 +2473,11 @@
       showAuthError("recover-reset-error", "Código incorrecto. Revisa e intenta otra vez.");
       return;
     }
+    const recoverExp = Date.parse(users[idx].recoverExpiresAt || "") || 0;
+    if (recoverExp && Date.now() > recoverExp) {
+      showAuthError("recover-reset-error", "El código expiró. Solicita uno nuevo.");
+      return;
+    }
     const pwError = validatePassword(password);
     if (pwError) {
       showAuthError("recover-reset-error", pwError);
@@ -1939,6 +2493,7 @@
     users[idx].passwordHash = bundle.hash;
     users[idx].recoverCode = "";
     users[idx].recoverSentAt = "";
+    users[idx].recoverExpiresAt = "";
     users[idx].emailVerified = true;
     saveLoyaltyUsers(users);
     pendingRecoverUserId = null;
@@ -1970,8 +2525,14 @@
       showAuthError("verify-error", "Código incorrecto. Revisa e intenta otra vez.");
       return;
     }
+    const verifyExp = Date.parse(users[idx].verifyExpiresAt || "") || 0;
+    if (verifyExp && Date.now() > verifyExp) {
+      showAuthError("verify-error", "El código expiró. Pulsa Reenviar código.");
+      return;
+    }
     users[idx].emailVerified = true;
     users[idx].verifyCode = "";
+    users[idx].verifyExpiresAt = "";
     saveLoyaltyUsers(users);
     setSession(users[idx].id);
     verifyForm.reset();
@@ -1985,12 +2546,111 @@
     startEmailVerification(user);
   });
 
+  googleCompleteForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!pendingGoogleProfile) {
+      showAuthError("google-complete-error", "Sesión de Google expirada. Vuelve a intentar.");
+      showPuntosView("auth");
+      return;
+    }
+
+    const submitBtn = googleCompleteForm.querySelector('button[type="submit"]');
+    const data = Object.fromEntries(new FormData(googleCompleteForm).entries());
+    const name = String(data.name || pendingGoogleProfile.name || "").trim();
+    const email = normalizeEmail(data.email || pendingGoogleProfile.email);
+    const docType = String(data.docType || "CC");
+    const docNumber = normalizeDoc(data.docNumber, docType);
+    const phone = normalizePhone(data.phone);
+    const acceptTerms = data.acceptTerms === "on" || data.acceptTerms === "true";
+
+    if (!docNumber || !phone) {
+      showAuthError("google-complete-error", "Completa documento y WhatsApp.");
+      return;
+    }
+    const docError = validateDocNumber(docType, docNumber);
+    if (docError) {
+      showAuthError("google-complete-error", docError);
+      return;
+    }
+    if (!acceptTerms) {
+      showAuthError("google-complete-error", "Debes aceptar los términos y condiciones.");
+      return;
+    }
+
+    const users = loadLoyaltyUsers();
+    const duplicateDoc = users.some(
+      (u) =>
+        u.id !== pendingGoogleUserId &&
+        u.docType === docType &&
+        normalizeDoc(u.docNumber, docType) === docNumber
+    );
+    if (duplicateDoc) {
+      showAuthError("google-complete-error", "Ese documento ya está registrado.");
+      return;
+    }
+
+    let user = pendingGoogleUserId
+      ? users.find((u) => u.id === pendingGoogleUserId)
+      : null;
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Activando…";
+    }
+
+    if (user) {
+      user.name = name || user.name;
+      user.email = email || user.email;
+      user.docType = docType;
+      user.docNumber = docNumber;
+      user.phone = phone;
+      user.googleId = pendingGoogleProfile.sub;
+      user.authProvider = "google";
+      user.googlePicture = pendingGoogleProfile.picture || user.googlePicture || "";
+      user.emailVerified = true;
+      user.acceptedTermsAt = user.acceptedTermsAt || new Date().toISOString();
+    } else {
+      user = {
+        id: crypto.randomUUID(),
+        name,
+        docType,
+        docNumber,
+        email,
+        phone,
+        googleId: pendingGoogleProfile.sub,
+        authProvider: "google",
+        googlePicture: pendingGoogleProfile.picture || "",
+        emailVerified: true,
+        points: 0,
+        acceptedTermsAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      users.push(user);
+    }
+
+    saveLoyaltyUsers(users);
+    pendingGoogleProfile = null;
+    pendingGoogleUserId = null;
+    googleCompleteForm.reset();
+    setSession(user.id);
+    window.AppShell?.toast?.("Cuenta activada con Google");
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Activar cuenta";
+    }
+    renderDashboard(user);
+  });
+
   document.getElementById("btn-loyalty-logout")?.addEventListener("click", () => {
     setSession("");
     pendingVerifyUserId = null;
     pendingRecoverUserId = null;
+    pendingGoogleProfile = null;
+    pendingGoogleUserId = null;
     loginForm?.reset();
     registerForm?.reset();
+    googleCompleteForm?.reset();
     recoverRequestForm?.reset();
     recoverResetForm?.reset();
     showPuntosView("auth");
@@ -2050,24 +2710,94 @@
     openRedeemWhatsApp();
   });
 
-  document.getElementById("loyalty-redeem-grid")?.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".btn-redeem-product");
+  document.getElementById("btn-redeem-cart")?.addEventListener("click", () => {
+    const user = getLoggedInUser();
+    if (!user) {
+      window.AppShell?.toast?.("Inicia sesión para ver tu carrito de canje");
+      return;
+    }
+    openRedeemCart(user);
+  });
+
+  document.querySelectorAll("[data-close-redeem-cart]").forEach((el) => {
+    el.addEventListener("click", closeRedeemCart);
+  });
+
+  redeemCartList?.addEventListener("click", (e) => {
+    const user = getLoggedInUser();
+    if (!user) return;
+    const row = e.target.closest(".mkt-cart-item");
+    if (!row) return;
+    const productId = row.getAttribute("data-redeem-cart-id");
+    let cart = loadRedeemCart();
+    const item = cart.find((c) => c.productId === productId);
+    if (!item) return;
+
+    if (e.target.closest("[data-remove-redeem-cart]")) {
+      cart = cart.filter((c) => c.productId !== productId);
+      saveRedeemCart(cart);
+      renderRedeemCart(user);
+      renderRedeemProducts(user);
+      updatePointsProgress(user.points, redeemableProducts());
+      return;
+    }
+
+    const qtyBtn = e.target.closest("[data-redeem-qty]");
+    if (!qtyBtn) return;
+    const delta = Number(qtyBtn.getAttribute("data-redeem-qty"));
+    const product = loadRedeemProducts().find((p) => p.id === productId);
+    if (!product) return;
+
+    if (delta > 0) {
+      const products = loadRedeemProducts();
+      const cartTotal = redeemCartPointsTotal(
+        cart,
+        Object.fromEntries(products.map((p) => [p.id, p]))
+      );
+      const unitCost = productPointsCost(product);
+      if (cartTotal + unitCost > (user.points || 0)) {
+        window.AppShell?.toast?.("No tienes puntos suficientes para agregar otro");
+        return;
+      }
+      if ((item.qty || 0) + 1 > (Number(product.stock) || 0)) {
+        window.AppShell?.toast?.("No hay más unidades disponibles");
+        return;
+      }
+    }
+
+    item.qty = (item.qty || 0) + delta;
+    if (item.qty <= 0) cart = cart.filter((c) => c.productId !== productId);
+    saveRedeemCart(cart);
+    renderRedeemCart(user);
+    renderRedeemProducts(user);
+    updatePointsProgress(user.points, redeemableProducts());
+  });
+
+  document.getElementById("btn-redeem-checkout")?.addEventListener("click", async () => {
+    const user = getLoggedInUser();
+    if (!user) {
+      window.AppShell?.toast?.("Inicia sesión para canjear");
+      return;
+    }
+    const updated = await redeemCartWithPoints(user);
+    if (updated) renderDashboard(updated, { keepRedeemSuccess: true });
+  });
+
+  document.getElementById("loyalty-redeem-grid")?.addEventListener("click", (e) => {
+    if (handlePublicCarouselClick(e)) return;
+    const btn = e.target.closest(".btn-add-redeem-cart");
     if (!btn || btn.disabled) return;
     const productId = btn.getAttribute("data-product-id");
     if (!productId) return;
-
-    const product = loadShopProducts().find((p) => p.id === productId);
-    const cost = product ? pointsCostForProduct(product.price) : 0;
-    const productName = product?.name || "este producto";
-    const ok = await openPublicConfirm({
-      title: "Confirmar canje",
-      message: `Vas a canjear ${productName} por ${cost} puntos. Se descontarán al instante; luego coordina la entrega por WhatsApp.`,
-      confirmLabel: "Sí, canjear",
-      cancelLabel: "Cancelar",
-    });
-    if (!ok) return;
-    redeemProductWithPoints(productId);
+    const user = getLoggedInUser();
+    if (!user) {
+      showAuthError("redeem-error", "Debes iniciar sesión para canjear.");
+      return;
+    }
+    addToRedeemCart(productId, user);
+    updatePointsProgress(user.points, redeemableProducts());
   });
+  initCarouselSwipe(document.getElementById("loyalty-redeem-grid"));
 
   /** Respaldo si EmailService aún no tiene sendBookingAdminAlert (caché vieja) */
   async function notifyAdminBookingFallback(booking) {
@@ -2093,6 +2823,8 @@
       status: booking?.status || "pending_confirmation",
       source: booking?.source || "public",
       business: booking?.business || c.fromName || "BarberHome",
+      clientFingerprint:
+        booking?.clientFingerprint || window.Security?.getDeviceId?.() || "",
     };
     const res = await fetch(url, {
       method: "POST",
@@ -2106,6 +2838,7 @@
         admin_email: admin,
         client_name: payloadBooking.name,
         client_phone: payloadBooking.phone,
+        client_fingerprint: payloadBooking.clientFingerprint,
         service: payloadBooking.serviceName,
         date: payloadBooking.date,
         time: payloadBooking.time,
@@ -2127,37 +2860,143 @@
     return { ok: true, message: "Aviso enviado al administrador" };
   }
 
+  function showBookingError(message) {
+    const el = document.getElementById("booking-error");
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message || "";
+  }
+
+  function setBookingLoading(active) {
+    if (bookingLoading) bookingLoading.hidden = !active;
+    form?.classList.toggle("is-submitting", active);
+    if (bookingSubmitBtn) {
+      bookingSubmitBtn.disabled = active;
+      bookingSubmitBtn.classList.toggle("is-loading", active);
+      bookingSubmitBtn.setAttribute("aria-busy", active ? "true" : "false");
+    }
+    if (bookingSubmitLabel) {
+      bookingSubmitLabel.textContent = active ? "Reservando…" : "Reservar";
+    }
+    form
+      ?.querySelectorAll("input, select, button.book-nav__back")
+      .forEach((el) => {
+        if (active) {
+          el.dataset.bookingWasDisabled = el.disabled ? "1" : "0";
+          el.disabled = true;
+          return;
+        }
+        if (el.dataset.bookingWasDisabled === "0") el.disabled = false;
+        delete el.dataset.bookingWasDisabled;
+      });
+  }
+
+  function sanitizeBookingPhone(value) {
+    return String(value || "").replace(/\D/g, "");
+  }
+
+  function validateBookingName(name) {
+    const trimmed = String(name || "").trim();
+    if (!trimmed) return "El nombre es obligatorio.";
+    if (trimmed.length < 2) return "Escribe tu nombre completo.";
+    return "";
+  }
+
+  function validateBookingPhoneLocal(local) {
+    const digits = sanitizeBookingPhone(local);
+    if (!digits) return "El WhatsApp es obligatorio.";
+    if (digits.length < 7) return "Escribe un número de WhatsApp válido (mín. 7 dígitos).";
+    if (digits.length > 15) return "El número de WhatsApp es demasiado largo.";
+    return "";
+  }
+
+  function bindBookingPhoneInput() {
+    bookingPhoneLocal?.addEventListener("input", () => {
+      const next = sanitizeBookingPhone(bookingPhoneLocal.value);
+      if (bookingPhoneLocal.value !== next) bookingPhoneLocal.value = next;
+    });
+  }
+
+  function findRecentClientBooking(date, time, phone) {
+    if (!window.BookingStore || !date || !time || !phone) return null;
+    const recentMs = 120_000;
+    const now = Date.now();
+    return (
+      window.BookingStore.loadBookings().find((b) => {
+        if (!window.BookingStore.isActive(b)) return false;
+        if (b.date !== date || b.time !== time || b.phone !== phone) return false;
+        const created = Date.parse(b.createdAt || "") || 0;
+        return now - created < recentMs;
+      }) || null
+    );
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const local = String(bookingPhoneLocal?.value || "").trim();
-    if (!local) {
+    if (isBookingSubmitting) return;
+    showBookingError("");
+
+    const local = sanitizeBookingPhone(bookingPhoneLocal?.value || "");
+    if (bookingPhoneLocal) bookingPhoneLocal.value = local;
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    const name = String(data.name || "").trim();
+
+    const nameError = validateBookingName(name);
+    if (nameError) {
+      showBookingError(nameError);
+      bookingNameInput?.focus();
+      return;
+    }
+
+    const phoneError = validateBookingPhoneLocal(local);
+    if (phoneError) {
+      showBookingError(phoneError);
       bookingPhoneLocal?.focus();
       return;
     }
+
     const fullPhone = (() => {
       const cc = bookingCc?.value || "+57";
-      const digits = local.replace(/[^\d]/g, "");
-      return `${cc}${digits}`;
+      return `${cc}${local}`;
     })();
     if (phoneFullInput) phoneFullInput.value = fullPhone;
 
-    const data = Object.fromEntries(new FormData(form).entries());
+    data.name = name;
     data.phone = fullPhone;
     const duration = selectedType?.duration || 60;
     const date = data.date || selectedDate;
     const time = data.time || selectedTime;
 
-    // Revalidar ocupación (local + Google) justo antes de reservar
-    if (date && time && !isSlotOpen(date, time, duration)) {
-      window.alert("Esa hora ya no está disponible. Elige otra.");
-      closeTimesOverlay();
-      showCalendar();
+    // Límite: máx. 3 citas activas por WhatsApp + rate por dispositivo/IP local
+    const loadBookingsFn = () =>
+      window.BookingStore?.loadBookings?.() ||
+      (() => {
+        try {
+          return JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
+        } catch {
+          return [];
+        }
+      })();
+    const phoneLimit = window.Security?.checkBookingPhoneLimit?.(fullPhone, loadBookingsFn);
+    if (phoneLimit && !phoneLimit.ok) {
+      showBookingError(phoneLimit.message);
       return;
     }
+    const deviceLimit = window.Security?.checkBookingDeviceLimit?.();
+    if (deviceLimit && !deviceLimit.ok) {
+      showBookingError(deviceLimit.message);
+      return;
+    }
+    const clientFingerprint = window.Security?.getDeviceId?.() || "";
 
+    isBookingSubmitting = true;
+    setBookingLoading(true);
+
+    try {
     if (window.BookingStore && date && time) {
       const useGoogle = usesGoogleBusy();
-      const result = await window.BookingStore.bookAtomically({
+      let result = await window.BookingStore.bookAtomically({
         ...data,
         date,
         time,
@@ -2170,8 +3009,13 @@
         calendarId: useGoogle ? "gmail" : "barberhome",
         status: "pending_confirmation",
         source: "public",
-        name: data.name || "Cliente",
+        name,
+        clientFingerprint,
       });
+      if (!result.ok) {
+        const duplicate = findRecentClientBooking(date, time, fullPhone);
+        if (duplicate) result = { ok: true, booking: duplicate };
+      }
       if (!result.ok) {
         window.alert(result.message || "Esa hora ya no está disponible. Elige otra.");
         closeTimesOverlay();
@@ -2179,11 +3023,16 @@
         return;
       }
 
+      window.Security?.registerDeviceBooking?.();
+
       // Aviso al admin PRIMERO (no depender de Google OAuth)
       try {
         const alertFn =
           window.EmailService?.sendBookingAdminAlert || notifyAdminBookingFallback;
-        const alert = await alertFn(result.booking);
+        const alert = await alertFn({
+          ...result.booking,
+          clientFingerprint,
+        });
         if (alert?.ok) {
           window.AppShell?.toast?.("Aviso de reserva enviado a tu correo");
         } else if (alert && !alert.skipped) {
@@ -2237,15 +3086,21 @@
         business: config.title || "BarberHome",
         status: "pending_confirmation",
         source: "public",
+        clientFingerprint,
         createdAt: new Date().toISOString(),
       };
       const list = JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
       list.unshift(booking);
-      localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
+      if (window.BookingStore?.saveBookings) window.BookingStore.saveBookings(list);
+      else {
+        localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
+        window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
+      }
+      window.Security?.registerDeviceBooking?.();
       try {
         const alertFn =
           window.EmailService?.sendBookingAdminAlert || notifyAdminBookingFallback;
-        await alertFn(booking);
+        await alertFn({ ...booking, clientFingerprint });
       } catch (err) {
         console.warn("[booking] No se pudo avisar al admin por correo", err);
       }
@@ -2254,10 +3109,18 @@
     // Los puntos ya no se cargan solos: el barbero los asigna (5 pts por servicio).
     hideAll();
     ok.hidden = false;
+    } finally {
+      isBookingSubmitting = false;
+      setBookingLoading(false);
+    }
   });
+
+  bindDocNumberInputs();
+  bindBookingPhoneInput();
 
   document.getElementById("btn-book-another")?.addEventListener("click", () => {
     form?.reset();
+    showBookingError("");
     if (bookingPhoneLocal) bookingPhoneLocal.value = "";
     if (phoneFullInput) phoneFullInput.value = "";
     showServices();

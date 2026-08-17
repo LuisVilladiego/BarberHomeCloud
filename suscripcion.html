@@ -11,6 +11,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
   <body>
     <div class="app">
@@ -111,16 +113,16 @@
           <p class="section-lead" id="billing-period">Período de facturación: 17 jul 2026 - 17 ago 2026</p>
           <div class="usage-row">
             <p class="usage-stat">
-              <strong id="usage-used">42</strong>
+              <strong id="usage-used">0</strong>
               <span id="usage-label"> / 100 citas usadas este período</span>
             </p>
             <button class="btn btn--secondary" type="button" id="btn-history">Ver historial</button>
           </div>
           <div class="progress" aria-hidden="true">
-            <div class="progress__bar" id="usage-bar" style="width: 42%"></div>
+            <div class="progress__bar" id="usage-bar" style="width: 0%"></div>
           </div>
           <div class="progress__meta">
-            <span id="usage-pct">42% usado</span>
+            <span id="usage-pct">0% usado</span>
             <span id="usage-limit">Límite del plan: 100</span>
           </div>
         </section>
@@ -326,6 +328,8 @@
     </button>
     <div class="backdrop" aria-hidden="true"></div>
 
+    <script src="js/booking-store.js"></script>
+        <script src="js/security.js?v=20260816"></script>
     <script src="js/app.js"></script>
     <script src="js/suscripcion.js"></script>
   </body>

@@ -26,6 +26,9 @@
   });
 
   function safeParse(raw, fallback) {
+    if (window.Security?.safeJsonParse) {
+      return window.Security.safeJsonParse(raw, fallback);
+    }
     try {
       return JSON.parse(raw || "") ?? fallback;
     } catch {
@@ -54,7 +57,10 @@
 
   function saveBookings(list) {
     localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
-    bc?.postMessage({ type: "bookings-updated" });
+    const payload = { type: "bookings-updated" };
+    bc?.postMessage(payload);
+    listeners.forEach((fn) => fn(payload));
+    window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
   }
 
   function findConflicts(bookings, date, time, duration, excludeId) {
@@ -92,17 +98,35 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  const slotChains = new Map();
+
+  function runSlotExclusive(date, time, work) {
+    const key = lockKey(date, time);
+    const tail = slotChains.get(key) || Promise.resolve();
+    const run = tail.catch(() => {}).then(work);
+    slotChains.set(key, run);
+    return run.finally(() => {
+      if (slotChains.get(key) === run) slotChains.delete(key);
+    });
+  }
+
   /**
    * Intenta reservar un hueco de forma concurrente-segura (multi-pestaña).
    * Si dos clientes compiten, gana el claim con `at` más antiguo.
    */
   async function bookAtomically(bookingInput) {
-    const duration = Number(bookingInput.duration) || 60;
     const date = bookingInput.date;
     const time = bookingInput.time;
     if (!date || !time) {
       return { ok: false, reason: "invalid", message: "Fecha y hora son obligatorias." };
     }
+    return runSlotExclusive(date, time, () => bookAtomicallyCore(bookingInput));
+  }
+
+  async function bookAtomicallyCore(bookingInput) {
+    const duration = Number(bookingInput.duration) || 60;
+    const date = bookingInput.date;
+    const time = bookingInput.time;
 
     const claim = {
       id: crypto.randomUUID(),
