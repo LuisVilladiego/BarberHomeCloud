@@ -140,13 +140,11 @@
       { id: "barbercloud", label: "Calendario en BarberCloud", type: "local" },
     ];
     const g = window.GoogleCalendar?.getConnection?.();
-    if (g?.email) {
-      list.splice(1, 0, {
-        id: "gmail",
-        label: g.email,
-        type: "google",
-      });
-    }
+    list.splice(1, 0, {
+      id: "gmail",
+      label: g?.email || "Google Calendar (sin conectar)",
+      type: "google",
+    });
     return list;
   }
 

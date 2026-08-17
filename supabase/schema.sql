@@ -61,7 +61,7 @@ create index if not exists citas_phone_idx on public.citas (phone);
 create index if not exists citas_status_idx on public.citas (status);
 
 create table if not exists public.productos (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key,
   name text not null,
   description text default '',
   kind text not null default 'sale' check (kind in ('sale', 'redeem')),
@@ -76,7 +76,7 @@ create table if not exists public.productos (
 
 create table if not exists public.inventario (
   id uuid primary key default gen_random_uuid(),
-  producto_id uuid not null references public.productos (id) on delete cascade,
+  producto_id text references public.productos (id) on delete cascade,
   delta integer not null,
   reason text default '',
   meta jsonb not null default '{}'::jsonb,
@@ -100,7 +100,7 @@ create index if not exists puntos_cliente_idx on public.puntos (cliente_id);
 create table if not exists public.canjes (
   id uuid primary key default gen_random_uuid(),
   cliente_id uuid references public.clientes (id) on delete set null,
-  producto_id uuid references public.productos (id) on delete set null,
+  producto_id text references public.productos (id) on delete set null,
   product_name text default '',
   points_cost integer default 0,
   value_cop numeric(12, 2) default 0,

@@ -256,8 +256,21 @@
       return;
     }
     const rep = r.report || {};
-    toast(`Subido: ${rep.citas || 0} citas, ${rep.clientes || 0} clientes, ${rep.productos || 0} productos`);
-    if (rep.errores?.length) console.warn("[Supabase migrate]", rep.errores);
+    const locales =
+      (rep.locales?.citas || 0) + (rep.locales?.clientes || 0) + (rep.locales?.productos || 0);
+    if (!locales) {
+      toast(
+        "Este navegador no tiene datos locales. Ábrelo en localhost (donde ya usabas BarberHome) y pulsa de nuevo."
+      );
+      return;
+    }
+    toast(
+      `Subido: ${rep.citas || 0} citas, ${rep.clientes || 0} clientes, ${rep.productos || 0} productos`
+    );
+    if (rep.errores?.length) {
+      console.warn("[Supabase migrate]", rep.errores);
+      toast(`Error al subir: ${rep.errores[0]}`);
+    }
   });
 
   fillForm();

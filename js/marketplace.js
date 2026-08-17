@@ -141,7 +141,7 @@
   }
 
   function uid() {
-    return `prod-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    return crypto.randomUUID ? crypto.randomUUID() : `prod-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   }
 
   function monthLabel(date = new Date()) {

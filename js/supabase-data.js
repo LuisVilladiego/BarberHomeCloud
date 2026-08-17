@@ -63,16 +63,44 @@
     };
   }
 
+  function isUuid(id) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      String(id || "")
+    );
+  }
+
+  /** Postgres uuid no acepta ids tipo prod-xxxx */
+  function ensureUuid(id) {
+    const raw = String(id || "").trim();
+    if (isUuid(raw)) return raw;
+    if (typeof crypto !== "undefined" && crypto.randomUUID && !raw) {
+      return crypto.randomUUID();
+    }
+    let hex = "";
+    const src = raw || "anon";
+    for (let i = 0; hex.length < 32; i += 1) {
+      hex += ((src.charCodeAt(i % src.length) + i * 17) % 256).toString(16).padStart(2, "0");
+    }
+    hex = hex.slice(0, 32);
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+  }
+
+  function compactImages(images) {
+    return (Array.isArray(images) ? images : [])
+      .filter((src) => typeof src === "string" && src && !src.startsWith("data:"))
+      .slice(0, 8);
+  }
+
   function productToRow(p, kind) {
     return {
-      id: p.id,
+      id: ensureUuid(p.id),
       name: p.name,
       description: p.description || "",
       kind: kind || p.kind || "sale",
       price: p.price ?? 0,
       points_cost: p.pointsCost ?? 0,
       stock: Number(p.stock) || 0,
-      images: Array.isArray(p.images) ? p.images : [],
+      images: compactImages(p.images),
       active: true,
       updated_at: new Date().toISOString(),
     };
@@ -158,14 +186,19 @@
   async function upsertProducto(product, kind) {
     const client = db();
     if (!client || !product?.id) return { ok: false, skipped: true };
-    const { error } = await client
-      .from("productos")
-      .upsert(productToRow(product, kind), { onConflict: "id" });
+    let images = Array.isArray(product.images) ? product.images : [];
+    try {
+      images = await uploadProductImages(images, ensureUuid(product.id));
+    } catch (err) {
+      console.warn("[Supabase] imágenes producto", err);
+    }
+    const row = productToRow({ ...product, images }, kind);
+    const { error } = await client.from("productos").upsert(row, { onConflict: "id" });
     if (error) {
       console.warn("[Supabase] upsert producto", error.message);
       return { ok: false, message: error.message };
     }
-    return { ok: true };
+    return { ok: true, id: row.id };
   }
 
   async function fetchProductos(kind) {
@@ -294,10 +327,17 @@
   /** Migra datos locales → Supabase (idempotente por id) */
   async function migrateFromLocalStorage() {
     if (!enabled()) return { ok: false, message: "Supabase no configurado" };
-    const report = { citas: 0, clientes: 0, productos: 0, errores: [] };
+    const report = {
+      citas: 0,
+      clientes: 0,
+      productos: 0,
+      locales: { citas: 0, clientes: 0, productos: 0 },
+      errores: [],
+    };
 
     try {
       const bookings = JSON.parse(localStorage.getItem("barbercloud.bookings") || "[]");
+      report.locales.citas = Array.isArray(bookings) ? bookings.length : 0;
       for (const b of bookings) {
         const r = await upsertCita(b);
         if (r.ok) report.citas += 1;
@@ -309,9 +349,11 @@
 
     try {
       const users = JSON.parse(localStorage.getItem("barbercloud.loyalty_users") || "[]");
+      report.locales.clientes = Array.isArray(users) ? users.length : 0;
       for (const u of users) {
         const r = await upsertCliente(u);
         if (r.ok) report.clientes += 1;
+        else if (r.message) report.errores.push(r.message);
       }
     } catch (e) {
       report.errores.push(String(e?.message || e));
@@ -319,16 +361,18 @@
 
     try {
       const sale = JSON.parse(localStorage.getItem("barbercloud.marketplace_products") || "[]");
-      for (const p of sale) {
-        const images = await uploadProductImages(p.images || [], p.id);
-        const r = await upsertProducto({ ...p, images }, "sale");
-        if (r.ok) report.productos += 1;
-      }
       const redeem = JSON.parse(localStorage.getItem("barbercloud.loyalty_redeem_products") || "[]");
-      for (const p of redeem) {
-        const images = await uploadProductImages(p.images || [], p.id);
-        const r = await upsertProducto({ ...p, images }, "redeem");
+      report.locales.productos =
+        (Array.isArray(sale) ? sale.length : 0) + (Array.isArray(redeem) ? redeem.length : 0);
+      for (const p of sale) {
+        const r = await upsertProducto(p, "sale");
         if (r.ok) report.productos += 1;
+        else if (r.message) report.errores.push(r.message);
+      }
+      for (const p of redeem) {
+        const r = await upsertProducto(p, "redeem");
+        if (r.ok) report.productos += 1;
+        else if (r.message) report.errores.push(r.message);
       }
     } catch (e) {
       report.errores.push(String(e?.message || e));
