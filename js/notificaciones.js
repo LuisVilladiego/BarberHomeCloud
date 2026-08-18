@@ -37,7 +37,6 @@
     list = normalizeNotificationTypes(list);
     list = mergeFromBookings(list);
     list = mergeReminderNotifsFromBookings(list);
-    if (!list.length) list = seedDemo();
     saveNotifications(list);
     return list;
   }
@@ -111,68 +110,6 @@
 
   function saveNotifications(list) {
     localStorage.setItem(NOTIF_KEY, JSON.stringify(list.slice(0, 300)));
-  }
-
-  function seedDemo() {
-    const now = new Date();
-    const today = new Date(now);
-    const anteayer = new Date(now);
-    anteayer.setDate(anteayer.getDate() - 2);
-
-    return [
-      {
-        id: "demo-1",
-        title: "Jaime y Vicente - Agendar cita en BarberHome -",
-        appointmentAt: isoAt(today, 14, 0),
-        createdAt: today.toISOString(),
-        type: "autoagenda",
-        read: false,
-      },
-      {
-        id: "demo-2",
-        title: "Jose Goldstein - Agendar cita en BarberHome -",
-        appointmentAt: isoAt(addDays(today, 1), 13, 0),
-        createdAt: today.toISOString(),
-        type: "autoagenda",
-        read: false,
-      },
-      {
-        id: "demo-3",
-        title: "Juan Miguel Vélez - Recordatorio enviado -",
-        appointmentAt: isoAt(addDays(today, -1), 9, 0),
-        createdAt: anteayer.toISOString(),
-        type: "recordatorio",
-        read: true,
-      },
-      {
-        id: "demo-4",
-        title: "Alexander Vargas - Recordatorio enviado -",
-        appointmentAt: isoAt(addDays(today, -1), 7, 0),
-        createdAt: anteayer.toISOString(),
-        type: "recordatorio",
-        read: true,
-      },
-      {
-        id: "demo-5",
-        title: "Alejandro Agudelo - Recordatorio enviado -",
-        appointmentAt: isoAt(addDays(today, -2), 17, 0),
-        createdAt: anteayer.toISOString(),
-        type: "recordatorio",
-        read: true,
-      },
-    ];
-  }
-
-  function addDays(d, n) {
-    const x = new Date(d);
-    x.setDate(x.getDate() + n);
-    return x;
-  }
-
-  function isoAt(date, h, m) {
-    const d = new Date(date);
-    d.setHours(h, m, 0, 0);
-    return d.toISOString();
   }
 
   function mergeFromBookings(existing) {

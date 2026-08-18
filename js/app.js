@@ -88,16 +88,16 @@
   function unreadNotificationCount() {
     try {
       const list = JSON.parse(localStorage.getItem("barbercloud.notifications") || "[]");
-      if (!Array.isArray(list) || !list.length) return 49;
+      if (!Array.isArray(list) || !list.length) return 0;
       return list.filter((n) => !n.read).length;
     } catch {
-      return 49;
+      return 0;
     }
   }
 
   function syncNotificationBadge() {
     const count = unreadNotificationCount();
-    const label = count > 49 ? "49+" : String(count);
+    const label = count > 99 ? "99+" : String(count);
     document.querySelectorAll(".notifications .badge-count").forEach((el) => {
       el.textContent = label;
       el.hidden = count <= 0;
