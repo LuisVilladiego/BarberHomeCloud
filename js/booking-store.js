@@ -57,6 +57,19 @@
   }
 
   let occupancyOverlay = [];
+  /** "all" = admin; "occupancy_only" = autoagenda pública (solo nube, sin caché local vieja). */
+  let availabilitySource = "all";
+
+  function setAvailabilitySource(mode) {
+    availabilitySource = mode === "occupancy_only" ? "occupancy_only" : "all";
+  }
+
+  function bookingsForAvailability() {
+    if (availabilitySource === "occupancy_only") {
+      return occupancyOverlay.slice();
+    }
+    return loadBookings();
+  }
 
   function setOccupancy(slots) {
     occupancyOverlay = (Array.isArray(slots) ? slots : []).map((s, i) => {
@@ -118,7 +131,7 @@
   }
 
   function isSlotFree(date, time, duration, excludeId) {
-    return findConflicts(loadBookings(), date, time, duration, excludeId).length === 0;
+    return findConflicts(bookingsForAvailability(), date, time, duration, excludeId).length === 0;
   }
 
   function lockKey(date, time) {
@@ -342,6 +355,7 @@
     cancelBooking,
     patchBooking,
     setOccupancy,
+    setAvailabilitySource,
     subscribe,
     notifyExternalUpdate,
     toMinutes,

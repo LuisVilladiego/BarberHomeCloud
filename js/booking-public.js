@@ -195,9 +195,11 @@
     window.Tenant?.setCurrent?.(negocio);
     const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
     applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
+    if (window.SupabaseData?.enabled?.()) {
+      window.BookingStore?.setAvailabilitySource?.("occupancy_only");
+    }
     try {
-      const slots = await window.SupabaseData.fetchOcupacion?.(negocio.slug);
-      if (slots?.length) window.BookingStore?.setOccupancy?.(slots);
+      await refreshPublicOccupancy(negocio.slug);
       const sale = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "sale");
       const redeem = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "redeem");
       localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(Array.isArray(sale) ? sale : []));
@@ -207,6 +209,36 @@
       );
     } catch (err) {
       console.warn("[booking] ocupacion/productos", err);
+    }
+  }
+
+  async function refreshPublicOccupancy(tenantSlug) {
+    const s = tenantSlug || slug;
+    if (!s || !window.SupabaseData?.enabled?.()) return;
+    try {
+      const slots = await window.SupabaseData.fetchOcupacion?.(s);
+      window.BookingStore?.setOccupancy?.(Array.isArray(slots) ? slots : []);
+    } catch (err) {
+      console.warn("[booking] ocupacion", err);
+    }
+  }
+
+  let occupancyPollId = null;
+  const OCCUPANCY_POLL_MS = 4000;
+
+  function startOccupancyPolling() {
+    stopOccupancyPolling();
+    if (!slug || !window.SupabaseData?.enabled?.()) return;
+    occupancyPollId = setInterval(() => {
+      if (!isAvailabilityViewActive()) return;
+      refreshPublicOccupancy(slug);
+    }, OCCUPANCY_POLL_MS);
+  }
+
+  function stopOccupancyPolling() {
+    if (occupancyPollId) {
+      clearInterval(occupancyPollId);
+      occupancyPollId = null;
     }
   }
 
@@ -439,6 +471,8 @@
   function startAvailabilityPolling() {
     stopAvailabilityPolling();
     lastBusyFingerprint = busyFingerprint();
+    startOccupancyPolling();
+    refreshPublicOccupancy(slug);
     // Primera pasada rápida y luego cada 5s mientras estés en calendario/horas
     availabilityPollId = setInterval(() => {
       pollAvailability({ force: true });
@@ -446,6 +480,7 @@
   }
 
   function stopAvailabilityPolling() {
+    stopOccupancyPolling();
     if (availabilityPollId) {
       clearInterval(availabilityPollId);
       availabilityPollId = null;
@@ -454,6 +489,7 @@
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden || !isAvailabilityViewActive()) return;
+    refreshPublicOccupancy(slug);
     pollAvailability({ force: true });
   });
 
@@ -463,9 +499,11 @@
     applyAvailabilityToUI();
   });
 
-  window.BookingStore?.subscribe?.(() => {
+  window.BookingStore?.subscribe?.((ev) => {
     if (!isAvailabilityViewActive()) return;
-    applyAvailabilityToUI();
+    if (ev?.type === "occupancy" || ev?.type === "bookings-updated" || ev?.type === "bookings-external-sync") {
+      applyAvailabilityToUI();
+    }
   });
 
   function renderCalendar() {
