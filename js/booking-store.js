@@ -76,13 +76,21 @@
     listeners.forEach((fn) => fn({ type: "occupancy" }));
   }
 
-  function saveBookings(list) {
-    const persisted = (Array.isArray(list) ? list : []).filter((b) => !b?.occupancyOnly);
-    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(persisted));
-    const payload = { type: "bookings-updated" };
+  function notifyListeners(payload) {
     bc?.postMessage(payload);
     listeners.forEach((fn) => fn(payload));
     window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
+  }
+
+  /** Tras actualizar localStorage desde Supabase (sin re-subir a la nube). */
+  function notifyExternalUpdate() {
+    notifyListeners({ type: "bookings-external-sync" });
+  }
+
+  function saveBookings(list) {
+    const persisted = (Array.isArray(list) ? list : []).filter((b) => !b?.occupancyOnly);
+    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(persisted));
+    notifyListeners({ type: "bookings-updated" });
     // Sync en segundo plano a Supabase (si está configurado)
     if (window.SupabaseData?.enabled?.()) {
       Promise.resolve()
@@ -335,6 +343,7 @@
     patchBooking,
     setOccupancy,
     subscribe,
+    notifyExternalUpdate,
     toMinutes,
     isActive,
   };

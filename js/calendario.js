@@ -644,7 +644,7 @@
     }
 
     closeModal();
-    render();
+    refreshCalendar();
     window.AppShell?.toast(`Cita agendada · ${name} · ${time}`);
   });
 
@@ -695,17 +695,62 @@
     window.AppShell?.toast("Cita cancelada · horario liberado");
   });
 
+  function refreshCalendar() {
+    if (isGoogleSource()) {
+      renderAndLoad();
+    } else {
+      render();
+    }
+  }
+
   store.subscribe(() => {
-    if (!isGoogleSource()) render();
+    refreshCalendar();
   });
+
+  window.addEventListener("barbercloud:bookings-changed", () => {
+    refreshCalendar();
+  });
+
+  let stopCitasLive = null;
+
+  function startLiveBookingsSync() {
+    if (!window.SupabaseData?.startCitasLiveSync) return;
+    stopCitasLive?.();
+    stopCitasLive = window.SupabaseData.startCitasLiveSync({
+      intervalMs: 4000,
+      onChange: () => refreshCalendar(),
+    });
+  }
+
   fillServices();
   fillSourceSelect();
   renderAndLoad();
-  setInterval(updateNowIndicator, 30000);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-      updateNowIndicator();
-      if (isGoogleSource()) renderAndLoad();
+
+  (async function bootCalendarSync() {
+    try {
+      await window.SupabaseData?.fetchOwnNegocio?.();
+    } catch {
+      /* ignore */
     }
+    startLiveBookingsSync();
+  })();
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    updateNowIndicator();
+    if (isGoogleSource()) {
+      renderAndLoad();
+      return;
+    }
+    window.SupabaseData?.syncCitasFromCloud?.().then((res) => {
+      if (res?.changed) refreshCalendar();
+    });
   });
+
+  window.addEventListener("pagehide", () => {
+    stopCitasLive?.();
+    window.SupabaseData?.stopCitasLiveSync?.();
+  });
+
+  setInterval(updateNowIndicator, 30000);
 })();

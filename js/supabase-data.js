@@ -7,6 +7,14 @@
     return window.SupabaseClient?.getClient?.() || null;
   }
 
+  function safeParse(raw, fallback) {
+    try {
+      return JSON.parse(raw || "") ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   function enabled() {
     return !!window.SupabaseClient?.isConfigured?.() && !!db();
   }
@@ -410,14 +418,102 @@
     return { ok: true, report };
   }
 
+  /** Baja citas de Supabase y fusiona con la caché local (sin re-subir). */
+  async function syncCitasFromCloud(options = {}) {
+    if (!enabled()) return { ok: false, skipped: true, changed: false };
+    const remote = await fetchCitas();
+    const localRaw = safeParse(localStorage.getItem("barbercloud.bookings"), []);
+    const local = Array.isArray(localRaw) ? localRaw.filter((b) => !b?.occupancyOnly) : [];
+    const byId = new Map(local.map((b) => [b.id, b]));
+
+    remote.forEach((b) => {
+      if (!b?.id) return;
+      byId.set(b.id, b);
+    });
+
+    const merged = Array.from(byId.values()).sort((a, b) => {
+      const ta = new Date(b.createdAt || b.date || 0).getTime();
+      const tb = new Date(a.createdAt || a.date || 0).getTime();
+      return ta - tb;
+    });
+
+    const nextJson = JSON.stringify(merged);
+    const prevJson = localStorage.getItem("barbercloud.bookings") || "";
+    const changed = nextJson !== prevJson || !!options.force;
+
+    if (changed) {
+      localStorage.setItem("barbercloud.bookings", nextJson);
+      window.BookingStore?.notifyExternalUpdate?.();
+    }
+
+    return { ok: true, changed, count: merged.length };
+  }
+
+  let citasLiveStop = null;
+
+  /** Polling + Realtime de Supabase para refrescar citas en el panel admin. */
+  function startCitasLiveSync(options = {}) {
+    if (citasLiveStop) citasLiveStop();
+    const intervalMs = Number(options.intervalMs) || 4000;
+    const onChange = typeof options.onChange === "function" ? options.onChange : () => {};
+    let pollId = null;
+    let channel = null;
+    let stopped = false;
+
+    const runSync = async (force = false) => {
+      if (stopped) return;
+      try {
+        const res = await syncCitasFromCloud({ force });
+        if (res.changed) onChange(res);
+      } catch (err) {
+        console.warn("[Supabase] sync citas", err);
+      }
+    };
+
+    runSync(true);
+
+    pollId = setInterval(() => runSync(false), intervalMs);
+
+    const client = db();
+    const nid = currentNegocioId();
+    if (client && nid) {
+      try {
+        channel = client
+          .channel(`citas-live-${nid}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "citas",
+              filter: `negocio_id=eq.${nid}`,
+            },
+            () => runSync(true)
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn("[Supabase] realtime citas", err);
+      }
+    }
+
+    citasLiveStop = () => {
+      stopped = true;
+      if (pollId) clearInterval(pollId);
+      if (channel && client) client.removeChannel(channel).catch(() => {});
+      citasLiveStop = null;
+    };
+
+    return citasLiveStop;
+  }
+
+  function stopCitasLiveSync() {
+    if (citasLiveStop) citasLiveStop();
+  }
+
   /** Baja datos remotos y refresca localStorage (caché offline) */
   async function pullToLocalCache() {
     if (!enabled()) return { ok: false, skipped: true };
-    const citas = await fetchCitas();
-    if (citas.length) {
-      localStorage.setItem("barbercloud.bookings", JSON.stringify(citas));
-      window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
-    }
+    const citasRes = await syncCitasFromCloud();
     const clientes = await fetchClientes();
     if (clientes.length) {
       localStorage.setItem("barbercloud.loyalty_users", JSON.stringify(clientes));
@@ -445,7 +541,12 @@
         )
       );
     }
-    return { ok: true, citas: citas.length, clientes: clientes.length, productos: sale.length + redeem.length };
+    return {
+      ok: true,
+      citas: citasRes.count || 0,
+      clientes: clientes.length,
+      productos: sale.length + redeem.length,
+    };
   }
 
   async function fetchOwnNegocio() {
@@ -562,6 +663,9 @@
     uploadProductImages,
     migrateFromLocalStorage,
     pullToLocalCache,
+    syncCitasFromCloud,
+    startCitasLiveSync,
+    stopCitasLiveSync,
     fetchOwnNegocio,
     fetchNegocioBySlug,
     slugAvailability,
