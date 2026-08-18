@@ -24,6 +24,9 @@
     if (/not enabled|issuer.*accounts\.google\.com|provider.*google/i.test(raw)) {
       return "Google no está activado en Supabase. Ve a Authentication → Providers → Google, actívalo con tu Client ID y Secret, y vuelve a intentar.";
     }
+    if (/pkce|code verifier/i.test(raw)) {
+      return "La sesión de Google expiró. Vuelve a pulsar «Crear cuenta con Gmail» e inténtalo de nuevo.";
+    }
     if (/email not confirmed/i.test(raw)) {
       return "Correo o contraseña incorrectos. Si acabas de registrarte, revisa el código que te enviamos al correo.";
     }
@@ -181,6 +184,19 @@
   }
 
   async function signInWithGoogle() {
+    try {
+      if (window.GoogleAuth?.signInCredential) {
+        const credential = await window.GoogleAuth.signInCredential();
+        const result = await signInWithGoogleIdToken(credential);
+        if (result.ok) return result;
+      }
+    } catch (err) {
+      const msg = String(err?.message || "");
+      if (/cancelado/i.test(msg)) {
+        return { ok: false, message: "Inicio de sesión con Google cancelado." };
+      }
+      console.warn("Google credential", err);
+    }
     return signInWithGoogleOAuth();
   }
 

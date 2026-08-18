@@ -443,15 +443,6 @@
       ? "Cerramos la sesión por inactividad. Vuelve a entrar."
       : "";
 
-  function cleanAuthUrl() {
-    const nextSearch = new URLSearchParams(location.search);
-    nextSearch.delete("code");
-    nextSearch.delete("error");
-    nextSearch.delete("error_description");
-    const qs = nextSearch.toString();
-    history.replaceState(null, "", location.pathname + (qs ? `?${qs}` : ""));
-  }
-
   async function bootstrap() {
     const googleIdToken = hashParams.get("id_token");
     if (googleIdToken) {
@@ -467,31 +458,24 @@
     }
 
     const isOAuthReturn =
-      params.has("code") ||
       hashParams.has("access_token") ||
+      hashParams.has("error") ||
+      hashParams.has("error_description") ||
       !!authError;
 
     if (isOAuthReturn) {
       const client = await window.SupabaseClient?.getClient?.();
       if (client) {
-        if (params.has("code")) {
-          const { error } = await client.auth.exchangeCodeForSession(window.location.href);
-          if (error && !bootError) {
-            showHub(initialMode);
-            showError(window.BarberAuth.authErrorMessage(error));
-            cleanAuthUrl();
-            return;
-          }
-        }
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         const { data, error } = await client.auth.getSession();
         if (error && !bootError) {
           showHub(initialMode);
           showError(window.BarberAuth.authErrorMessage(error));
-          cleanAuthUrl();
+          history.replaceState(null, "", location.pathname + location.search);
           return;
         }
         if (data?.session) {
-          cleanAuthUrl();
+          history.replaceState(null, "", location.pathname + location.search);
           await afterAuth();
           return;
         }
