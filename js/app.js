@@ -21,16 +21,68 @@
   function syncUserFromSettings() {
     try {
       const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
-      if (!s.name) return;
-      document.querySelectorAll(".user__name").forEach((el) => {
-        el.textContent = s.name;
-      });
-      document.querySelectorAll(".user__avatar").forEach((el) => {
-        el.textContent = (String(s.name).trim()[0] || "I").toUpperCase();
-      });
+      if (s.name) {
+        document.querySelectorAll(".user__name").forEach((el) => {
+          el.textContent = s.name;
+        });
+        document.querySelectorAll(".user__avatar").forEach((el) => {
+          el.textContent = (String(s.name).trim()[0] || "I").toUpperCase();
+        });
+      }
     } catch {
       /* ignore */
     }
+    applySaasBranding();
+  }
+
+  function applySaasBranding() {
+    document.querySelectorAll(".brand").forEach((brand) => {
+      if (brand.querySelector(".brand__sub")) return;
+      const name = brand.querySelector(".brand__name");
+      if (!name) return;
+      const wrap = document.createElement("span");
+      wrap.className = "brand__text";
+      name.replaceWith(wrap);
+      wrap.appendChild(name);
+      const sub = document.createElement("small");
+      sub.className = "brand__sub";
+      sub.textContent = "Plataforma para barberías";
+      wrap.appendChild(sub);
+    });
+    document.querySelectorAll('a.nav__item[href="marketplace.html"]').forEach((a) => {
+      a.childNodes.forEach((n) => {
+        if (n.nodeType === 3 && n.textContent.trim()) n.textContent = " Tienda";
+      });
+    });
+    let negocio = "";
+    try {
+      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      negocio = String(auto.title || "").trim();
+    } catch {
+      negocio = "";
+    }
+    if (!negocio) negocio = window.Tenant?.cached?.()?.name || "";
+    document.querySelectorAll(".user").forEach((box) => {
+      const nameEl = box.querySelector(".user__name");
+      if (nameEl && !nameEl.parentElement.classList.contains("user__text")) {
+        const wrap = document.createElement("span");
+        wrap.className = "user__text";
+        nameEl.replaceWith(wrap);
+        wrap.appendChild(nameEl);
+      }
+      const host = box.querySelector(".user__text") || box;
+      let chip = host.querySelector(".user__negocio");
+      if (!negocio) {
+        chip?.remove();
+        return;
+      }
+      if (!chip) {
+        chip = document.createElement("span");
+        chip.className = "user__negocio";
+        host.appendChild(chip);
+      }
+      chip.textContent = negocio;
+    });
   }
 
   function unreadNotificationCount() {
@@ -319,6 +371,24 @@
   syncUserFromSettings();
   wireNotificationBell();
   syncNotificationBadge();
+
+  function hasExistingBusiness() {
+    if (window.Tenant?.hasExistingBusiness?.()) return true;
+    try {
+      if (localStorage.getItem("barbercloud.onboarded") === "1") return true;
+      if (localStorage.getItem("barbercloud.negocio_id")) return true;
+      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      return !!(auto.slug && String(auto.slug).length >= 3);
+    } catch {
+      return false;
+    }
+  }
+
+  if (!hasExistingBusiness()) {
+    location.replace("onboarding.html");
+    return;
+  }
+
   runNotificationJobs();
   setInterval(runNotificationJobs, 20000);
   document.addEventListener("visibilitychange", () => {

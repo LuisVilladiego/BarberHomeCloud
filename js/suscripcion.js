@@ -22,9 +22,7 @@
     periodEnd: "2026-08-17",
     nextCharge: "2026-08-17",
     payment: {
-      holder: "Luis Villadiego",
-      last4: "4242",
-      expiry: "08/28",
+      provider: "pending",
     },
     invoices: [
       { id: "inv-2026-07", label: "Julio 2026", amount: 18 * USD_TO_COP, date: "2026-07-17" },
@@ -45,6 +43,14 @@
     try {
       const raw = { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
       delete raw.demoUsed;
+      if (raw.payment && typeof raw.payment === "object") {
+        delete raw.payment.last4;
+        delete raw.payment.number;
+        delete raw.payment.cvc;
+        delete raw.payment.expiry;
+        delete raw.payment.holder;
+        raw.payment.provider = "pending";
+      }
       if (raw.currency !== "COP") {
         raw.currency = "COP";
         raw.overageCost = defaults.overageCost;
@@ -62,6 +68,14 @@
 
   function save(state) {
     delete state.demoUsed;
+    if (state.payment && typeof state.payment === "object") {
+      delete state.payment.last4;
+      delete state.payment.number;
+      delete state.payment.cvc;
+      delete state.payment.expiry;
+      delete state.payment.holder;
+      state.payment.provider = "pending";
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     const id = window.Tenant?.currentId?.();
     const cached = window.Tenant?.cached?.();
@@ -159,6 +173,7 @@
 
   let state = normalizeBillingPeriod(load());
   save(state);
+  save(state);
 
   const planTitle = document.getElementById("plan-title");
   const planNext = document.getElementById("plan-next-charge");
@@ -254,26 +269,7 @@
   });
 
   document.getElementById("btn-payment")?.addEventListener("click", () => {
-    const form = document.getElementById("payment-form");
-    form.holder.value = state.payment?.holder || "";
-    form.number.value = state.payment?.last4 ? `•••• •••• •••• ${state.payment.last4}` : "";
-    form.expiry.value = state.payment?.expiry || "";
-    form.cvc.value = "";
     openModal("payment-modal");
-  });
-
-  document.getElementById("payment-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const number = String(fd.get("number") || "").replace(/\D/g, "");
-    state.payment = {
-      holder: String(fd.get("holder") || "").trim(),
-      last4: number.slice(-4) || state.payment?.last4 || "4242",
-      expiry: String(fd.get("expiry") || "").trim(),
-    };
-    save(state);
-    closeModal("payment-modal");
-    window.AppShell?.toast("Método de pago guardado");
   });
 
   document.getElementById("btn-history")?.addEventListener("click", () => {

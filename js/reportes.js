@@ -85,19 +85,24 @@
   }
 
   function bookingCalendarId(b) {
-    const raw = String(b.calendarId || b.business || "barberhome").toLowerCase();
+    const raw = String(b.calendarId || b.business || "negocio").toLowerCase();
     if (raw.includes("gmail") || raw.includes("google")) return "gmail";
-    if (raw.includes("barbercloud") || raw === "native") return "native";
-    if (raw.includes("barberhome")) return "barberhome";
-    return raw || "barberhome";
+    return "negocio";
   }
 
   function matchesCalendarFilter(calendarId) {
     const f = filters.calendar;
     if (!f || f === "all") return true;
-    if (f === "BarberHome" || f === "barberhome") return calendarId === "barberhome";
     if (f === "gmail") return calendarId === "gmail";
-    if (f === "native") return calendarId === "native";
+    if (
+      f === "BarberHome" ||
+      f === "barberhome" ||
+      f === "native" ||
+      f === "negocio" ||
+      f === "barbercloud"
+    ) {
+      return calendarId === "negocio";
+    }
     return calendarId === String(f).toLowerCase();
   }
 

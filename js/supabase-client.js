@@ -22,7 +22,13 @@
       return null;
     }
     client = createClient(String(cfg().url).trim(), String(cfg().anonKey).trim(), {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: "implicit",
+        storageKey: "barbercloud.auth",
+      },
     });
     return client;
   }

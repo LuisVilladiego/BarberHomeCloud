@@ -275,6 +275,33 @@
 
   fillForm();
 
+  async function refreshAuthCard() {
+    const label = document.getElementById("auth-session-label");
+    const loginBtn = document.getElementById("btn-auth-login");
+    const logoutBtn = document.getElementById("btn-auth-logout");
+    if (!label) return;
+    if (!window.BarberAuth) {
+      label.textContent = "Carga auth.js para gestionar la sesión.";
+      return;
+    }
+    const user = await window.BarberAuth.currentUser();
+    if (user) {
+      label.textContent = `Sesión: ${user.email}`;
+      if (loginBtn) loginBtn.hidden = true;
+      if (logoutBtn) logoutBtn.hidden = false;
+    } else {
+      label.textContent = "Sin sesión de barbero en la nube";
+      if (loginBtn) loginBtn.hidden = false;
+      if (logoutBtn) logoutBtn.hidden = true;
+    }
+  }
+  refreshAuthCard();
+  document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
+    await window.BarberAuth?.signOut?.();
+    toast("Sesión cerrada");
+    refreshAuthCard();
+  });
+
   const initial = (location.hash || "").replace("#", "");
   if (views[initial]) showView(initial);
   else showView("hub");

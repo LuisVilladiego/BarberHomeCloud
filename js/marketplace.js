@@ -360,10 +360,10 @@
     document.getElementById("product-kind").value = kind;
     document.getElementById("product-modal-title").textContent = product
       ? kind === "redeem"
-        ? "Editar producto canje"
+        ? "Editar producto Rewards"
         : "Editar producto en venta"
       : kind === "redeem"
-        ? "Agregar producto canje"
+        ? "Agregar producto Rewards"
         : "Agregar producto en venta";
     document.getElementById("product-id").value = product?.id || "";
     document.getElementById("product-name").value = product?.name || "";
@@ -385,7 +385,7 @@
     }
     if (stockHint) {
       stockHint.textContent = isRedeem
-        ? "Cantidad disponible para canjear con Puntos Barberhome."
+        ? "Cantidad disponible para canjear con Rewards."
         : "Cantidad disponible para la venta en la agenda pública.";
     }
 
@@ -590,7 +590,7 @@
         <div class="mkt-empty">
           <strong>Aún no hay productos para canje</strong>
           <p>Publica artículos con costo en puntos e inventario separado del catálogo de venta.</p>
-          <button class="btn btn--primary" type="button" id="btn-empty-add-redeem">+ Agregar producto canje</button>
+          <button class="btn btn--primary" type="button" id="btn-empty-add-redeem">+ Agregar producto Rewards</button>
         </div>`;
       document.getElementById("btn-empty-add-redeem")?.addEventListener("click", () =>
         openProductModal("redeem")

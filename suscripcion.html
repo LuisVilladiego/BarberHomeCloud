@@ -157,7 +157,7 @@
               </span>
               <span class="manage-item__text">
                 <strong>Método de pago</strong>
-                <small>Actualiza la tarjeta con la que pagas tu plan</small>
+                <small>Los cobros irán por pasarela. BarberCloud no guarda número ni CVC</small>
               </span>
               <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -237,30 +237,17 @@
       <div class="modal__backdrop" data-close-payment></div>
       <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
         <h3 id="payment-modal-title">Método de pago</h3>
-        <form class="form" id="payment-form">
-          <label class="field">
-            <span class="field__label">Nombre en la tarjeta</span>
-            <input name="holder" type="text" required placeholder="Luis Villadiego" />
-          </label>
-          <label class="field">
-            <span class="field__label">Número</span>
-            <input name="number" type="text" required inputmode="numeric" placeholder="4242 4242 4242 4242" maxlength="19" />
-          </label>
-          <div class="field-row">
-            <label class="field">
-              <span class="field__label">Vence</span>
-              <input name="expiry" type="text" required placeholder="08/28" maxlength="5" />
-            </label>
-            <label class="field">
-              <span class="field__label">CVC</span>
-              <input name="cvc" type="text" required inputmode="numeric" placeholder="123" maxlength="4" />
-            </label>
-          </div>
-          <div class="modal__actions">
-            <button class="btn btn--secondary" type="button" data-close-payment>Cancelar</button>
-            <button class="btn btn--primary" type="submit">Guardar tarjeta</button>
-          </div>
-        </form>
+        <p class="modal__lead">
+          BarberCloud no almacena números de tarjeta ni CVC. Cuando conectemos la pasarela
+          (Stripe o Wompi), el cobro ocurrirá en su página segura y aquí solo quedará un token.
+        </p>
+        <p class="section-lead">
+          Hasta entonces, el plan se marca como activo para que puedas probar el enlace público
+          de tu negocio. No ingreses datos reales de tarjeta en esta app.
+        </p>
+        <div class="modal__actions">
+          <button class="btn btn--primary" type="button" data-close-payment>Entendido</button>
+        </div>
       </div>
     </div>
 

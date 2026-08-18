@@ -1,4 +1,5 @@
 -- Multi-tenant: un negocio = un slug. Ejecutar en SQL Editor (después de schema.sql).
+-- Después: supabase/rls.sql (Auth + aislamiento entre barberías).
 
 create table if not exists public.negocios (
   id uuid primary key default gen_random_uuid(),

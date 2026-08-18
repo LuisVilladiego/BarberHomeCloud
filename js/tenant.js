@@ -39,6 +39,9 @@
     "notificaciones",
     "suscripcion",
     "feedback",
+    "onboarding",
+    "signup",
+    "cuenta",
     "assets",
     "js",
     "css",
@@ -148,9 +151,31 @@
     }
   }
 
+  const ONBOARDED_KEY = "barbercloud.onboarded";
+
+  function hasExistingBusiness() {
+    try {
+      if (localStorage.getItem(ONBOARDED_KEY) === "1") return true;
+      if (currentId()) return true;
+      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      return !!(auto.slug && validateSlug(auto.slug).ok);
+    } catch {
+      return false;
+    }
+  }
+
+  function markOnboarded() {
+    try {
+      localStorage.setItem(ONBOARDED_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  }
+
   window.Tenant = {
     RESERVED_SLUGS,
     NEGOCIO_ID_KEY,
+    ONBOARDED_KEY,
     normalizeSlug,
     validateSlug,
     publicUrl,
@@ -161,5 +186,7 @@
     setCurrent,
     cached,
     isLocalHost,
+    hasExistingBusiness,
+    markOnboarded,
   };
 })();

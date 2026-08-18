@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Agendar cita · BarberHome</title>
+    <title>Agendar cita · BarberCloud</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -52,8 +52,8 @@
           <div class="public-services" id="public-services"></div>
           <button type="button" class="service-row" id="btn-puntos">
             <span class="service-row__body">
-              <span class="service-row__name">Puntos Barberhome</span>
-              <span class="service-row__duration">Canjea por productos</span>
+              <span class="service-row__name" data-rewards-brand>Rewards</span>
+              <span class="service-row__duration">Canjea con tus puntos</span>
             </span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -184,7 +184,7 @@
           <button class="back-link" type="button" id="btn-back-puntos">← Volver</button>
 
           <div id="puntos-auth">
-            <h2 class="public-section-title">Puntos Barberhome</h2>
+            <h2 class="public-section-title" data-rewards-brand>Rewards</h2>
             <p class="public-desc public-desc--block">
               Inicia sesión o regístrate para ver tus puntos y canjearlos por productos.
             </p>
@@ -304,7 +304,7 @@
                   <button type="button" class="auth-terms__link" id="btn-open-terms">
                     términos y condiciones
                   </button>
-                  de Puntos BarberHome.
+                  de Rewards.
                 </span>
               </label>
               <p class="auth-error" id="register-error" hidden></p>
@@ -350,7 +350,7 @@
                   <button type="button" class="auth-terms__link" id="btn-open-terms-google">
                     términos y condiciones
                   </button>
-                  de Puntos BarberHome.
+                  de Rewards.
                 </span>
               </label>
               <p class="auth-error" id="google-complete-error" hidden></p>
@@ -727,13 +727,13 @@
         <h3 id="loyalty-terms-title">Términos y condiciones</h3>
         <div class="loyalty-terms-body" id="loyalty-terms-body">
           <p>
-            Al crear una cuenta en <strong>Puntos BarberHome</strong> aceptas estas condiciones de uso del
+            Al crear una cuenta en <strong data-rewards-brand>Rewards</strong> aceptas estas condiciones de uso del
             programa de fidelidad.
           </p>
           <ol>
             <li>
-              Los puntos se acumulan según las reglas vigentes (actualmente 5 puntos por servicio) y deben
-              ser cargados por el barbero a tu solicitud.
+              Los puntos se acumulan automáticamente al completar un servicio (actualmente 5 puntos por
+              visita). El administrador solo ajusta el saldo en casos especiales.
             </li>
             <li>
               Los puntos pueden canjearse por productos disponibles según el costo en puntos indicado en la
@@ -801,6 +801,7 @@
     <script src="js/google-calendar.js?v=20260806"></script>
     <script src="js/tenant.js?v=20260818"></script>
     <script src="js/booking-store.js?v=20260816"></script>
+    <script src="js/loyalty-engine.js?v=20260818"></script>
     <script src="js/booking-public.js?v=20260818"></script>
   </body>
 </html>

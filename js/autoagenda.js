@@ -124,6 +124,7 @@
       id: window.Tenant.currentId() || undefined,
       slug: v.slug,
       name: state.title || v.slug,
+      owner_id: (await window.BarberAuth?.currentUser?.())?.id,
       subscription_status: sub.status || "active",
       plan_id: sub.planId || "100",
       autoagenda: { ...state, slug: v.slug },

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Crear cuenta · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  </head>
+  <body class="tutorial-body">
+    <main class="tutorial-shell">
+      <div class="tutorial-card tutorial-card--page">
+        <div class="tutorial-card__brand">
+          <img src="assets/logo.png" alt="" width="28" height="28" />
+          <strong>BarberCloud</strong>
+        </div>
+        <h1 id="login-title">Entra a tu barbería</h1>
+        <p class="tutorial-card__lead" id="login-lead">
+          Usa tu correo y contraseña para abrir el panel y gestionar citas, clientes y reservas.
+        </p>
+
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tabs__btn is-active" data-auth-mode="login">Entrar</button>
+          <button type="button" class="auth-tabs__btn" data-auth-mode="signup">Crear cuenta</button>
+        </div>
+
+        <form class="form" id="login-form">
+          <label class="field" id="field-name" hidden>
+            <span class="field__label">Tu nombre</span>
+            <input name="name" type="text" autocomplete="name" placeholder="Luis Villadiego" />
+          </label>
+          <label class="field">
+            <span class="field__label">Correo</span>
+            <input name="email" type="email" required autocomplete="email" placeholder="tu@correo.com" />
+          </label>
+          <label class="field">
+            <span class="field__label">Contraseña</span>
+            <input name="password" type="password" required minlength="6" autocomplete="current-password" />
+          </label>
+          <p class="auth-error" id="login-error" hidden></p>
+          <div class="tutorial-card__actions">
+            <a class="btn btn--secondary" href="onboarding.html">Continuar sin cuenta</a>
+            <button class="btn btn--primary" type="submit" id="login-submit">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js?v=20260816s"></script>
+    <script src="js/supabase-client.js?v=20260818a"></script>
+    <script src="js/tenant.js?v=20260818"></script>
+    <script src="js/supabase-data.js?v=20260818a"></script>
+    <script src="js/auth.js?v=20260818"></script>
+    <script src="js/login.js?v=20260818"></script>
+  </body>
+</html>
