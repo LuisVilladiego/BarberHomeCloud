@@ -213,32 +213,6 @@ function sendBookingAlert_(data) {
   var business = String(booking.business || fromName).trim();
   var bookingId = String(booking.id || "").trim();
 
-  // Rate limit server-side (Apps Script no expone IP real de forma fiable):
-  // máx. 3 avisos de reserva / 2h por WhatsApp y por dispositivo (fingerprint).
-  var phoneKey = phoneTail_(phone);
-  if (phoneKey) {
-    var phoneLimit = consumeRateLimit_("bk_phone:" + phoneKey, 3, 7200);
-    if (!phoneLimit.ok) {
-      return json_({
-        ok: false,
-        code: "phone_limit",
-        message:
-          "Límite de 3 citas seguidas por WhatsApp. Cancela una o espera un rato.",
-      });
-    }
-  }
-  if (fingerprint && fingerprint !== "anonymous") {
-    var deviceLimit = consumeRateLimit_("bk_dev:" + fingerprint, 3, 7200);
-    if (!deviceLimit.ok) {
-      return json_({
-        ok: false,
-        code: "device_limit",
-        message:
-          "Límite de 3 citas seguidas desde este dispositivo. Espera un rato.",
-      });
-    }
-  }
-
   var priceText =
     price === "" || price == null
       ? "—"
@@ -436,43 +410,6 @@ function isValidEmail_(value) {
 }
 
 /** Últimos dígitos del WhatsApp para clave de rate-limit */
-function phoneTail_(phone) {
-  var digits = String(phone || "").replace(/\D/g, "");
-  if (digits.length < 7) return "";
-  return digits.slice(-10);
-}
-
-/**
- * Rate limit con CacheService.
- * maxHits en windowSec segundos. Devuelve { ok, count }.
- */
-function consumeRateLimit_(key, maxHits, windowSec) {
-  var cache = CacheService.getScriptCache();
-  var raw = cache.get(key);
-  var now = Date.now();
-  var hits = [];
-  if (raw) {
-    try {
-      hits = JSON.parse(raw) || [];
-    } catch (e) {
-      hits = [];
-    }
-  }
-  if (!Array.isArray(hits)) hits = [];
-  var cutoff = now - windowSec * 1000;
-  hits = hits.filter(function (t) {
-    return Number(t) > cutoff;
-  });
-  if (hits.length >= maxHits) {
-    return { ok: false, count: hits.length };
-  }
-  hits.push(now);
-  // CacheService max ~6h; usamos el window pedido (máx 21600)
-  var ttl = Math.min(Math.max(windowSec, 60), 21600);
-  cache.put(key, JSON.stringify(hits), ttl);
-  return { ok: true, count: hits.length };
-}
-
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
     ContentService.MimeType.JSON

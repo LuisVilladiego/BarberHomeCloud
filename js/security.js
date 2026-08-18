@@ -141,12 +141,7 @@
     return `Demasiados intentos. Espera ~${waitMin} min e inténtalo de nuevo.`;
   }
 
-  /* —— Rate limit de reservas (máx. 3 citas seguidas) —— */
-  const BOOKING_MAX_ACTIVE = 3;
-  const BOOKING_DEVICE_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 horas
-  const BOOKING_DEVICE_MAX = 3;
   const DEVICE_ID_KEY = "barbercloud.device_id";
-  const BOOKING_DEVICE_RATE_KEY = "barbercloud.booking_device_rate";
 
   function getDeviceId() {
     try {
@@ -164,71 +159,6 @@
   function phoneTail(phone) {
     const digits = String(phone || "").replace(/\D/g, "");
     return digits.length >= 7 ? digits.slice(-10) : digits;
-  }
-
-  function countActiveFutureBookingsForPhone(phone, loadBookingsFn) {
-    const tail = phoneTail(phone);
-    if (tail.length < 7) return 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    let list = [];
-    try {
-      list = typeof loadBookingsFn === "function" ? loadBookingsFn() : [];
-    } catch {
-      list = [];
-    }
-    if (!Array.isArray(list)) list = [];
-    return list.filter((b) => {
-      const status = String(b?.status || "").toLowerCase();
-      if (status === "cancelled" || status === "canceled" || status === "rejected") return false;
-      if (phoneTail(b?.phone) !== tail) return false;
-      const date = String(b?.date || "").slice(0, 10);
-      return date >= todayIso;
-    }).length;
-  }
-
-  function checkBookingPhoneLimit(phone, loadBookingsFn) {
-    const count = countActiveFutureBookingsForPhone(phone, loadBookingsFn);
-    if (count >= BOOKING_MAX_ACTIVE) {
-      return {
-        ok: false,
-        reason: "phone_limit",
-        count,
-        message: `Ya tienes ${count} citas activas. El máximo es ${BOOKING_MAX_ACTIVE} citas seguidas por WhatsApp. Cancela una o espera a completarlas.`,
-      };
-    }
-    return { ok: true, count };
-  }
-
-  function getDeviceBookingRate() {
-    const data = safeJsonParse(localStorage.getItem(BOOKING_DEVICE_RATE_KEY), null);
-    if (!data || typeof data !== "object") return { hits: [], deviceId: getDeviceId() };
-    const cutoff = Date.now() - BOOKING_DEVICE_WINDOW_MS;
-    const hits = Array.isArray(data.hits) ? data.hits.filter((t) => Number(t) > cutoff) : [];
-    return { hits, deviceId: data.deviceId || getDeviceId() };
-  }
-
-  function checkBookingDeviceLimit() {
-    const { hits, deviceId } = getDeviceBookingRate();
-    if (hits.length >= BOOKING_DEVICE_MAX) {
-      return {
-        ok: false,
-        reason: "device_limit",
-        deviceId,
-        message: `Desde este dispositivo ya se agendaron ${BOOKING_DEVICE_MAX} citas seguidas. Espera un rato e inténtalo de nuevo.`,
-      };
-    }
-    return { ok: true, deviceId, remaining: BOOKING_DEVICE_MAX - hits.length };
-  }
-
-  function registerDeviceBooking() {
-    const { hits, deviceId } = getDeviceBookingRate();
-    hits.push(Date.now());
-    localStorage.setItem(
-      BOOKING_DEVICE_RATE_KEY,
-      JSON.stringify({ deviceId, hits: hits.slice(-20) })
-    );
   }
 
   /** Evita javascript: y data: en href de enlaces dinámicos */
@@ -261,13 +191,7 @@
     safeExternalHref,
     getDeviceId,
     phoneTail,
-    checkBookingPhoneLimit,
-    checkBookingDeviceLimit,
-    registerDeviceBooking,
-    countActiveFutureBookingsForPhone,
     SESSION_MAX_AGE_MS,
     LOGIN_MAX_ATTEMPTS,
-    BOOKING_MAX_ACTIVE,
-    BOOKING_DEVICE_MAX,
   };
 })();

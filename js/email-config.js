@@ -24,7 +24,7 @@ window.EmailConfig = {
 
   /* —— Google Apps Script —— */
   appsScriptUrl:
-    "https://script.google.com/macros/s/AKfycbzdpNXtU4Bx9GWWKwVWGokVC49EDJMNe8xe0vwEEnUFl7zrC7h9JUtb-b0gQ2HioASY/exec",
+    "https://script.google.com/macros/s/AKfycbwpCxFSEjmwMTeIuB9tQVbgigXglhIYYM9Ch-fOAhIUuBHI9yCsLokPGjH0OvuIPBqS/exec",
   /** Debe coincidir con SECRET en gmail-apps-script.gs.
    *  Nota de seguridad: cualquier secreto en frontend es visible.
    *  Rótalo si lo filtraste y vuelve a desplegar el Apps Script. */

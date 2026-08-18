@@ -188,9 +188,10 @@
     if (!client || !booking?.id) return { ok: false, skipped: true };
     const row = bookingToRow(booking);
     const { data: authData } = await client.auth.getSession();
+    const table = client.from("citas");
     const query = authData?.session
-      ? client.from("citas").upsert(row, { onConflict: "id" })
-      : client.from("citas").insert(row);
+      ? table.upsert(row, { onConflict: "id" })
+      : table.insert(row);
     const { error } = await query;
     if (error) {
       console.warn("[Supabase] upsert cita", error.message);

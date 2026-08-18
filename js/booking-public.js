@@ -3136,26 +3136,6 @@
     const date = data.date || selectedDate;
     const time = data.time || selectedTime;
 
-    // Límite: máx. 3 citas activas por WhatsApp + rate por dispositivo/IP local
-    const loadBookingsFn = () =>
-      window.BookingStore?.loadBookings?.() ||
-      (() => {
-        try {
-          return JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
-        } catch {
-          return [];
-        }
-      })();
-    const phoneLimit = window.Security?.checkBookingPhoneLimit?.(fullPhone, loadBookingsFn);
-    if (phoneLimit && !phoneLimit.ok) {
-      showBookingError(phoneLimit.message);
-      return;
-    }
-    const deviceLimit = window.Security?.checkBookingDeviceLimit?.();
-    if (deviceLimit && !deviceLimit.ok) {
-      showBookingError(deviceLimit.message);
-      return;
-    }
     const clientFingerprint = window.Security?.getDeviceId?.() || "";
 
     isBookingSubmitting = true;
@@ -3191,8 +3171,6 @@
         showCalendar();
         return;
       }
-
-      window.Security?.registerDeviceBooking?.();
 
       // Aviso al admin PRIMERO (no depender de Google OAuth)
       try {
@@ -3265,7 +3243,6 @@
         localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
         window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
       }
-      window.Security?.registerDeviceBooking?.();
       try {
         const alertFn =
           window.EmailService?.sendBookingAdminAlert || notifyAdminBookingFallback;
