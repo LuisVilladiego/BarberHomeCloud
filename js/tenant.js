@@ -120,8 +120,23 @@
   }
 
   function isSubscriptionActive(status) {
-    const s = String(status || "active").toLowerCase();
+    const s = String(status || "").toLowerCase();
     return s === "active" || s === "trialing";
+  }
+
+  function hasActiveSubscription() {
+    const biz = cached();
+    if (biz && biz.subscription_status) {
+      return isSubscriptionActive(biz.subscription_status);
+    }
+    try {
+      const raw = localStorage.getItem("barbercloud.subscription");
+      if (!raw) return false;
+      const sub = JSON.parse(raw);
+      return isSubscriptionActive(sub?.status);
+    } catch {
+      return false;
+    }
   }
 
   function currentId() {
@@ -182,6 +197,7 @@
     displayLink,
     slugFromLocation,
     isSubscriptionActive,
+    hasActiveSubscription,
     currentId,
     setCurrent,
     cached,

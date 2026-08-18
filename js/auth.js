@@ -20,6 +20,10 @@
 
   function authErrorMessage(err) {
     const raw = String(err?.message || err || "");
+    if (/rate limit/i.test(raw)) return "";
+    if (/email not confirmed/i.test(raw)) {
+      return "Correo o contraseña incorrectos. Si acabas de registrarte, revisa el código que te enviamos al correo.";
+    }
     if (/invalid login/i.test(raw)) return "Correo o contraseña incorrectos.";
     if (/already registered/i.test(raw)) return "Ese correo ya tiene una cuenta. Entra en su lugar.";
     if (/password/i.test(raw) && /6/i.test(raw)) return "La contraseña debe tener al menos 6 caracteres.";
@@ -47,6 +51,12 @@
         emailRedirectTo: authRedirectUrl(),
       },
     });
+    if (
+      error &&
+      /rate limit|already registered|user already|límite de correos/i.test(error.message || "")
+    ) {
+      return { ok: true, session: null, existing: true };
+    }
     if (error) return { ok: false, message: authErrorMessage(error) };
     return { ok: true, user: data.user, session: data.session };
   }
@@ -101,12 +111,141 @@
     });
   }
 
+  function oauthRedirectUrl() {
+    return `${location.origin}/login.html`;
+  }
+
+  const PENDING_PW_KEY = "barbercloud.pending_pw";
+
+  function savePendingPassword(email, password) {
+    try {
+      sessionStorage.setItem(
+        PENDING_PW_KEY,
+        JSON.stringify({
+          email: String(email || "").trim().toLowerCase(),
+          password,
+          exp: Date.now() + 15 * 60 * 1000,
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function applyPendingPassword() {
+    try {
+      const raw = sessionStorage.getItem(PENDING_PW_KEY);
+      if (!raw) return;
+      const pending = JSON.parse(raw);
+      if (!pending?.password || Date.now() > pending.exp) {
+        sessionStorage.removeItem(PENDING_PW_KEY);
+        return;
+      }
+      const user = await currentUser();
+      if (!user?.email || String(user.email).toLowerCase() !== pending.email) return;
+      const client = await getClient();
+      if (!client) return;
+      const { error } = await client.auth.updateUser({ password: pending.password });
+      if (!error) sessionStorage.removeItem(PENDING_PW_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function signInWithGoogleIdToken(credential) {
+    const client = await getClient();
+    if (!client) return { ok: false, message: "Supabase no está configurado." };
+    const { data, error } = await client.auth.signInWithIdToken({
+      provider: "google",
+      token: credential,
+    });
+    if (error) return { ok: false, message: authErrorMessage(error) };
+    return { ok: true, user: data.user, session: data.session };
+  }
+
+  async function signInWithGoogle() {
+    const client = await getClient();
+    if (!client) return { ok: false, message: "Supabase no está configurado." };
+    try {
+      if (window.GoogleAuth?.signInIdToken) {
+        const credential = await window.GoogleAuth.signInIdToken();
+        const result = await signInWithGoogleIdToken(credential);
+        if (result.ok) return result;
+      }
+    } catch (err) {
+      if (!/popup|cancelado/i.test(String(err?.message || ""))) {
+        console.warn("Google id token", err);
+      }
+    }
+    const { error } = await client.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: oauthRedirectUrl(),
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) {
+      return {
+        ok: false,
+        message:
+          "No se pudo entrar con Google. Revisa que el proveedor esté activo o usa correo y contraseña.",
+      };
+    }
+    return { ok: true, redirect: true };
+  }
+
+  async function updatePassword(password) {
+    const client = await getClient();
+    if (!client) return { ok: false, message: "Supabase no está configurado." };
+    const { error } = await client.auth.updateUser({ password });
+    if (error) return { ok: false, message: authErrorMessage(error) };
+    return { ok: true };
+  }
+
+  async function completePasswordReset(email, password) {
+    savePendingPassword(email, password);
+    const updated = await updatePassword(password);
+    if (updated.ok) {
+      try {
+        sessionStorage.removeItem(PENDING_PW_KEY);
+      } catch {
+        /* ignore */
+      }
+      return { ok: true };
+    }
+    const login = await signIn(email, password);
+    if (login.ok) {
+      try {
+        sessionStorage.removeItem(PENDING_PW_KEY);
+      } catch {
+        /* ignore */
+      }
+      return { ok: true, session: login.session };
+    }
+    return {
+      ok: true,
+      needsGoogle: true,
+      message: "Código verificado. Entra con Google para guardar la contraseña nueva.",
+    };
+  }
+
+  async function hydrateOwnNegocio() {
+    if (!window.SupabaseData?.enabled?.()) return null;
+    return (await window.SupabaseData.fetchOwnNegocio?.()) || null;
+  }
+
   window.BarberAuth = {
     session,
     currentUser,
     signUp,
     signIn,
     signOut,
+    signInWithGoogle,
+    signInWithGoogleIdToken,
+    updatePassword,
+    completePasswordReset,
+    applyPendingPassword,
+    hydrateOwnNegocio,
     claimCurrentNegocio,
     authErrorMessage,
   };

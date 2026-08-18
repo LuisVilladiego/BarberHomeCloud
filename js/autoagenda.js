@@ -285,6 +285,10 @@
     title.textContent = state.title || "Tu negocio";
     desc.textContent = state.description || "";
     avatar.src = state.avatarDataUrl || "assets/barberhome-avatar.png";
+    const rewardsName = document.getElementById("preview-rewards-name");
+    if (rewardsName) {
+      rewardsName.textContent = state.title ? `${state.title} Rewards` : "Rewards";
+    }
     services.innerHTML = state.appointmentTypes
       .map(
         (t) => `

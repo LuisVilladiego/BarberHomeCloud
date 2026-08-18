@@ -440,6 +440,27 @@
     return { ok: true, citas: citas.length, clientes: clientes.length, productos: sale.length + redeem.length };
   }
 
+  async function fetchOwnNegocio() {
+    const client = db();
+    if (!client) return null;
+    const { data: sessionData } = await client.auth.getUser();
+    const uid = sessionData?.user?.id;
+    if (!uid) return null;
+    const { data, error } = await client
+      .from("negocios")
+      .select("*")
+      .eq("owner_id", uid)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      console.warn("[Supabase] fetch own negocio", error.message);
+      return null;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) window.Tenant?.setCurrent?.(row);
+    return row || null;
+  }
+
   async function fetchNegocioBySlug(slug) {
     const client = db();
     if (!client || !slug) return null;
@@ -533,6 +554,7 @@
     uploadProductImages,
     migrateFromLocalStorage,
     pullToLocalCache,
+    fetchOwnNegocio,
     fetchNegocioBySlug,
     slugAvailability,
     upsertNegocio,

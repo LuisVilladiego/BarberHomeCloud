@@ -100,8 +100,55 @@
     return profile;
   }
 
+  function currentPageUrl() {
+    return location.href.split("#")[0].split("?")[0];
+  }
+
+  async function signInIdToken() {
+    await waitForGis();
+    const clientId = cfg().clientId;
+    if (!clientId) throw new Error("Falta GoogleConfig.clientId");
+    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const redirectUri = currentPageUrl();
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.searchParams.set("client_id", clientId);
+    url.searchParams.set("redirect_uri", redirectUri);
+    url.searchParams.set("response_type", "id_token");
+    url.searchParams.set("scope", "openid email profile");
+    url.searchParams.set("nonce", nonce);
+    url.searchParams.set("prompt", "select_account");
+
+    return new Promise((resolve, reject) => {
+      const popup = window.open(url.toString(), "barbercloud-google", "width=480,height=640");
+      if (!popup) {
+        reject(new Error("popup"));
+        return;
+      }
+      const timer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(timer);
+          reject(new Error("Inicio de sesión con Google cancelado."));
+          return;
+        }
+        try {
+          if (popup.location.origin !== location.origin) return;
+          const params = new URLSearchParams(String(popup.location.hash || "").replace(/^#/, ""));
+          const token = params.get("id_token");
+          const err = params.get("error");
+          popup.close();
+          clearInterval(timer);
+          if (token) resolve(token);
+          else reject(new Error(err || "No se obtuvo el acceso de Google."));
+        } catch {
+          /* still on accounts.google.com */
+        }
+      }, 300);
+    });
+  }
+
   window.GoogleAuth = {
     signIn,
+    signInIdToken,
     waitForGis,
   };
 })();

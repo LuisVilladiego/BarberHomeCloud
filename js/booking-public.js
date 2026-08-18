@@ -139,7 +139,15 @@
     });
   }
 
+  function syncPublicExtras() {
+    const shopBtn = document.getElementById("btn-shop");
+    const puntosBtn = document.getElementById("btn-puntos");
+    if (shopBtn) shopBtn.hidden = false;
+    if (puntosBtn) puntosBtn.hidden = false;
+  }
+
   applyRewardsCopy();
+  syncPublicExtras();
 
   function applyPublicConfig(next) {
     config = next || {};
@@ -153,6 +161,7 @@
     if (avatar) avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
     document.title = `${config.title || "Agendar"} · BarberCloud`;
     applyRewardsCopy();
+    syncPublicExtras();
     renderServices();
   }
 

@@ -79,6 +79,14 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     const id = window.Tenant?.currentId?.();
     const cached = window.Tenant?.cached?.();
+    if (cached?.id || id) {
+      window.Tenant?.setCurrent?.({
+        ...cached,
+        id: id || cached?.id,
+        subscription_status: state.status || "active",
+        plan_id: state.planId || cached?.plan_id || "100",
+      });
+    }
     if (id && cached?.slug && window.SupabaseData?.enabled?.()) {
       window.SupabaseData.upsertNegocio({
         id,
@@ -171,9 +179,18 @@
     return bookingsInPeriod(state).length;
   }
 
+  let stored = null;
+  try {
+    stored = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    stored = null;
+  }
   let state = normalizeBillingPeriod(load());
-  save(state);
-  save(state);
+  if (!stored) {
+    state.status = "incomplete";
+  } else {
+    save(state);
+  }
 
   const planTitle = document.getElementById("plan-title");
   const planNext = document.getElementById("plan-next-charge");
@@ -215,8 +232,15 @@
       planStatus.className = "status status--paused";
     } else {
       planNext.textContent = `Próximo cargo: ${formatDate(state.nextCharge)} · ${formatMoney(plan.price)}`;
-      planStatus.textContent = state.status === "active" ? "Activo" : "Pausado";
-      planStatus.className = `status ${state.status === "active" ? "status--ok" : "status--paused"}`;
+      planStatus.textContent =
+        state.status === "active" || state.status === "trialing"
+          ? "Activo"
+          : state.status === "incomplete"
+            ? "Sin activar"
+            : "Pausado";
+      planStatus.className = `status ${
+        state.status === "active" || state.status === "trialing" ? "status--ok" : "status--paused"
+      }`;
     }
 
     billingPeriod.textContent = `Período de facturación: ${formatDate(state.periodStart, "long")} - ${formatDate(state.periodEnd, "long")}`;
@@ -257,6 +281,7 @@
     const id = e.target.closest("[data-plan]")?.getAttribute("data-plan");
     if (!id) return;
     state.planId = id;
+    state.status = "active";
     // Actualizar facturas demo al precio del plan actual
     state.invoices = (state.invoices || []).map((inv) => ({
       ...inv,
@@ -264,6 +289,7 @@
     }));
     save(state);
     render();
+    refreshNeedBanner();
     closeModal("plan-modal");
     window.AppShell?.toast("Plan actualizado");
   });
@@ -362,8 +388,23 @@
   document.querySelectorAll("[data-close-plan]").forEach((el) =>
     el.addEventListener("click", () => closeModal("plan-modal"))
   );
+  function refreshNeedBanner() {
+    const needEl = document.getElementById("sub-need");
+    if (!needEl) return;
+    const need =
+      new URLSearchParams(location.search).get("need") === "1" || state.status === "incomplete";
+    needEl.hidden = !need || state.status === "active" || state.status === "trialing";
+  }
+
   document.querySelectorAll("[data-close-payment]").forEach((el) =>
-    el.addEventListener("click", () => closeModal("payment-modal"))
+    el.addEventListener("click", () => {
+      state.status = "active";
+      save(state);
+      render();
+      refreshNeedBanner();
+      closeModal("payment-modal");
+      window.AppShell?.toast("Suscripción activa. Ya puedes entrar al panel.");
+    })
   );
   document.querySelectorAll("[data-close-history]").forEach((el) =>
     el.addEventListener("click", () => closeModal("history-modal"))
@@ -389,5 +430,6 @@
     if (document.visibilityState === "visible") refreshUsage();
   });
 
+  refreshNeedBanner();
   render();
 })();

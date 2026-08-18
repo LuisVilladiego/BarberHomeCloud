@@ -241,23 +241,24 @@
     } catch {
       localStorage.setItem("barbercloud_settings", JSON.stringify(settings));
     }
+    window.Tenant.markOnboarded();
+    const user = await window.BarberAuth?.currentUser?.();
+    const subStatus = user ? "incomplete" : "trialing";
     localStorage.setItem(
       "barbercloud.subscription",
       JSON.stringify({
         planId: "100",
-        status: "trialing",
+        status: subStatus,
         cancelAtPeriodEnd: false,
         payment: { provider: "pending" },
       })
     );
-    window.Tenant.markOnboarded();
-    const user = await window.BarberAuth?.currentUser?.();
     if (window.SupabaseData?.enabled?.()) {
       const payload = {
         slug: auto.slug,
         name: auto.title,
         owner_id: user?.id || undefined,
-        subscription_status: "trialing",
+        subscription_status: subStatus,
         plan_id: "100",
         autoagenda: auto,
         whatsapp: settings.waPhone,
@@ -309,6 +310,11 @@
   backBtn.addEventListener("click", () => showStep(Math.max(1, step - 1)));
   nextBtn.addEventListener("click", async () => {
     if (step === 7) {
+      const user = await window.BarberAuth?.currentUser?.();
+      if (user && !window.Tenant?.hasActiveSubscription?.()) {
+        location.href = "suscripcion.html?need=1";
+        return;
+      }
       location.href = "index.html";
       return;
     }

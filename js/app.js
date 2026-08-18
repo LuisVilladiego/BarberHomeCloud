@@ -355,13 +355,164 @@
     }
   }
 
+  let retentionEnginePromise = null;
+
+  function ensureRetentionEngine() {
+    if (window.RetentionEngine) return Promise.resolve();
+    if (retentionEnginePromise) return retentionEnginePromise;
+    retentionEnginePromise = new Promise((resolve) => {
+      const existing = document.querySelector('script[data-retention-engine="1"]');
+      if (existing) {
+        existing.addEventListener("load", () => resolve(), { once: true });
+        existing.addEventListener("error", () => resolve(), { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "js/retention-engine.js?v=20260818";
+      script.dataset.retentionEngine = "1";
+      script.onload = () => resolve();
+      script.onerror = () => resolve();
+      document.head.appendChild(script);
+    });
+    return retentionEnginePromise;
+  }
+
+  function runRetentionScan() {
+    ensureRetentionEngine().then(() => {
+      window.RetentionEngine?.syncRetentionNotifications?.();
+    });
+  }
+
   function runNotificationJobs() {
     processClientReminderSends();
     checkAdminReminders();
+    runRetentionScan();
+  }
+
+  const LAST_ACTIVITY_KEY = "barbercloud.last_activity";
+  const IDLE_MS = 15 * 60 * 1000;
+
+  function hasAuthSessionEarly() {
+    try {
+      const raw = localStorage.getItem("barbercloud.auth");
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      return !!(data?.access_token || data?.currentSession?.access_token || data?.user);
+    } catch {
+      return false;
+    }
+  }
+
+  async function logout(options = {}) {
+    try {
+      await window.BarberAuth?.signOut?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      const client = window.SupabaseClient?.getClient?.();
+      if (client?.auth?.signOut) await client.auth.signOut();
+    } catch {
+      /* ignore */
+    }
+    try {
+      localStorage.removeItem("barbercloud.auth");
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+    } catch {
+      /* ignore */
+    }
+    location.href = options.idle ? "login.html?idle=1" : "login.html";
+  }
+
+  function markActivity() {
+    try {
+      localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function startIdleWatch() {
+    if (!hasAuthSessionEarly()) return;
+    markActivity();
+    let lastWrite = 0;
+    const bump = () => {
+      const now = Date.now();
+      if (now - lastWrite < 4000) return;
+      lastWrite = now;
+      markActivity();
+    };
+    ["click", "keydown", "mousemove", "scroll", "touchstart"].forEach((evt) => {
+      document.addEventListener(evt, bump, { passive: true });
+    });
+    const check = () => {
+      if (!hasAuthSessionEarly()) return;
+      let last = 0;
+      try {
+        last = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+      } catch {
+        last = 0;
+      }
+      if (!last) {
+        markActivity();
+        return;
+      }
+      if (Date.now() - last >= IDLE_MS) {
+        logout({ idle: true });
+      }
+    };
+    setInterval(check, 15000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) check();
+    });
+    window.addEventListener("storage", (e) => {
+      if (e.key === LAST_ACTIVITY_KEY || e.key === "barbercloud.auth") check();
+    });
+  }
+
+  function wireUserMenu() {
+    document.querySelectorAll("aside .user").forEach((btn) => {
+      if (btn.closest(".user-menu")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "user-menu";
+      btn.replaceWith(wrap);
+      wrap.appendChild(btn);
+      btn.setAttribute("aria-haspopup", "true");
+      btn.setAttribute("aria-expanded", "false");
+      if (!btn.querySelector(".user__caret")) {
+        btn.insertAdjacentHTML(
+          "beforeend",
+          '<svg class="user__caret" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        );
+      }
+      const panel = document.createElement("div");
+      panel.className = "user-menu__panel";
+      panel.hidden = true;
+      panel.innerHTML =
+        '<button type="button" class="user-menu__item" data-logout>Cerrar sesión</button>';
+      wrap.appendChild(panel);
+
+      const setOpen = (open) => {
+        panel.hidden = !open;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      };
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setOpen(panel.hidden);
+      });
+      panel.querySelector("[data-logout]")?.addEventListener("click", (e) => {
+        e.preventDefault();
+        logout();
+      });
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) setOpen(false);
+      });
+    });
   }
 
   window.AppShell = {
     toast,
+    logout,
     syncNotificationBadge,
     checkAdminReminders,
     processClientReminderSends,
@@ -371,6 +522,8 @@
   syncUserFromSettings();
   wireNotificationBell();
   syncNotificationBadge();
+  wireUserMenu();
+  startIdleWatch();
 
   function hasExistingBusiness() {
     if (window.Tenant?.hasExistingBusiness?.()) return true;
@@ -384,8 +537,37 @@
     }
   }
 
+  function hasAuthSession() {
+    try {
+      const raw = localStorage.getItem("barbercloud.auth");
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      return !!(data?.access_token || data?.currentSession?.access_token || data?.user);
+    } catch {
+      return false;
+    }
+  }
+
+  function hasActiveSub() {
+    if (window.Tenant?.hasActiveSubscription) return window.Tenant.hasActiveSubscription();
+    try {
+      const raw = localStorage.getItem("barbercloud.subscription");
+      if (!raw) return false;
+      const status = String(JSON.parse(raw)?.status || "").toLowerCase();
+      return status === "active" || status === "trialing";
+    } catch {
+      return false;
+    }
+  }
+
   if (!hasExistingBusiness()) {
     location.replace("onboarding.html");
+    return;
+  }
+
+  const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  if (page !== "suscripcion.html" && hasAuthSession() && !hasActiveSub()) {
+    location.replace("suscripcion.html?need=1");
     return;
   }
 

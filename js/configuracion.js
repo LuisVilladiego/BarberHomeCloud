@@ -297,9 +297,12 @@
   }
   refreshAuthCard();
   document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
+    if (window.AppShell?.logout) {
+      await window.AppShell.logout();
+      return;
+    }
     await window.BarberAuth?.signOut?.();
-    toast("Sesión cerrada");
-    refreshAuthCard();
+    location.href = "login.html";
   });
 
   const initial = (location.hash || "").replace("#", "");

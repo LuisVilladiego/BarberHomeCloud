@@ -305,6 +305,15 @@
     return `${y}-${m}-${d}`;
   }
 
+  function hasRetentionKind(client, kind) {
+    return (client.retentionSignals || []).some((s) => s.kind === kind);
+  }
+
+  function topRetentionSignal(client) {
+    const signals = client.retentionSignals || [];
+    return signals.length ? signals[0] : null;
+  }
+
   function badgeHtml(tag) {
     const map = {
       frequent: { className: "intel-badge--frequent", label: "🔥 Frecuente" },
@@ -312,12 +321,18 @@
       lost: { className: "intel-badge--lost", label: "💤 Perdido" },
       vip: { className: "intel-badge--vip", label: "⭐ VIP" },
       active: { className: "intel-badge--active", label: "Activo" },
+      near_reward: { className: "intel-badge--near", label: "🎁 Cerca de canje" },
+      milestone: { className: "intel-badge--milestone", label: "🏆 Hito" },
+      birthday: { className: "intel-badge--birthday", label: "🎂 Cumpleaños" },
     };
     const info = map[tag] || map.active;
     return `<span class="intel-badge ${info.className}">${info.label}</span>`;
   }
 
   function insightText(client) {
+    const retention = topRetentionSignal(client);
+    if (retention?.insight) return retention.insight;
+
     const brand = businessName();
     if (!client.total) {
       return client.email
@@ -342,6 +357,10 @@
   }
 
   function whatsappMessage(client) {
+    const signal = topRetentionSignal(client);
+    if (signal && window.RetentionEngine?.whatsappMessage) {
+      return window.RetentionEngine.whatsappMessage(client, signal);
+    }
     const brand = businessName();
     const name = firstName(client.name);
     if (client.primary === "lost" || client.primary === "inactive") {
@@ -374,6 +393,10 @@
 
   function matchesFilter(client, filter) {
     if (filter === "all") return true;
+    if (filter === "retencion") return (client.retentionSignals || []).length > 0;
+    if (filter === "near_reward") return hasRetentionKind(client, "near_reward");
+    if (filter === "milestone") return hasRetentionKind(client, "milestone");
+    if (filter === "birthday") return hasRetentionKind(client, "birthday");
     if (filter === "vip") return client.tags.includes("vip");
     if (filter === "frequent") return client.tags.includes("frequent");
     if (filter === "inactive") return client.primary === "inactive";
@@ -430,6 +453,13 @@
     set("intel-count-inactive", clients.filter((c) => c.primary === "inactive").length);
     set("intel-count-lost", clients.filter((c) => c.primary === "lost").length);
     set("intel-count-vip", clients.filter((c) => c.tags.includes("vip")).length);
+    set(
+      "intel-count-retencion",
+      clients.filter((c) => (c.retentionSignals || []).length > 0).length
+    );
+    set("intel-count-near", clients.filter((c) => hasRetentionKind(c, "near_reward")).length);
+    set("intel-count-milestone", clients.filter((c) => hasRetentionKind(c, "milestone")).length);
+    set("intel-count-birthday", clients.filter((c) => hasRetentionKind(c, "birthday")).length);
   }
 
   function contactMeta(client) {
@@ -473,24 +503,32 @@
 
     list.innerHTML = filtered
       .map((client) => {
-        const extraBadges = client.tags
-          .filter((t) => t !== client.primary)
+        const retentionTags = (client.retentionSignals || []).map((s) => s.kind);
+        const displayPrimary = client.retentionPrimary || client.primary;
+        const extraBadges = [
+          ...client.tags.filter((t) => t !== client.primary),
+          ...retentionTags.filter((t) => t !== displayPrimary && !client.tags.includes(t)),
+        ]
+          .filter((t, i, arr) => arr.indexOf(t) === i)
           .map((t) => badgeHtml(t))
           .join("");
         const canWhatsApp = normalizePhone(client.phone).length >= 7;
-        const showReminder = client.primary === "inactive" || client.primary === "lost";
+        const showReminder =
+          client.primary === "inactive" ||
+          client.primary === "lost" ||
+          retentionTags.length > 0;
         return `
-          <article class="intel-card intel-card--${escapeHtml(client.primary)}" data-key="${escapeHtml(client.key)}">
+          <article class="intel-card intel-card--${escapeHtml(displayPrimary || client.primary)}" data-key="${escapeHtml(client.key)}">
             <div class="intel-card__main">
               <div class="intel-card__head">
                 <strong class="intel-card__name">${escapeHtml(client.name)}</strong>
                 <div class="intel-card__badges">
-                  ${badgeHtml(client.primary)}
+                  ${badgeHtml(displayPrimary || client.primary)}
                   ${extraBadges}
                 </div>
               </div>
               <p class="intel-card__insight">${escapeHtml(insightText(client))}</p>
-              <p class="intel-card__meta">${escapeHtml(contactMeta(client))}</p>
+              <p class="intel-card__meta">${escapeHtml(contactMeta(client))}${client.points != null && client.points > 0 ? ` · ${client.points} pts` : ""}</p>
             </div>
             <div class="intel-card__actions">
               ${
@@ -592,6 +630,9 @@
   function refresh() {
     try {
       clientsCache = buildClients();
+      if (window.RetentionEngine?.attachRetentionSignals) {
+        clientsCache = window.RetentionEngine.attachRetentionSignals(clientsCache);
+      }
     } catch (err) {
       console.error("[contactos] Error al cargar clientes", err);
       clientsCache = [];
