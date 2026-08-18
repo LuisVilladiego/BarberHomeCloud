@@ -11,6 +11,10 @@
     return !!window.SupabaseClient?.isConfigured?.() && !!db();
   }
 
+  function currentNegocioId() {
+    return window.Tenant?.currentId?.() || "";
+  }
+
   function bookingToRow(b) {
     return {
       id: b.id,
@@ -30,6 +34,7 @@
       slug: b.slug || "",
       client_fingerprint: b.clientFingerprint || "",
       google_event_id: b.googleEventId || "",
+      negocio_id: b.negocioId || currentNegocioId() || null,
       meta: {
         countryCode: b.countryCode || "",
         createdAt: b.createdAt || null,
@@ -56,6 +61,7 @@
       business: r.business,
       calendarId: r.calendar_id,
       slug: r.slug,
+      negocioId: r.negocio_id,
       clientFingerprint: r.client_fingerprint,
       googleEventId: r.google_event_id,
       countryCode: r.meta?.countryCode || "",
@@ -102,6 +108,7 @@
       stock: Number(p.stock) || 0,
       images: compactImages(p.images),
       active: true,
+      negocio_id: p.negocioId || currentNegocioId() || null,
       updated_at: new Date().toISOString(),
     };
   }
@@ -118,6 +125,7 @@
       images: Array.isArray(r.images) ? r.images : [],
       createdAt: r.created_at,
       updatedAt: r.updated_at,
+      negocioId: r.negocio_id,
     };
   }
 
@@ -136,6 +144,7 @@
         passwordHash: u.passwordHash || null,
         googleSub: u.googleSub || null,
       },
+      negocio_id: u.negocioId || currentNegocioId() || null,
       updated_at: new Date().toISOString(),
     };
   }
@@ -154,6 +163,7 @@
       passwordHash: r.meta?.passwordHash || undefined,
       googleSub: r.meta?.googleSub || undefined,
       createdAt: r.created_at,
+      negocioId: r.negocio_id,
     };
   }
 
@@ -180,7 +190,10 @@
       console.warn("[Supabase] fetch citas", error.message);
       return [];
     }
-    return (data || []).map(rowToBooking);
+    const nid = currentNegocioId();
+    const rows = (data || []).map(rowToBooking);
+    if (!nid) return rows;
+    return rows.filter((b) => !b.negocioId || b.negocioId === nid);
   }
 
   async function upsertProducto(product, kind) {
@@ -211,7 +224,11 @@
       console.warn("[Supabase] fetch productos", error.message);
       return [];
     }
-    return (data || []).map(rowToProduct);
+    return (data || []).map(rowToProduct).filter((p) => {
+      const nid = currentNegocioId();
+      if (!nid) return true;
+      return !p.negocioId || p.negocioId === nid;
+    });
   }
 
   async function upsertCliente(user) {
@@ -409,13 +426,65 @@
             pointsCost: p.pointsCost,
             stock: p.stock,
             images: p.images,
-            createdAt: p.createdAt,
-            updatedAt: p.updatedAt,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      negocioId: r.negocio_id,
           }))
         )
       );
     }
     return { ok: true, citas: citas.length, clientes: clientes.length, productos: sale.length + redeem.length };
+  }
+
+  async function fetchNegocioBySlug(slug) {
+    const client = db();
+    if (!client || !slug) return null;
+    const { data, error } = await client.from("negocios").select("*").eq("slug", slug).maybeSingle();
+    if (error) {
+      console.warn("[Supabase] fetch negocio", error.message);
+      return undefined;
+    }
+    return data || null;
+  }
+
+  async function slugAvailability(slug, excludeId) {
+    const client = db();
+    if (!client) return { ok: true, available: true, skipped: true };
+    const { data, error } = await client.from("negocios").select("id").eq("slug", slug).maybeSingle();
+    if (error) {
+      return { ok: false, available: false, message: error.message };
+    }
+    if (!data?.id) return { ok: true, available: true };
+    if (excludeId && data.id === excludeId) return { ok: true, available: true, own: true };
+    return { ok: true, available: false };
+  }
+
+  async function upsertNegocio(payload) {
+    const client = db();
+    if (!client) return { ok: false, skipped: true };
+    const row = {
+      id: payload.id,
+      slug: payload.slug,
+      name: payload.name || "",
+      subscription_status: payload.subscription_status || "active",
+      plan_id: payload.plan_id || "100",
+      autoagenda: payload.autoagenda || {},
+      updated_at: new Date().toISOString(),
+    };
+    if (!row.id) delete row.id;
+    let query;
+    if (row.id) {
+      query = client.from("negocios").upsert(row, { onConflict: "id" }).select().maybeSingle();
+    } else {
+      query = client.from("negocios").insert(row).select().maybeSingle();
+    }
+    const { data, error } = await query;
+    if (error) {
+      console.warn("[Supabase] upsert negocio", error.message);
+      return { ok: false, message: error.message };
+    }
+    if (data) window.Tenant?.setCurrent?.(data);
+    return { ok: true, negocio: data };
   }
 
   window.SupabaseData = {
@@ -432,5 +501,8 @@
     uploadProductImages,
     migrateFromLocalStorage,
     pullToLocalCache,
+    fetchNegocioBySlug,
+    slugAvailability,
+    upsertNegocio,
   };
 })();

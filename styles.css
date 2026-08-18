@@ -758,10 +758,11 @@ body.nav-open .backdrop {
   color: #374151;
 }
 
-.field__hint {
-  font-size: 0.84rem;
-  color: var(--text-muted);
-  line-height: 1.4;
+.field__hint--ok {
+  color: #047857;
+}
+.field__hint--err {
+  color: #b91c1c;
 }
 
 .field input,

@@ -63,6 +63,18 @@
   function save(state) {
     delete state.demoUsed;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const id = window.Tenant?.currentId?.();
+    const cached = window.Tenant?.cached?.();
+    if (id && cached?.slug && window.SupabaseData?.enabled?.()) {
+      window.SupabaseData.upsertNegocio({
+        id,
+        slug: window.Tenant.cached?.()?.slug,
+        name: window.Tenant.cached?.()?.name,
+        subscription_status: state.status || "active",
+        plan_id: state.planId || "100",
+        autoagenda: window.Tenant.cached?.()?.autoagenda || {},
+      }).catch((err) => console.warn("[suscripcion] sync negocio", err));
+    }
   }
 
   function formatDate(iso, style = "short") {

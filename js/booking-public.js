@@ -80,13 +80,17 @@
   }
 
   const params = new URLSearchParams(location.search);
-  const slug = params.get("s") || "";
-  const config = loadConfig();
-  const types =
+  const slug =
+    window.Tenant?.slugFromLocation?.() ||
+    window.Tenant?.normalizeSlug?.(params.get("s") || "") ||
+    params.get("s") ||
+    "";
+  let config = loadConfig();
+  let types =
     Array.isArray(config.appointmentTypes) && config.appointmentTypes.length
       ? config.appointmentTypes
       : [{ id: "type-1", name: "Agendar cita en BarberHome", duration: 60, price: 0, scheduleId: "" }];
-  const schedules = Array.isArray(config.schedules) ? config.schedules : [];
+  let schedules = Array.isArray(config.schedules) ? config.schedules : [];
 
   const title = document.getElementById("public-title");
   const description = document.getElementById("public-description");
@@ -122,6 +126,52 @@
   if (config.description) description.textContent = config.description;
   avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
   document.title = `${config.title || "Agendar"} · BarberHome`;
+
+  function applyPublicConfig(next) {
+    config = next || {};
+    types =
+      Array.isArray(config.appointmentTypes) && config.appointmentTypes.length
+        ? config.appointmentTypes
+        : [{ id: "type-1", name: "Agendar cita en BarberHome", duration: 60, price: 0, scheduleId: "" }];
+    schedules = Array.isArray(config.schedules) ? config.schedules : [];
+    if (config.title && title) title.textContent = config.title;
+    if (config.description && description) description.textContent = config.description;
+    if (avatar) avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
+    document.title = `${config.title || "Agendar"} · BarberHome`;
+    renderServices();
+  }
+
+  function showPublicGate(kind) {
+    const notFound = document.getElementById("public-not-found");
+    const unavailable = document.getElementById("public-unavailable");
+    hideAll();
+    if (serviceStep) serviceStep.hidden = true;
+    if (kind === "unavailable") {
+      if (unavailable) unavailable.hidden = false;
+      if (notFound) notFound.hidden = true;
+      return;
+    }
+    if (notFound) notFound.hidden = false;
+    if (unavailable) unavailable.hidden = true;
+  }
+
+  async function hydrateTenantPage() {
+    if (!slug) return;
+    if (!window.SupabaseData?.enabled?.()) return;
+    const negocio = await window.SupabaseData.fetchNegocioBySlug(slug);
+    if (negocio === undefined) return;
+    if (!negocio) {
+      showPublicGate("not-found");
+      return;
+    }
+    if (!window.Tenant?.isSubscriptionActive?.(negocio.subscription_status)) {
+      showPublicGate("unavailable");
+      return;
+    }
+    window.Tenant?.setCurrent?.(negocio);
+    const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
+    applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
+  }
 
   let selectedType = null;
   let viewMonth = startOfDay(new Date());
@@ -163,6 +213,10 @@
     if (shopStep) shopStep.hidden = true;
     form.hidden = true;
     ok.hidden = true;
+    const nf = document.getElementById("public-not-found");
+    const un = document.getElementById("public-unavailable");
+    if (nf) nf.hidden = true;
+    if (un) un.hidden = true;
   }
 
   function closeTimesOverlay() {
@@ -502,6 +556,7 @@
   }
 
   renderServices();
+  hydrateTenantPage().catch((err) => console.warn("[booking] tenant", err));
 
   services.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-service]");
@@ -3011,6 +3066,7 @@
         source: "public",
         name,
         clientFingerprint,
+        negocioId: window.Tenant?.currentId?.() || "",
       });
       if (!result.ok) {
         const duplicate = findRecentClientBooking(date, time, fullPhone);

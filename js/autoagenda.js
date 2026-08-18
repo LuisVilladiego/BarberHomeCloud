@@ -101,18 +101,50 @@
   function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     renderPreview();
+    scheduleNegocioSync();
+  }
+
+  let negocioSyncTimer = 0;
+  function scheduleNegocioSync() {
+    clearTimeout(negocioSyncTimer);
+    negocioSyncTimer = setTimeout(persistNegocio, 800);
+  }
+
+  async function persistNegocio() {
+    const v = window.Tenant?.validateSlug?.(state.slug);
+    if (!v?.ok) return;
+    if (!window.SupabaseData?.enabled?.()) return;
+    let sub = {};
+    try {
+      sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+    } catch {
+      sub = {};
+    }
+    const r = await window.SupabaseData.upsertNegocio({
+      id: window.Tenant.currentId() || undefined,
+      slug: v.slug,
+      name: state.title || v.slug,
+      subscription_status: sub.status || "active",
+      plan_id: sub.planId || "100",
+      autoagenda: { ...state, slug: v.slug },
+    });
+    if (!r.ok && r.message && /duplicate|unique|23505/i.test(r.message)) {
+      setSlugHint("Ese slug ya está en uso por otro negocio.", "err");
+    }
   }
 
   function publicUrl(slug) {
+    if (window.Tenant?.publicUrl) return window.Tenant.publicUrl(slug);
     const clean = String(slug || "")
       .trim()
       .toLowerCase()
-      .replace(/[^a-z0-9-_]/g, "");
+      .replace(/[^a-z0-9-]/g, "");
     return new URL(`booking.html?s=${encodeURIComponent(clean || "negocio")}`, window.location.href).href;
   }
 
   function displayLink(slug) {
-    return `barbercloud.com/${String(slug || "").trim()}`;
+    if (window.Tenant?.displayLink) return window.Tenant.displayLink(slug);
+    return `barber-home-cloud.vercel.app/${String(slug || "").trim()}`;
   }
 
   function formatTime(hhmm) {
@@ -396,6 +428,57 @@
   renderSchedules();
   renderTypes();
   renderPreview();
+
+  const urlPrefix = document.getElementById("url-prefix");
+  if (urlPrefix) {
+    urlPrefix.textContent = window.Tenant?.isLocalHost?.()
+      ? "barber-home-cloud.vercel.app/"
+      : `${location.host}/`;
+  }
+
+  const slugStatus = document.getElementById("slug-status");
+  function setSlugHint(msg, kind) {
+    if (!slugStatus) return;
+    slugStatus.textContent = msg;
+    slugStatus.className = "field__hint" + (kind ? ` field__hint--${kind}` : "");
+  }
+
+  let availTimer = 0;
+  async function checkSlugLive() {
+    const v = window.Tenant?.validateSlug?.(slugInput.value);
+    if (!v) return;
+    if (!v.ok) {
+      setSlugHint(v.message, "err");
+      return;
+    }
+    if (!window.SupabaseData?.enabled?.()) {
+      setSlugHint(`Tu link: ${window.Tenant.displayLink(v.slug)}`, "ok");
+      return;
+    }
+    setSlugHint("Comprobando si está disponible…");
+    const r = await window.SupabaseData.slugAvailability(v.slug, window.Tenant.currentId());
+    if (r.skipped) {
+      setSlugHint(`Tu link: ${window.Tenant.displayLink(v.slug)}`, "ok");
+      return;
+    }
+    if (!r.ok) {
+      setSlugHint("No se pudo comprobar el slug.", "err");
+      return;
+    }
+    if (r.available) setSlugHint(`Disponible · ${window.Tenant.displayLink(v.slug)}`, "ok");
+    else setSlugHint("Ese slug ya está ocupado. Elige otro.", "err");
+  }
+
+  slugInput?.addEventListener("input", () => {
+    const next = String(slugInput.value || "")
+      .toLowerCase()
+      .replace(/[\s_]+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+    slugInput.value = next;
+    clearTimeout(availTimer);
+    availTimer = setTimeout(checkSlugLive, 400);
+  });
+  checkSlugLive();
 
   ["input", "change"].forEach((evt) => form.addEventListener(evt, syncBasicFields));
 
