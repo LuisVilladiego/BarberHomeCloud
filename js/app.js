@@ -561,6 +561,35 @@
     }
   }
 
+  /** Aviso fijo + panel solo de consulta cuando el pago está vencido. */
+  function showBillingBanner() {
+    if (document.querySelector(".billing-banner")) return;
+    document.body.classList.add("is-readonly");
+
+    const banner = document.createElement("div");
+    banner.className = "billing-banner";
+    banner.setAttribute("role", "status");
+
+    const text = document.createElement("div");
+    text.className = "billing-banner__text";
+    const title = document.createElement("strong");
+    title.textContent = "Suscripción vencida por falta de pago.";
+    const detail = document.createElement("span");
+    detail.textContent =
+      "Tu link público de reservas está desactivado y el panel quedó solo para consultar tus datos.";
+    text.append(title, detail);
+
+    const cta = document.createElement("a");
+    cta.className = "btn btn--primary";
+    cta.href = "suscripcion.html";
+    cta.textContent = "Renovar ahora";
+
+    banner.append(text, cta);
+    const main = document.querySelector(".main");
+    if (main) main.insertBefore(banner, main.firstChild);
+    else document.body.insertBefore(banner, document.body.firstChild);
+  }
+
   async function initTenantGate() {
     if (hasAuthSession() && window.Tenant?.syncWithAuthenticatedUser) {
       const sync = await window.Tenant.syncWithAuthenticatedUser();
@@ -574,15 +603,35 @@
     }
 
     const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
-    if (page !== "suscripcion.html" && hasAuthSession() && !hasActiveSub()) {
+    if (page === "suscripcion.html" || !hasAuthSession()) return true;
+
+    // Sin Supabase (desarrollo local) se sigue con el estado guardado.
+    if (!window.Billing?.enabled?.()) {
+      if (!hasActiveSub()) {
+        location.replace("suscripcion.html?need=1");
+        return false;
+      }
+      return true;
+    }
+
+    const billing = await window.Billing.refresh();
+    if (window.Billing.isActive(billing)) return true;
+
+    // Nunca pagó: no hay nada que consultar, va directo a activar.
+    if (!billing?.periodEnd) {
       location.replace("suscripcion.html?need=1");
       return false;
     }
+
+    showBillingBanner();
     return true;
   }
 
   initTenantGate().then((ok) => {
     if (!ok) return;
+
+    window.AppShell.panelReady = true;
+    window.dispatchEvent(new CustomEvent("barbercloud:panel-ready"));
 
     runNotificationJobs();
     setInterval(runNotificationJobs, 20000);

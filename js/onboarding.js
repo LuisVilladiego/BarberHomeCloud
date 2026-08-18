@@ -255,6 +255,7 @@
     }
     window.Tenant.markOnboarded();
     const user = await window.BarberAuth?.currentUser?.();
+    // En la nube el estado real lo fija el webhook de Wompi: nace sin pagar.
     const subStatus = user ? "incomplete" : "trialing";
     localStorage.setItem(
       "barbercloud.subscription",

@@ -188,7 +188,7 @@
       showPublicGate("not-found");
       return;
     }
-    if (!window.Tenant?.isSubscriptionActive?.(negocio.subscription_status)) {
+    if (!window.Tenant?.isNegocioActive?.(negocio)) {
       showPublicGate("unavailable");
       return;
     }

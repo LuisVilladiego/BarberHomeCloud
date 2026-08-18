@@ -177,6 +177,13 @@
     if (!date || !time) {
       return { ok: false, reason: "invalid", message: "Fecha y hora son obligatorias." };
     }
+    if (window.Billing?.blocksWrites?.()) {
+      return {
+        ok: false,
+        reason: "subscription",
+        message: "Suscripción vencida: renueva el pago para volver a agendar.",
+      };
+    }
     return runSlotExclusive(date, time, () => bookAtomicallyCore(bookingInput));
   }
 
@@ -330,6 +337,7 @@
   }
 
   function patchBooking(id, patch) {
+    if (window.Billing?.guard?.()) return null;
     const list = loadBookings();
     const idx = list.findIndex((b) => b.id === id);
     if (idx < 0) return null;

@@ -200,7 +200,12 @@
     return { ok: true };
   }
 
-  async function fetchCitas() {
+  /**
+   * Con strict, un fallo lanza en vez de devolver []. Lo necesitan los llamadores
+   * que reemplazan la caché local: si no distinguen "vacío" de "falló", un error
+   * de red les borraría los datos del barbero.
+   */
+  async function fetchCitas(options = {}) {
     const client = db();
     if (!client) return [];
     let q = client.from("citas").select("*").order("created_at", { ascending: false }).limit(2000);
@@ -209,6 +214,7 @@
     const { data, error } = await q;
     if (error) {
       console.warn("[Supabase] fetch citas", error.message);
+      if (options.strict) throw new Error(error.message);
       return [];
     }
     return (data || []).map(rowToBooking);
@@ -232,7 +238,7 @@
     return { ok: true, id: row.id };
   }
 
-  async function fetchProductos(kind) {
+  async function fetchProductos(kind, options = {}) {
     const client = db();
     if (!client) return [];
     let q = client.from("productos").select("*").eq("active", true).order("created_at", { ascending: false });
@@ -242,6 +248,7 @@
     const { data, error } = await q;
     if (error) {
       console.warn("[Supabase] fetch productos", error.message);
+      if (options.strict) throw new Error(error.message);
       return [];
     }
     return (data || []).map(rowToProduct);
@@ -258,7 +265,7 @@
     return { ok: true };
   }
 
-  async function fetchClientes() {
+  async function fetchClientes(options = {}) {
     const client = db();
     if (!client) return [];
     let q = client.from("clientes").select("*").order("created_at", { ascending: false });
@@ -267,6 +274,7 @@
     const { data, error } = await q;
     if (error) {
       console.warn("[Supabase] fetch clientes", error.message);
+      if (options.strict) throw new Error(error.message);
       return [];
     }
     return (data || []).map(rowToClient);
@@ -422,8 +430,8 @@
   /** Baja citas de Supabase; con replace=true sustituye la caché local (no fusiona). */
   async function syncCitasFromCloud(options = {}) {
     if (!enabled()) return { ok: false, skipped: true, changed: false };
-    const remote = await fetchCitas();
     const replace = !!options.replace;
+    const remote = await fetchCitas({ strict: replace });
 
     let merged;
     if (replace) {
@@ -522,34 +530,52 @@
   async function pullToLocalCache(options = {}) {
     if (!enabled()) return { ok: false, skipped: true };
     const replace = !!options.replace;
-    const citasRes = await syncCitasFromCloud({ replace, force: replace });
-    const clientes = await fetchClientes();
-    localStorage.setItem("barbercloud.loyalty_users", JSON.stringify(clientes));
-    const sale = await fetchProductos("sale");
-    localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
-    const redeem = await fetchProductos("redeem");
-    localStorage.setItem(
-      "barbercloud.loyalty_redeem_products",
-      JSON.stringify(
-        redeem.map((p) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          pointsCost: p.pointsCost,
-          stock: p.stock,
-          images: p.images,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
-          negocioId: p.negocioId,
-        }))
-      )
-    );
-    return {
-      ok: true,
-      citas: citasRes.count || 0,
-      clientes: clientes.length,
-      productos: sale.length + redeem.length,
-    };
+
+    // Cada bloque falla por separado: un error de red no debe vaciar la caché.
+    let citas = 0;
+    try {
+      const citasRes = await syncCitasFromCloud({ replace, force: replace });
+      citas = citasRes.count || 0;
+    } catch (err) {
+      console.warn("[Supabase] pull citas", err.message);
+    }
+
+    let clientes = 0;
+    try {
+      const rows = await fetchClientes({ strict: replace });
+      localStorage.setItem("barbercloud.loyalty_users", JSON.stringify(rows));
+      clientes = rows.length;
+    } catch (err) {
+      console.warn("[Supabase] pull clientes", err.message);
+    }
+
+    let productos = 0;
+    try {
+      const sale = await fetchProductos("sale", { strict: replace });
+      localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
+      const redeem = await fetchProductos("redeem", { strict: replace });
+      localStorage.setItem(
+        "barbercloud.loyalty_redeem_products",
+        JSON.stringify(
+          redeem.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            pointsCost: p.pointsCost,
+            stock: p.stock,
+            images: p.images,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+            negocioId: p.negocioId,
+          }))
+        )
+      );
+      productos = sale.length + redeem.length;
+    } catch (err) {
+      console.warn("[Supabase] pull productos", err.message);
+    }
+
+    return { ok: true, citas, clientes, productos };
   }
 
   async function fetchOwnNegocio() {

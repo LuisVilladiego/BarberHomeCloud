@@ -89,8 +89,8 @@
           <h1>Suscripción</h1>
         </header>
         <p class="sub-need" id="sub-need" hidden>
-          Para entrar al panel necesitas una suscripción activa. Elige un plan y pulsa
-          <strong>Método de pago → Entendido</strong> para activarla.
+          Para entrar al panel necesitas una suscripción activa. Elige tu plan y págalo con
+          <strong>Wompi</strong> para activarla.
         </p>
 
         <section class="panel config-panel plan-summary">
@@ -102,9 +102,13 @@
             <span class="status status--ok" id="plan-status">Activo</span>
           </div>
           <p class="section-lead" style="margin-top:12px">
-            El enlace público de reservas (<code>/tu-slug</code>) solo funciona con suscripción activa.
-            Los pagos reales se conectarán más adelante.
+            El enlace público de reservas (<code>/tu-slug</code>) solo funciona con suscripción
+            activa. Si el pago vence, el enlace se desactiva de inmediato y el panel queda solo
+            para consultar tus datos.
           </p>
+          <div class="modal__actions" style="justify-content:flex-start;margin-top:14px">
+            <button class="btn btn--primary" type="button" id="btn-pay-now">Pagar con Wompi</button>
+          </div>
         </section>
 
         <section class="panel config-panel">
@@ -160,8 +164,8 @@
                 </svg>
               </span>
               <span class="manage-item__text">
-                <strong>Método de pago</strong>
-                <small>Los cobros irán por pasarela. BarberCloud no guarda número ni CVC</small>
+                <strong>Pagar o renovar</strong>
+                <small>El cobro ocurre en la página segura de Wompi. Aquí no se guardan tarjetas</small>
               </span>
               <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -175,8 +179,8 @@
                 </svg>
               </span>
               <span class="manage-item__text">
-                <strong>Descargar Facturas</strong>
-                <small>Consulta y descarga tus facturas en el portal de facturación</small>
+                <strong>Historial de pagos</strong>
+                <small>Consulta tus pagos de Wompi y descarga el comprobante</small>
               </span>
               <svg class="manage-item__chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -240,17 +244,31 @@
     <div class="modal" id="payment-modal" hidden>
       <div class="modal__backdrop" data-close-payment></div>
       <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="payment-modal-title">
-        <h3 id="payment-modal-title">Método de pago</h3>
-        <p class="modal__lead">
-          BarberCloud no almacena números de tarjeta ni CVC. Cuando conectemos la pasarela
-          (Stripe o Wompi), el cobro ocurrirá en su página segura y aquí solo quedará un token.
+        <h3 id="payment-modal-title">Pagar con Wompi</h3>
+        <p class="modal__lead" id="payment-lead">
+          Vas a pagar un mes de tu plan en la página segura de Wompi. BarberCloud no almacena
+          números de tarjeta ni CVC.
         </p>
         <p class="section-lead">
-          Hasta entonces, el plan se marca como activo para que puedas probar el enlace público
-          de tu negocio. No ingreses datos reales de tarjeta en esta app.
+          Al aprobarse el pago, tu suscripción se activa automáticamente y el enlace público
+          vuelve a funcionar. Puedes pagar con tarjeta, PSE, Nequi o Bancolombia.
+        </p>
+        <p class="auth-error" id="payment-error" hidden></p>
+        <div class="modal__actions">
+          <button class="btn btn--secondary" type="button" data-close-payment>Cancelar</button>
+          <button class="btn btn--primary" type="button" id="btn-go-wompi">Ir a pagar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="pending-modal" hidden>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="pending-modal-title">
+        <h3 id="pending-modal-title">Confirmando tu pago…</h3>
+        <p class="modal__lead" id="pending-lead">
+          Estamos esperando la confirmación de Wompi. Esto suele tardar unos segundos.
         </p>
         <div class="modal__actions">
-          <button class="btn btn--primary" type="button" data-close-payment>Entendido</button>
+          <button class="btn btn--secondary" type="button" data-close-pending>Cerrar</button>
         </div>
       </div>
     </div>
@@ -269,8 +287,8 @@
     <div class="modal" id="invoices-modal" hidden>
       <div class="modal__backdrop" data-close-invoices></div>
       <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="invoices-modal-title">
-        <h3 id="invoices-modal-title">Facturas</h3>
-        <div class="invoice-list" id="invoice-list"></div>
+        <h3 id="invoices-modal-title">Historial de pagos</h3>
+        <div class="billing-history" id="invoice-list"></div>
         <div class="modal__actions">
           <button class="btn btn--primary" type="button" data-close-invoices>Cerrar</button>
         </div>
@@ -323,14 +341,18 @@
     </button>
     <div class="backdrop" aria-hidden="true"></div>
 
-    <script src="js/booking-store.js"></script>
     <script src="js/security.js?v=20260816"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>
     <script src="js/supabase-client.js?v=20260818a"></script>
-    <script src="js/tenant.js?v=20260818f"></script>
-    <script src="js/supabase-data.js?v=20260818f"></script>
-    <script src="js/app.js?v=20260818f"></script>
-    <script src="js/suscripcion.js?v=20260818f"></script>
+    <script src="js/tenant.js?v=20260818m"></script>
+    <script src="js/supabase-data.js?v=20260818m"></script>
+    <script src="js/plans.js?v=20260818m"></script>
+    <script src="js/billing.js?v=20260818m"></script>
+    <script src="js/booking-store.js?v=20260818m"></script>
+    <script src="js/auth.js?v=20260818m"></script>
+    <script src="js/app.js?v=20260818m"></script>
+    <script src="js/welcome.js?v=20260818m"></script>
+    <script src="js/suscripcion.js?v=20260818m"></script>
   </body>
 </html>

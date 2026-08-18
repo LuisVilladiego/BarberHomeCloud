@@ -4539,6 +4539,60 @@ body.nav-open .backdrop {
   display: none !important;
 }
 
+.billing-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.billing-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 260px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.billing-banner .btn {
+  flex: 0 0 auto;
+}
+
+.billing-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.billing-history__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+}
+
+.billing-history__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.88rem;
+}
+
+.billing-history__meta small {
+  color: #6b7280;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
@@ -7733,5 +7787,177 @@ img {
       padding-left: max(14px, env(safe-area-inset-left, 0px));
       padding-right: max(14px, env(safe-area-inset-right, 0px));
     }
+  }
+}
+
+/* —— Bienvenida tras activar la suscripción —— */
+.welcome-open {
+  overflow: hidden;
+}
+
+.welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px 18px;
+  overflow-y: auto;
+  background: radial-gradient(130% 130% at 15% 0%, #7c3aed 0%, #6528e0 55%, #4f38d6 100%);
+  animation: fade-in 220ms ease both;
+}
+
+.welcome-card {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 34px 28px;
+  box-shadow: 0 26px 60px rgba(15, 23, 42, 0.28);
+  animation: rise 320ms ease both;
+}
+
+.welcome-card--center {
+  text-align: center;
+}
+
+.welcome-card h2 {
+  margin: 0 0 14px;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.welcome-question {
+  margin-bottom: 4px;
+}
+
+.welcome-lead {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.welcome-lead:last-child {
+  margin-bottom: 0;
+}
+
+.welcome-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  min-height: 44px;
+}
+
+.welcome-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--whatsapp);
+  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35);
+}
+
+.welcome-choices {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 14px;
+}
+
+.welcome-choice {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 58px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  font-size: 1rem;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.welcome-choice:hover {
+  border-color: #c7c3f5;
+  background: #fafaff;
+}
+
+.welcome-choice.is-selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(82, 72, 231, 0.12);
+}
+
+.welcome-note {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.welcome-note--center {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.welcome-actions .btn {
+  min-width: 136px;
+  height: 44px;
+  border-radius: 12px;
+  justify-content: center;
+}
+
+.welcome-actions .btn[hidden] {
+  display: none;
+}
+
+.welcome-actions .btn--primary:disabled {
+  background: #b7b2f0;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .welcome-card {
+    padding: 26px 20px 22px;
+    border-radius: 16px;
+  }
+
+  .welcome-card h2 {
+    font-size: 1.2rem;
+  }
+
+  .welcome-actions {
+    flex-direction: column-reverse;
+  }
+
+  .welcome-actions .btn {
+    width: 100%;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

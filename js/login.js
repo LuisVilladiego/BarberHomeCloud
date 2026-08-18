@@ -199,11 +199,14 @@
       location.href = "onboarding.html";
       return;
     }
-    if (!window.Tenant?.hasActiveSubscription?.()) {
-      location.href = "suscripcion.html?need=1";
+    if (window.Tenant?.hasActiveSubscription?.()) {
+      location.href = "index.html";
       return;
     }
-    location.href = "index.html";
+    // Si ya pagó antes y se le venció, entra al panel en modo lectura.
+    // Si nunca pagó, va directo a activar la suscripción.
+    const billing = window.Billing?.cached?.();
+    location.href = billing?.periodEnd ? "index.html" : "suscripcion.html?need=1";
   }
 
   async function sendStaffCode(email, name, type) {

@@ -1,152 +1,96 @@
 (function () {
-  const STORAGE_KEY = "barbercloud.subscription";
+  const SUB_KEY = "barbercloud.subscription";
   const BOOKINGS_KEY = "barbercloud.bookings";
-  const USD_TO_COP = 4000;
+  const OVERAGE_COP = 800;
 
-  // Planes BarberCloud (USD) convertidos a COP
-  const PLANS = [
-    { id: "50", limit: 50, priceUsd: 12, price: 12 * USD_TO_COP, label: "50 citas al mes" },
-    { id: "100", limit: 100, priceUsd: 18, price: 18 * USD_TO_COP, label: "100 citas al mes" },
-    { id: "200", limit: 200, priceUsd: 31, price: 31 * USD_TO_COP, label: "200 citas al mes" },
-    { id: "300", limit: 300, priceUsd: 45, price: 45 * USD_TO_COP, label: "300 citas al mes" },
-  ];
+  const formatMoney =
+    window.Plans?.formatMoney ||
+    ((amount) =>
+      new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0,
+      }).format(Number(amount) || 0));
 
-  const defaults = {
-    planId: "100",
-    status: "active",
-    cancelAtPeriodEnd: false,
-    currency: "COP",
-    overageCost: Math.round(0.2 * USD_TO_COP),
-    billingFrequency: "Mensual",
-    periodStart: "2026-07-17",
-    periodEnd: "2026-08-17",
-    nextCharge: "2026-08-17",
-    payment: {
-      provider: "pending",
-    },
-    invoices: [
-      { id: "inv-2026-07", label: "Julio 2026", amount: 18 * USD_TO_COP, date: "2026-07-17" },
-      { id: "inv-2026-06", label: "Junio 2026", amount: 18 * USD_TO_COP, date: "2026-06-17" },
-      { id: "inv-2026-05", label: "Mayo 2026", amount: 18 * USD_TO_COP, date: "2026-05-17" },
-    ],
+  const PAGO_LABELS = {
+    APPROVED: "Aprobado",
+    DECLINED: "Rechazado",
+    VOIDED: "Anulado",
+    ERROR: "Error",
+    PENDING: "Pendiente",
   };
 
-  function formatMoney(amount) {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(Number(amount) || 0);
+  let state = {
+    planId: "100",
+    status: "incomplete",
+    periodStart: null,
+    periodEnd: null,
+    lastPaymentAt: null,
+  };
+  let selectedPlanId = null;
+  let pagos = [];
+
+  const planTitle = document.getElementById("plan-title");
+  const planNext = document.getElementById("plan-next-charge");
+  const planStatus = document.getElementById("plan-status");
+  const billingPeriod = document.getElementById("billing-period");
+  const usageUsed = document.getElementById("usage-used");
+  const usageLabel = document.getElementById("usage-label");
+  const usageBar = document.getElementById("usage-bar");
+  const usagePct = document.getElementById("usage-pct");
+  const usageLimit = document.getElementById("usage-limit");
+  const overageCost = document.getElementById("overage-cost");
+  const billingFrequency = document.getElementById("billing-frequency");
+  const paymentError = document.getElementById("payment-error");
+  const paymentLead = document.getElementById("payment-lead");
+  const pendingLead = document.getElementById("pending-lead");
+
+  function plansList() {
+    return window.Plans?.PLANS || [];
   }
 
-  function load() {
-    try {
-      const raw = { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
-      delete raw.demoUsed;
-      if (raw.payment && typeof raw.payment === "object") {
-        delete raw.payment.last4;
-        delete raw.payment.number;
-        delete raw.payment.cvc;
-        delete raw.payment.expiry;
-        delete raw.payment.holder;
-        raw.payment.provider = "pending";
-      }
-      if (raw.currency !== "COP") {
-        raw.currency = "COP";
-        raw.overageCost = defaults.overageCost;
-        raw.invoices = defaults.invoices;
-        if (["250", "500"].includes(raw.planId)) raw.planId = "200";
-      }
-      if (Number(raw.overageCost) > 0 && Number(raw.overageCost) < 10) {
-        raw.overageCost = Math.round(Number(raw.overageCost) * USD_TO_COP);
-      }
-      return raw;
-    } catch {
-      return { ...defaults };
-    }
+  function currentPlan() {
+    return (
+      window.Plans?.find?.(state.planId) ||
+      plansList()[1] ||
+      { id: "100", limit: 100, price: 72000, label: "100 citas al mes" }
+    );
   }
 
-  function save(state) {
-    delete state.demoUsed;
-    if (state.payment && typeof state.payment === "object") {
-      delete state.payment.last4;
-      delete state.payment.number;
-      delete state.payment.cvc;
-      delete state.payment.expiry;
-      delete state.payment.holder;
-      state.payment.provider = "pending";
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    const id = window.Tenant?.currentId?.();
-    const cached = window.Tenant?.cached?.();
-    if (cached?.id || id) {
-      window.Tenant?.setCurrent?.({
-        ...cached,
-        id: id || cached?.id,
-        subscription_status: state.status || "active",
-        plan_id: state.planId || cached?.plan_id || "100",
-      });
-    }
-    if (id && cached?.slug && window.SupabaseData?.enabled?.()) {
-      window.SupabaseData.upsertNegocio({
-        id,
-        slug: window.Tenant.cached?.()?.slug,
-        name: window.Tenant.cached?.()?.name,
-        subscription_status: state.status || "active",
-        plan_id: state.planId || "100",
-        autoagenda: window.Tenant.cached?.()?.autoagenda || {},
-      }).catch((err) => console.warn("[suscripcion] sync negocio", err));
-    }
+  function isActive() {
+    return !!window.Billing?.isActive?.(state);
   }
 
-  function formatDate(iso, style = "short") {
-    const d = new Date(`${iso}T12:00:00`);
+  function toIsoDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function formatDate(value, style = "short") {
+    if (!value) return "—";
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
     if (style === "long") {
       return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
     }
     return d.toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
   }
 
-  function currentPlan(state) {
-    return PLANS.find((p) => p.id === state.planId) || PLANS[1];
-  }
-
-  function toIsoDate(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-  }
-
-  function billingAnchorDay(state) {
-    const charge = state.nextCharge || defaults.nextCharge;
-    const parsed = new Date(`${charge}T12:00:00`);
-    const day = parsed.getDate();
-    return Number.isFinite(day) && day > 0 ? day : 17;
-  }
-
-  /** Ajusta el período para que siempre incluya la fecha de hoy. */
-  function normalizeBillingPeriod(state) {
-    const anchorDay = billingAnchorDay(state);
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const today = now.getDate();
-
-    let endYear = y;
-    let endMonth = m;
-    if (today >= anchorDay) endMonth += 1;
-    if (endMonth > 11) {
-      endMonth = 0;
-      endYear += 1;
+  /** Sin pago vigente se muestra el mes corriente para que el consumo tenga sentido. */
+  function periodBounds() {
+    if (state.periodStart && state.periodEnd) {
+      return {
+        start: String(state.periodStart).slice(0, 10),
+        end: String(state.periodEnd).slice(0, 10),
+      };
     }
-
-    const periodEnd = new Date(endYear, endMonth, anchorDay);
-    const periodStart = new Date(endYear, endMonth - 1, anchorDay);
-    state.periodStart = toIsoDate(periodStart);
-    state.periodEnd = toIsoDate(periodEnd);
-    if (!state.cancelAtPeriodEnd) state.nextCharge = state.periodEnd;
-    return state;
+    const now = new Date();
+    return {
+      start: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+      end: toIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+    };
   }
 
   function loadBookings() {
@@ -165,9 +109,8 @@
     return status !== "cancelled" && status !== "canceled" && status !== "rejected";
   }
 
-  function bookingsInPeriod(state) {
-    const start = state.periodStart;
-    const end = state.periodEnd;
+  function bookingsInPeriod() {
+    const { start, end } = periodBounds();
     return loadBookings().filter((b) => {
       if (!isActiveBooking(b)) return false;
       const day = String(b.date || b.createdAt || "").slice(0, 10);
@@ -175,104 +118,275 @@
     });
   }
 
-  function usedCount(state) {
-    return bookingsInPeriod(state).length;
+  /** Caché local solo para pintar; el estado real lo escribe el webhook de Wompi. */
+  function cacheLocal() {
+    try {
+      localStorage.setItem(
+        SUB_KEY,
+        JSON.stringify({
+          planId: state.planId,
+          status: state.status,
+          periodStart: state.periodStart,
+          periodEnd: state.periodEnd,
+          lastPaymentAt: state.lastPaymentAt,
+          payment: { provider: "wompi" },
+        })
+      );
+    } catch {
+      /* ignore */
+    }
   }
 
-  let stored = null;
-  try {
-    stored = localStorage.getItem(STORAGE_KEY);
-  } catch {
-    stored = null;
-  }
-  let state = normalizeBillingPeriod(load());
-  if (!stored) {
-    state.status = "incomplete";
-  } else {
-    save(state);
+  function readLocal() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SUB_KEY) || "{}");
+      return {
+        planId: raw.planId || "100",
+        status: raw.status || "incomplete",
+        periodStart: raw.periodStart || null,
+        periodEnd: raw.periodEnd || null,
+        lastPaymentAt: raw.lastPaymentAt || null,
+      };
+    } catch {
+      return { ...state };
+    }
   }
 
-  const planTitle = document.getElementById("plan-title");
-  const planNext = document.getElementById("plan-next-charge");
-  const planStatus = document.getElementById("plan-status");
-  const billingPeriod = document.getElementById("billing-period");
-  const usageUsed = document.getElementById("usage-used");
-  const usageLabel = document.getElementById("usage-label");
-  const usageBar = document.getElementById("usage-bar");
-  const usagePct = document.getElementById("usage-pct");
-  const usageLimit = document.getElementById("usage-limit");
-  const overageCost = document.getElementById("overage-cost");
-  const billingFrequency = document.getElementById("billing-frequency");
-
-  function renderUsage(used) {
-    const plan = currentPlan(state);
+  function renderUsage() {
+    const plan = currentPlan();
+    const used = bookingsInPeriod().length;
     const pct = Math.min(100, Math.round((used / plan.limit) * 100));
-    usageUsed.textContent = String(used);
-    usageLabel.textContent = ` / ${plan.limit} citas usadas este período`;
-    usageBar.style.width = `${pct}%`;
-    usagePct.textContent = `${pct}% usado`;
-    usageLimit.textContent = `Límite del plan: ${plan.limit}`;
-  }
-
-  function refreshUsage() {
-    state = normalizeBillingPeriod(state);
-    save(state);
-    billingPeriod.textContent = `Período de facturación: ${formatDate(state.periodStart, "long")} - ${formatDate(state.periodEnd, "long")}`;
-    renderUsage(usedCount(state));
+    if (usageUsed) usageUsed.textContent = String(used);
+    if (usageLabel) usageLabel.textContent = ` / ${plan.limit} citas usadas este período`;
+    if (usageBar) usageBar.style.width = `${pct}%`;
+    if (usagePct) usagePct.textContent = `${pct}% usado`;
+    if (usageLimit) usageLimit.textContent = `Límite del plan: ${plan.limit}`;
   }
 
   function render() {
-    const plan = currentPlan(state);
-    const used = usedCount(state);
+    const plan = currentPlan();
+    const label = window.Billing?.statusLabel?.(state) || { text: "Sin activar", tone: "paused" };
 
-    planTitle.textContent = `Tienes el plan de ${plan.limit} citas al mes`;
-    if (state.cancelAtPeriodEnd) {
-      planNext.textContent = `Se cancelará el ${formatDate(state.periodEnd)}`;
-      planStatus.textContent = "Cancelación programada";
-      planStatus.className = "status status--paused";
-    } else {
-      planNext.textContent = `Próximo cargo: ${formatDate(state.nextCharge)} · ${formatMoney(plan.price)}`;
-      planStatus.textContent =
-        state.status === "active" || state.status === "trialing"
-          ? "Activo"
-          : state.status === "incomplete"
-            ? "Sin activar"
-            : "Pausado";
-      planStatus.className = `status ${
-        state.status === "active" || state.status === "trialing" ? "status--ok" : "status--paused"
-      }`;
+    if (planTitle) planTitle.textContent = `Tienes el plan de ${plan.limit} citas al mes`;
+    if (planStatus) {
+      planStatus.textContent = label.text;
+      planStatus.className = `status status--${label.tone}`;
+    }
+    if (planNext) {
+      if (isActive()) {
+        const days = window.Billing?.daysLeft?.(state) || 0;
+        planNext.textContent = `Pagado hasta ${formatDate(state.periodEnd)} · ${formatMoney(
+          plan.price
+        )} al mes · quedan ${days} día${days === 1 ? "" : "s"}`;
+      } else if (state.periodEnd) {
+        planNext.textContent = `Venció el ${formatDate(state.periodEnd)} · ${formatMoney(
+          plan.price
+        )} para reactivar`;
+      } else {
+        planNext.textContent = `Sin pagos registrados · ${formatMoney(plan.price)} al mes`;
+      }
     }
 
-    billingPeriod.textContent = `Período de facturación: ${formatDate(state.periodStart, "long")} - ${formatDate(state.periodEnd, "long")}`;
-    renderUsage(used);
-    if (overageCost) overageCost.textContent = formatMoney(state.overageCost);
-    if (billingFrequency) billingFrequency.textContent = state.billingFrequency || "Mensual";
-    refreshUsage();
+    const { start, end } = periodBounds();
+    if (billingPeriod) {
+      billingPeriod.textContent = `Período de facturación: ${formatDate(
+        start,
+        "long"
+      )} - ${formatDate(end, "long")}`;
+    }
+    if (overageCost) overageCost.textContent = formatMoney(OVERAGE_COP);
+    if (billingFrequency) billingFrequency.textContent = "Mensual (pago manual)";
+
+    renderUsage();
+    refreshNeedBanner();
+  }
+
+  function refreshNeedBanner() {
+    const needEl = document.getElementById("sub-need");
+    if (!needEl) return;
+    needEl.hidden = isActive();
   }
 
   function openModal(id) {
-    document.getElementById(id).hidden = false;
+    const el = document.getElementById(id);
+    if (el) el.hidden = false;
   }
   function closeModal(id) {
-    document.getElementById(id).hidden = true;
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
+
+  function showPaymentError(message) {
+    if (!paymentError) return;
+    paymentError.hidden = !message;
+    paymentError.textContent = message || "";
   }
 
   function renderPlanOptions() {
     const box = document.getElementById("plan-options");
-    box.innerHTML = PLANS.map((plan) => {
-      const selected = plan.id === state.planId;
-      return `
+    if (!box) return;
+    const pick = selectedPlanId || state.planId;
+    box.innerHTML = plansList()
+      .map((plan) => {
+        const selected = plan.id === pick;
+        const isCurrent = plan.id === state.planId && isActive();
+        return `
         <button type="button" class="plan-option ${selected ? "is-selected" : ""}" data-plan="${plan.id}">
           <span>
             <strong>${plan.label}</strong>
             <small>${formatMoney(plan.price)} / mes</small>
           </span>
-          <span class="plan-option__badge">${selected ? "Actual" : "Elegir"}</span>
+          <span class="plan-option__badge">${isCurrent ? "Actual" : selected ? "Elegido" : "Elegir"}</span>
         </button>`;
-    }).join("");
+      })
+      .join("");
+  }
+
+  function openPaymentModal(planId) {
+    selectedPlanId = planId || state.planId;
+    const plan = window.Plans?.find?.(selectedPlanId) || currentPlan();
+    if (paymentLead) {
+      paymentLead.textContent = `Vas a pagar ${formatMoney(plan.price)} por un mes del plan de ${
+        plan.limit
+      } citas en la página segura de Wompi. BarberCloud no almacena números de tarjeta ni CVC.`;
+    }
+    showPaymentError("");
+    openModal("payment-modal");
+  }
+
+  async function goToWompi() {
+    const button = document.getElementById("btn-go-wompi");
+    const planId = selectedPlanId || state.planId;
+    showPaymentError("");
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Preparando…";
+    }
+
+    const res = await window.Billing?.startCheckout?.(planId);
+    if (!res?.ok) {
+      showPaymentError(res?.message || "No se pudo iniciar el pago.");
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Ir a pagar";
+      }
+      return;
+    }
+    location.href = res.checkoutUrl;
+  }
+
+  async function renderPagos() {
+    const list = document.getElementById("invoice-list");
+    if (!list) return;
+    list.innerHTML = `<p class="empty-hint">Cargando pagos…</p>`;
+    pagos = (await window.Billing?.fetchPagos?.()) || [];
+
+    if (!pagos.length) {
+      list.innerHTML = `<p class="empty-hint">Todavía no hay pagos registrados.</p>`;
+      return;
+    }
+
+    list.innerHTML = pagos
+      .map((pago) => {
+        const status = String(pago.status || "").toUpperCase();
+        const tone = status === "APPROVED" ? "ok" : "paused";
+        const amount = formatMoney(Number(pago.amount_in_cents || 0) / 100);
+        return `
+        <div class="billing-history__row">
+          <span class="billing-history__meta">
+            <strong>${amount} · plan ${pago.plan_id || ""}</strong>
+            <small>${formatDate(pago.created_at)} · ${pago.reference}</small>
+          </span>
+          <span class="status status--${tone}">${PAGO_LABELS[status] || status}</span>
+          ${
+            status === "APPROVED"
+              ? `<button class="btn btn--ghost" type="button" data-receipt="${pago.reference}">Comprobante</button>`
+              : ""
+          }
+        </div>`;
+      })
+      .join("");
+  }
+
+  function downloadReceipt(reference) {
+    const pago = pagos.find((p) => p.reference === reference);
+    if (!pago) return;
+    const amount = formatMoney(Number(pago.amount_in_cents || 0) / 100);
+    const lines = [
+      "BarberCloud · comprobante de pago",
+      `Referencia: ${pago.reference}`,
+      `Transacción Wompi: ${pago.wompi_transaction_id || "—"}`,
+      `Fecha: ${formatDate(pago.created_at, "long")}`,
+      `Plan: ${pago.plan_id}`,
+      `Monto: ${amount} ${pago.currency || "COP"}`,
+      `Medio de pago: ${pago.payment_method || "—"}`,
+      `Periodo cubierto: ${formatDate(pago.period_start)} a ${formatDate(pago.period_end)}`,
+      "",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pago-${pago.reference}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    window.AppShell?.toast?.("Comprobante descargado");
+  }
+
+  /** Al volver de Wompi el webhook puede tardar unos segundos en confirmar. */
+  async function handleReturnFromWompi() {
+    const params = new URLSearchParams(location.search);
+    const reference = params.get("ref");
+    if (!reference) return;
+
+    openModal("pending-modal");
+    const pago = await window.Billing?.waitForPayment?.(reference);
+    const status = String(pago?.status || "PENDING").toUpperCase();
+
+    let goToPanel = false;
+
+    if (status === "APPROVED") {
+      await syncFromCloud();
+      closeModal("pending-modal");
+      goToPanel = !!window.WelcomeTour?.pending?.();
+      window.AppShell?.toast?.(
+        goToPanel
+          ? "¡Pago aprobado! Te llevamos al panel."
+          : "¡Pago aprobado! Tu suscripción está activa."
+      );
+    } else if (status === "PENDING") {
+      if (pendingLead) {
+        pendingLead.textContent =
+          "Wompi todavía no confirma el pago. Si pagaste por PSE o transferencia puede tardar unos minutos; vuelve a esta página más tarde.";
+      }
+    } else {
+      if (pendingLead) {
+        pendingLead.textContent = `El pago quedó como ${
+          PAGO_LABELS[status] || status
+        }. No se hizo ningún cobro efectivo; puedes intentarlo de nuevo.`;
+      }
+    }
+
+    const clean = new URL(location.href);
+    clean.searchParams.delete("ref");
+    clean.searchParams.delete("id");
+    history.replaceState(null, "", clean.toString());
+
+    if (goToPanel) setTimeout(() => location.assign("index.html"), 1200);
+  }
+
+  async function syncFromCloud() {
+    if (!window.Billing?.enabled?.()) return;
+    const fresh = await window.Billing.refresh();
+    if (fresh) {
+      state = { ...state, ...fresh };
+      cacheLocal();
+    }
+    render();
   }
 
   document.getElementById("btn-change-plan")?.addEventListener("click", () => {
+    selectedPlanId = state.planId;
     renderPlanOptions();
     openModal("plan-modal");
   });
@@ -280,131 +394,74 @@
   document.getElementById("plan-options")?.addEventListener("click", (e) => {
     const id = e.target.closest("[data-plan]")?.getAttribute("data-plan");
     if (!id) return;
-    state.planId = id;
-    state.status = "active";
-    // Actualizar facturas demo al precio del plan actual
-    state.invoices = (state.invoices || []).map((inv) => ({
-      ...inv,
-      amount: currentPlan(state).price,
-    }));
-    save(state);
-    render();
-    refreshNeedBanner();
+    selectedPlanId = id;
+    renderPlanOptions();
     closeModal("plan-modal");
-    window.AppShell?.toast("Plan actualizado");
+    openPaymentModal(id);
   });
 
-  document.getElementById("btn-payment")?.addEventListener("click", () => {
-    openModal("payment-modal");
+  document.getElementById("btn-payment")?.addEventListener("click", () => openPaymentModal());
+  document.getElementById("btn-pay-now")?.addEventListener("click", () => openPaymentModal());
+  document.getElementById("btn-go-wompi")?.addEventListener("click", goToWompi);
+
+  document.getElementById("btn-invoices")?.addEventListener("click", () => {
+    openModal("invoices-modal");
+    renderPagos();
+  });
+
+  document.getElementById("invoice-list")?.addEventListener("click", (e) => {
+    const reference = e.target.closest("[data-receipt]")?.getAttribute("data-receipt");
+    if (reference) downloadReceipt(reference);
   });
 
   document.getElementById("btn-history")?.addEventListener("click", () => {
     const list = document.getElementById("history-list");
     openModal("history-modal");
-    const bookings = bookingsInPeriod(state);
+    if (!list) return;
+    const bookings = bookingsInPeriod();
     if (!bookings.length) {
       list.innerHTML = `<p class="empty-hint">Aún no hay citas agendadas en este período de facturación.</p>`;
-    } else {
-      list.innerHTML = bookings
-        .sort((a, b) => String(a.date).localeCompare(String(b.date)))
-        .map(
-          (b) => `
-          <article class="diagnostic-item">
-            <div class="diagnostic-item__top">
-              <strong>${b.serviceName || b.name || "Cita"}</strong>
-              <span class="status status--ok">${b.status || "agendada"}</span>
-            </div>
-            <p>${b.date || ""} ${b.time || ""} · ${b.phone || ""}</p>
-          </article>`
-        )
-        .join("");
+      return;
     }
-  });
-
-  document.getElementById("btn-invoices")?.addEventListener("click", () => {
-    const list = document.getElementById("invoice-list");
-    list.innerHTML = (state.invoices || [])
+    list.innerHTML = bookings
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)))
       .map(
-        (inv) => `
-        <button type="button" class="manage-item" data-invoice="${inv.id}">
-          <span class="manage-item__text">
-            <strong>${inv.label}</strong>
-            <small>${formatDate(inv.date)} · ${formatMoney(inv.amount)}</small>
-          </span>
-          <span class="btn btn--ghost" style="pointer-events:none;height:34px">Descargar</span>
-        </button>`
+        (b) => `
+        <article class="diagnostic-item">
+          <div class="diagnostic-item__top">
+            <strong>${b.serviceName || b.name || "Cita"}</strong>
+            <span class="status status--ok">${b.status || "agendada"}</span>
+          </div>
+          <p>${b.date || ""} ${b.time || ""} · ${b.phone || ""}</p>
+        </article>`
       )
       .join("");
-    openModal("invoices-modal");
-  });
-
-  document.getElementById("invoice-list")?.addEventListener("click", (e) => {
-    const id = e.target.closest("[data-invoice]")?.getAttribute("data-invoice");
-    if (!id) return;
-    const inv = (state.invoices || []).find((i) => i.id === id);
-    if (!inv) return;
-    const blob = new Blob(
-      [
-        `Factura ${inv.label}\nFecha: ${inv.date}\nMonto: ${formatMoney(inv.amount)}\nMoneda: COP\nPlan BarberCloud\n`,
-      ],
-      { type: "text/plain;charset=utf-8" }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${inv.id}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    window.AppShell?.toast("Factura descargada");
   });
 
   document.getElementById("btn-faq")?.addEventListener("click", () => openModal("faq-modal"));
 
   document.getElementById("btn-cancel")?.addEventListener("click", () => {
     const lead = document.getElementById("cancel-lead");
-    if (state.cancelAtPeriodEnd) {
-      lead.textContent =
-        "Ya programaste la cancelación. Puedes reactivar la renovación automática si cambiaste de opinión.";
-      document.getElementById("btn-confirm-cancel").textContent = "Reactivar renovación";
-    } else {
-      lead.textContent = `Tu plan seguirá activo hasta el ${formatDate(
-        state.periodEnd
-      )}. Después no se renovará automáticamente.`;
-      document.getElementById("btn-confirm-cancel").textContent = "Cancelar al final del período";
+    if (lead) {
+      lead.textContent = isActive()
+        ? `No hay renovación automática: tu plan está pagado hasta el ${formatDate(
+            state.periodEnd
+          )}. Si no pagas otro mes, ese día se desactiva el enlace público y el panel queda solo para consultar tus datos.`
+        : "Tu suscripción no está activa, así que no hay nada que cancelar. No se hará ningún cobro automático.";
     }
+    const confirmBtn = document.getElementById("btn-confirm-cancel");
+    if (confirmBtn) confirmBtn.hidden = true;
     openModal("cancel-modal");
-  });
-
-  document.getElementById("btn-confirm-cancel")?.addEventListener("click", () => {
-    state.cancelAtPeriodEnd = !state.cancelAtPeriodEnd;
-    save(state);
-    render();
-    closeModal("cancel-modal");
-    window.AppShell?.toast(
-      state.cancelAtPeriodEnd ? "Cancelación programada" : "Renovación reactivada"
-    );
   });
 
   document.querySelectorAll("[data-close-plan]").forEach((el) =>
     el.addEventListener("click", () => closeModal("plan-modal"))
   );
-  function refreshNeedBanner() {
-    const needEl = document.getElementById("sub-need");
-    if (!needEl) return;
-    const need =
-      new URLSearchParams(location.search).get("need") === "1" || state.status === "incomplete";
-    needEl.hidden = !need || state.status === "active" || state.status === "trialing";
-  }
-
   document.querySelectorAll("[data-close-payment]").forEach((el) =>
-    el.addEventListener("click", () => {
-      state.status = "active";
-      save(state);
-      render();
-      refreshNeedBanner();
-      closeModal("payment-modal");
-      window.AppShell?.toast("Suscripción activa. Ya puedes entrar al panel.");
-    })
+    el.addEventListener("click", () => closeModal("payment-modal"))
+  );
+  document.querySelectorAll("[data-close-pending]").forEach((el) =>
+    el.addEventListener("click", () => closeModal("pending-modal"))
   );
   document.querySelectorAll("[data-close-history]").forEach((el) =>
     el.addEventListener("click", () => closeModal("history-modal"))
@@ -420,16 +477,19 @@
   );
 
   window.addEventListener("storage", (e) => {
-    if (e.key === BOOKINGS_KEY) refreshUsage();
+    if (e.key === BOOKINGS_KEY) renderUsage();
   });
-
-  window.addEventListener("barbercloud:bookings-changed", refreshUsage);
-  window.BookingStore?.subscribe?.(refreshUsage);
-
+  window.addEventListener("barbercloud:bookings-changed", renderUsage);
+  window.BookingStore?.subscribe?.(renderUsage);
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") refreshUsage();
+    if (document.visibilityState === "visible") renderUsage();
   });
 
-  refreshNeedBanner();
+  state = { ...state, ...readLocal() };
   render();
+
+  (async () => {
+    await syncFromCloud();
+    await handleReturnFromWompi();
+  })();
 })();

@@ -124,16 +124,37 @@
     return s === "active" || s === "trialing";
   }
 
+  /**
+   * Misma regla que public.negocio_suscripcion_activa en supabase/billing.sql:
+   * sin periodo vigente no hay acceso, aunque el estado diga "active".
+   */
+  function isNegocioActive(negocio) {
+    if (!negocio) return false;
+    if (!isSubscriptionActive(negocio.subscription_status)) return false;
+    if (!Object.prototype.hasOwnProperty.call(negocio, "current_period_end")) return true;
+    const end = negocio.current_period_end;
+    return !!end && new Date(end).getTime() > Date.now();
+  }
+
   function hasActiveSubscription() {
     const biz = cached();
     if (biz && biz.subscription_status) {
-      return isSubscriptionActive(biz.subscription_status);
+      if (!isSubscriptionActive(biz.subscription_status)) return false;
+      // Si el negocio vive en la nube, manda el periodo pagado. La columna solo
+      // falta si todavía no se corrió supabase/billing.sql.
+      if (Object.prototype.hasOwnProperty.call(biz, "current_period_end")) {
+        const end = biz.current_period_end;
+        return !!end && new Date(end).getTime() > Date.now();
+      }
+      return true;
     }
     try {
       const raw = localStorage.getItem("barbercloud.subscription");
       if (!raw) return false;
       const sub = JSON.parse(raw);
-      return isSubscriptionActive(sub?.status);
+      if (!isSubscriptionActive(sub?.status)) return false;
+      if (sub?.periodEnd) return new Date(sub.periodEnd).getTime() > Date.now();
+      return true;
     } catch {
       return false;
     }
@@ -213,12 +234,16 @@
           "barbercloud.subscription",
           JSON.stringify({
             planId: negocio.plan_id || "100",
-            status: negocio.subscription_status || "trialing",
+            status: negocio.subscription_status || "incomplete",
+            periodStart: negocio.current_period_start || null,
+            periodEnd: negocio.current_period_end || null,
+            lastPaymentAt: negocio.last_payment_at || null,
             cancelAtPeriodEnd: false,
-            payment: { provider: "pending" },
+            payment: { provider: "wompi" },
           })
         );
       }
+      window.Billing?.cache?.(window.Billing.fromNegocio(negocio));
       if (negocio.onboarding_completed) {
         localStorage.setItem(ONBOARDED_KEY, "1");
       }
@@ -268,6 +293,7 @@
     displayLink,
     slugFromLocation,
     isSubscriptionActive,
+    isNegocioActive,
     hasActiveSubscription,
     currentId,
     setCurrent,
