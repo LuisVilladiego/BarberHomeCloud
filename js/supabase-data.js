@@ -419,20 +419,27 @@
     return { ok: true, report };
   }
 
-  /** Baja citas de Supabase y fusiona con la caché local (sin re-subir). */
+  /** Baja citas de Supabase; con replace=true sustituye la caché local (no fusiona). */
   async function syncCitasFromCloud(options = {}) {
     if (!enabled()) return { ok: false, skipped: true, changed: false };
     const remote = await fetchCitas();
-    const localRaw = safeParse(localStorage.getItem("barbercloud.bookings"), []);
-    const local = Array.isArray(localRaw) ? localRaw.filter((b) => !b?.occupancyOnly) : [];
-    const byId = new Map(local.map((b) => [b.id, b]));
+    const replace = !!options.replace;
 
-    remote.forEach((b) => {
-      if (!b?.id) return;
-      byId.set(b.id, b);
-    });
+    let merged;
+    if (replace) {
+      merged = (Array.isArray(remote) ? remote : []).filter((b) => b?.id && !b?.occupancyOnly);
+    } else {
+      const localRaw = safeParse(localStorage.getItem("barbercloud.bookings"), []);
+      const local = Array.isArray(localRaw) ? localRaw.filter((b) => !b?.occupancyOnly) : [];
+      const byId = new Map(local.map((b) => [b.id, b]));
+      remote.forEach((b) => {
+        if (!b?.id) return;
+        byId.set(b.id, b);
+      });
+      merged = Array.from(byId.values());
+    }
 
-    const merged = Array.from(byId.values()).sort((a, b) => {
+    merged.sort((a, b) => {
       const ta = new Date(b.createdAt || b.date || 0).getTime();
       const tb = new Date(a.createdAt || a.date || 0).getTime();
       return ta - tb;
@@ -512,36 +519,31 @@
   }
 
   /** Baja datos remotos y refresca localStorage (caché offline) */
-  async function pullToLocalCache() {
+  async function pullToLocalCache(options = {}) {
     if (!enabled()) return { ok: false, skipped: true };
-    const citasRes = await syncCitasFromCloud();
+    const replace = !!options.replace;
+    const citasRes = await syncCitasFromCloud({ replace, force: replace });
     const clientes = await fetchClientes();
-    if (clientes.length) {
-      localStorage.setItem("barbercloud.loyalty_users", JSON.stringify(clientes));
-    }
+    localStorage.setItem("barbercloud.loyalty_users", JSON.stringify(clientes));
     const sale = await fetchProductos("sale");
-    if (sale.length) {
-      localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
-    }
+    localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
     const redeem = await fetchProductos("redeem");
-    if (redeem.length) {
-      localStorage.setItem(
-        "barbercloud.loyalty_redeem_products",
-        JSON.stringify(
-          redeem.map((p) => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            pointsCost: p.pointsCost,
-            stock: p.stock,
-            images: p.images,
-            createdAt: p.createdAt,
-            updatedAt: p.updatedAt,
-            negocioId: p.negocioId,
-          }))
-        )
-      );
-    }
+    localStorage.setItem(
+      "barbercloud.loyalty_redeem_products",
+      JSON.stringify(
+        redeem.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          pointsCost: p.pointsCost,
+          stock: p.stock,
+          images: p.images,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          negocioId: p.negocioId,
+        }))
+      )
+    );
     return {
       ok: true,
       citas: citasRes.count || 0,

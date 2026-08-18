@@ -418,6 +418,7 @@
     try {
       localStorage.removeItem("barbercloud.auth");
       localStorage.removeItem(LAST_ACTIVITY_KEY);
+      window.Tenant?.clearLocalData?.();
     } catch {
       /* ignore */
     }
@@ -560,41 +561,54 @@
     }
   }
 
-  if (!hasExistingBusiness()) {
-    location.replace("onboarding.html");
-    return;
+  async function initTenantGate() {
+    if (hasAuthSession() && window.Tenant?.syncWithAuthenticatedUser) {
+      const sync = await window.Tenant.syncWithAuthenticatedUser();
+      if (sync?.needsOnboarding) {
+        location.replace("onboarding.html");
+        return false;
+      }
+    } else if (!hasExistingBusiness()) {
+      location.replace("onboarding.html");
+      return false;
+    }
+
+    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    if (page !== "suscripcion.html" && hasAuthSession() && !hasActiveSub()) {
+      location.replace("suscripcion.html?need=1");
+      return false;
+    }
+    return true;
   }
 
-  const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
-  if (page !== "suscripcion.html" && hasAuthSession() && !hasActiveSub()) {
-    location.replace("suscripcion.html?need=1");
-    return;
-  }
+  initTenantGate().then((ok) => {
+    if (!ok) return;
 
-  runNotificationJobs();
-  setInterval(runNotificationJobs, 20000);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) runNotificationJobs();
-  });
+    runNotificationJobs();
+    setInterval(runNotificationJobs, 20000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) runNotificationJobs();
+    });
 
-  const toggle = document.querySelector(".menu-toggle");
-  const sidebar = document.querySelector(".sidebar");
-  const backdrop = document.querySelector(".backdrop");
+    const toggle = document.querySelector(".menu-toggle");
+    const sidebar = document.querySelector(".sidebar");
+    const backdrop = document.querySelector(".backdrop");
 
-  if (!toggle || !sidebar) return;
+    if (!toggle || !sidebar) return;
 
-  function setOpen(open) {
-    sidebar.classList.toggle("is-open", open);
-    document.body.classList.toggle("nav-open", open);
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-  }
+    function setOpen(open) {
+      sidebar.classList.toggle("is-open", open);
+      document.body.classList.toggle("nav-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
 
-  toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("is-open")));
-  backdrop?.addEventListener("click", () => setOpen(false));
-  sidebar.querySelectorAll(".nav__item").forEach((link) => {
-    link.addEventListener("click", () => setOpen(false));
-  });
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > 900) setOpen(false);
+    toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("is-open")));
+    backdrop?.addEventListener("click", () => setOpen(false));
+    sidebar.querySelectorAll(".nav__item").forEach((link) => {
+      link.addEventListener("click", () => setOpen(false));
+    });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 900) setOpen(false);
+    });
   });
 })();

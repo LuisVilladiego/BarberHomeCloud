@@ -97,17 +97,24 @@
 
   async function signOut() {
     const client = await getClient();
-    if (!client) return { ok: true };
+    if (!client) {
+      window.Tenant?.clearLocalData?.();
+      return { ok: true };
+    }
     const { error } = await client.auth.signOut();
     if (error) return { ok: false, message: authErrorMessage(error) };
+    window.Tenant?.clearLocalData?.();
     return { ok: true };
   }
 
   async function claimCurrentNegocio() {
     const user = await currentUser();
     if (!user || !window.SupabaseData?.enabled?.()) return { ok: false, skipped: true };
+    const own = await window.SupabaseData.fetchOwnNegocio?.();
+    if (own?.owner_id && own.owner_id !== user.id) return { ok: false, skipped: true };
     const cached = window.Tenant?.cached?.();
-    const id = window.Tenant?.currentId?.();
+    if (cached?.owner_id && cached.owner_id !== user.id) return { ok: false, skipped: true };
+    const id = own?.id || window.Tenant?.currentId?.();
     if (!id && !cached?.slug) return { ok: false, skipped: true };
     let auto = {};
     try {

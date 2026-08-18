@@ -187,6 +187,77 @@
     }
   }
 
+  /** Borra datos de negocio/caché; conserva device_id, auth y throttle de login. */
+  function clearLocalData() {
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (!key.startsWith("barbercloud")) return;
+        if (key === "barbercloud.device_id") return;
+        if (key === "barbercloud.auth") return;
+        if (key.startsWith("barbercloud.login_throttle:")) return;
+        localStorage.removeItem(key);
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function hydrateNegocioCaches(negocio) {
+    if (!negocio) return;
+    try {
+      if (negocio.autoagenda && typeof negocio.autoagenda === "object") {
+        localStorage.setItem("barbercloud.autoagenda", JSON.stringify(negocio.autoagenda));
+      }
+      if (negocio.subscription_status || negocio.plan_id) {
+        localStorage.setItem(
+          "barbercloud.subscription",
+          JSON.stringify({
+            planId: negocio.plan_id || "100",
+            status: negocio.subscription_status || "trialing",
+            cancelAtPeriodEnd: false,
+            payment: { provider: "pending" },
+          })
+        );
+      }
+      if (negocio.onboarding_completed) {
+        localStorage.setItem(ONBOARDED_KEY, "1");
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Tras login: alinea caché local con el negocio del usuario autenticado.
+   * Evita que un usuario nuevo herede datos de otro en el mismo navegador.
+   */
+  async function syncWithAuthenticatedUser() {
+    const user = await window.BarberAuth?.currentUser?.();
+    if (!user) return { ok: true, mode: "anonymous" };
+    if (!window.SupabaseData?.enabled?.()) return { ok: true, mode: "local-only" };
+
+    const prevId = currentId();
+    const cachedBiz = cached();
+    const own = await window.SupabaseData.fetchOwnNegocio?.();
+
+    if (!own) {
+      if (prevId || cachedBiz || hasExistingBusiness()) clearLocalData();
+      return { ok: true, mode: "needs-onboarding", needsOnboarding: true };
+    }
+
+    const ownerMismatch = cachedBiz?.owner_id && cachedBiz.owner_id !== user.id;
+    const idMismatch = prevId && prevId !== own.id;
+    if (ownerMismatch || idMismatch || cachedBiz?.id !== own.id) {
+      clearLocalData();
+      setCurrent(own);
+    }
+
+    hydrateNegocioCaches(own);
+    await window.SupabaseData.pullToLocalCache?.({ replace: true });
+
+    return { ok: true, mode: "ready", negocio: own, needsOnboarding: false };
+  }
+
   window.Tenant = {
     RESERVED_SLUGS,
     NEGOCIO_ID_KEY,
@@ -204,5 +275,8 @@
     isLocalHost,
     hasExistingBusiness,
     markOnboarded,
+    clearLocalData,
+    hydrateNegocioCaches,
+    syncWithAuthenticatedUser,
   };
 })();

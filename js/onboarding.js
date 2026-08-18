@@ -1,8 +1,20 @@
 (function () {
-  if (window.Tenant?.hasExistingBusiness?.() && !/force=1/.test(location.search)) {
-    location.replace("index.html");
-    return;
+  async function initOnboarding() {
+    if (/force=1/.test(location.search)) return;
+    const user = await window.BarberAuth?.currentUser?.();
+    if (user && window.Tenant?.syncWithAuthenticatedUser) {
+      const sync = await window.Tenant.syncWithAuthenticatedUser();
+      if (!sync?.needsOnboarding && sync?.negocio) {
+        location.replace("index.html");
+      }
+      return;
+    }
+    if (!window.SupabaseData?.enabled?.() && window.Tenant?.hasExistingBusiness?.()) {
+      location.replace("index.html");
+    }
   }
+
+  initOnboarding();
 
   const DAYS = [
     { key: "lun", label: "Lunes", start: "08:00", end: "19:00", enabled: true },
@@ -264,8 +276,8 @@
         whatsapp: settings.waPhone,
         onboarding_completed: true,
       };
-      const existingId = window.Tenant.currentId();
-      if (existingId) payload.id = existingId;
+      const own = await window.SupabaseData.fetchOwnNegocio?.();
+      if (own?.id && own.owner_id === user?.id) payload.id = own.id;
       const r = await window.SupabaseData.upsertNegocio(payload);
       if (!r.ok && r.message) console.warn("[onboarding] negocio", r.message);
     }

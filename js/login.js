@@ -194,8 +194,8 @@
 
   async function afterAuth() {
     await window.BarberAuth?.applyPendingPassword?.();
-    await window.BarberAuth?.hydrateOwnNegocio?.();
-    if (!window.Tenant?.hasExistingBusiness?.()) {
+    const sync = await window.Tenant?.syncWithAuthenticatedUser?.();
+    if (sync?.needsOnboarding) {
       location.href = "onboarding.html";
       return;
     }
@@ -203,7 +203,6 @@
       location.href = "suscripcion.html?need=1";
       return;
     }
-    await window.BarberAuth?.claimCurrentNegocio?.();
     location.href = "index.html";
   }
 

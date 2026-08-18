@@ -51,8 +51,11 @@
   }
 
   function loadBookings() {
+    const nid = window.Tenant?.currentId?.() || "";
     const raw = safeParse(localStorage.getItem(BOOKINGS_KEY), []);
-    const persisted = (Array.isArray(raw) ? raw : []).filter((b) => !b?.occupancyOnly);
+    const persisted = (Array.isArray(raw) ? raw : [])
+      .filter((b) => !b?.occupancyOnly)
+      .filter((b) => !nid || !b?.negocioId || b.negocioId === nid);
     return persisted.concat(occupancyOverlay);
   }
 

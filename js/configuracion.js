@@ -302,6 +302,11 @@
       return;
     }
     await window.BarberAuth?.signOut?.();
+    try {
+      localStorage.removeItem("barbercloud.auth");
+    } catch {
+      /* ignore */
+    }
     location.href = "login.html";
   });
 
