@@ -21,6 +21,9 @@
   function authErrorMessage(err) {
     const raw = String(err?.message || err || "");
     if (/rate limit/i.test(raw)) return "";
+    if (/not enabled|issuer.*accounts\.google\.com|provider.*google/i.test(raw)) {
+      return "Google no está activado en Supabase. Ve a Authentication → Providers → Google, actívalo con tu Client ID y Secret, y vuelve a intentar.";
+    }
     if (/email not confirmed/i.test(raw)) {
       return "Correo o contraseña incorrectos. Si acabas de registrarte, revisa el código que te enviamos al correo.";
     }
@@ -163,21 +166,9 @@
     return { ok: true, user: data.user, session: data.session };
   }
 
-  async function signInWithGoogle() {
+  async function signInWithGoogleOAuth() {
     const client = await getClient();
     if (!client) return { ok: false, message: "Supabase no está configurado." };
-    try {
-      if (window.GoogleAuth?.signInCredential) {
-        const credential = await window.GoogleAuth.signInCredential();
-        return await signInWithGoogleIdToken(credential);
-      }
-    } catch (err) {
-      const msg = String(err?.message || "");
-      if (/cancelado/i.test(msg)) {
-        return { ok: false, message: "Inicio de sesión con Google cancelado." };
-      }
-      console.warn("Google credential", err);
-    }
     const { error } = await client.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -185,14 +176,12 @@
         queryParams: { prompt: "select_account" },
       },
     });
-    if (error) {
-      return {
-        ok: false,
-        message:
-          "No se pudo entrar con Google. Revisa que el proveedor esté activo o usa correo y contraseña.",
-      };
-    }
+    if (error) return { ok: false, message: authErrorMessage(error) };
     return { ok: true, redirect: true };
+  }
+
+  async function signInWithGoogle() {
+    return signInWithGoogleOAuth();
   }
 
   async function updatePassword(password) {

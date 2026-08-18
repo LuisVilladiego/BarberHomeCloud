@@ -431,32 +431,82 @@
 
   const params = new URLSearchParams(location.search);
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
-  const authError = params.get("error_description") || hashParams.get("error_description");
   const initialMode = params.get("mode") === "login" ? "login" : "signup";
+  const authError =
+    params.get("error_description") ||
+    hashParams.get("error_description") ||
+    params.get("error") ||
+    hashParams.get("error");
   const bootError = authError
-    ? decodeURIComponent(authError.replace(/\+/g, " "))
+    ? decodeURIComponent(String(authError).replace(/\+/g, " "))
     : params.get("idle") === "1"
       ? "Cerramos la sesión por inactividad. Vuelve a entrar."
       : "";
 
-  const googleIdToken = hashParams.get("id_token");
-  if (googleIdToken) {
-    history.replaceState(null, "", location.pathname + location.search);
-    window.BarberAuth.signInWithGoogleIdToken(googleIdToken).then((result) => {
+  function cleanAuthUrl() {
+    const nextSearch = new URLSearchParams(location.search);
+    nextSearch.delete("code");
+    nextSearch.delete("error");
+    nextSearch.delete("error_description");
+    const qs = nextSearch.toString();
+    history.replaceState(null, "", location.pathname + (qs ? `?${qs}` : ""));
+  }
+
+  async function bootstrap() {
+    const googleIdToken = hashParams.get("id_token");
+    if (googleIdToken) {
+      history.replaceState(null, "", location.pathname + location.search);
+      const result = await window.BarberAuth.signInWithGoogleIdToken(googleIdToken);
       if (!result.ok) {
         showHub(initialMode);
         showError(result.message);
         return;
       }
-      afterAuth();
-    });
-    return;
+      await afterAuth();
+      return;
+    }
+
+    const isOAuthReturn =
+      params.has("code") ||
+      hashParams.has("access_token") ||
+      !!authError;
+
+    if (isOAuthReturn) {
+      const client = await window.SupabaseClient?.getClient?.();
+      if (client) {
+        if (params.has("code")) {
+          const { error } = await client.auth.exchangeCodeForSession(window.location.href);
+          if (error && !bootError) {
+            showHub(initialMode);
+            showError(window.BarberAuth.authErrorMessage(error));
+            cleanAuthUrl();
+            return;
+          }
+        }
+        const { data, error } = await client.auth.getSession();
+        if (error && !bootError) {
+          showHub(initialMode);
+          showError(window.BarberAuth.authErrorMessage(error));
+          cleanAuthUrl();
+          return;
+        }
+        if (data?.session) {
+          cleanAuthUrl();
+          await afterAuth();
+          return;
+        }
+      }
+    }
+
+    showHub(initialMode);
+    if (bootError) showError(bootError);
+    else if (authError) {
+      showError(decodeURIComponent(String(authError).replace(/\+/g, " ")));
+    }
+
+    const s = await window.BarberAuth?.session?.();
+    if (s && params.get("idle") !== "1") await afterAuth();
   }
 
-  showHub(initialMode);
-  if (bootError) showError(bootError);
-
-  window.BarberAuth?.session?.().then((s) => {
-    if (s && params.get("idle") !== "1") afterAuth();
-  });
+  bootstrap();
 })();
