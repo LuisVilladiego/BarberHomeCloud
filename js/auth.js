@@ -167,15 +167,16 @@
     const client = await getClient();
     if (!client) return { ok: false, message: "Supabase no está configurado." };
     try {
-      if (window.GoogleAuth?.signInIdToken) {
-        const credential = await window.GoogleAuth.signInIdToken();
-        const result = await signInWithGoogleIdToken(credential);
-        if (result.ok) return result;
+      if (window.GoogleAuth?.signInCredential) {
+        const credential = await window.GoogleAuth.signInCredential();
+        return await signInWithGoogleIdToken(credential);
       }
     } catch (err) {
-      if (!/popup|cancelado/i.test(String(err?.message || ""))) {
-        console.warn("Google id token", err);
+      const msg = String(err?.message || "");
+      if (/cancelado/i.test(msg)) {
+        return { ok: false, message: "Inicio de sesión con Google cancelado." };
       }
+      console.warn("Google credential", err);
     }
     const { error } = await client.auth.signInWithOAuth({
       provider: "google",

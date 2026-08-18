@@ -14,18 +14,39 @@
 
   function waitForGis(timeoutMs = 12000) {
     return new Promise((resolve, reject) => {
-      if (window.google?.accounts?.oauth2) {
+      const ready = () => window.google?.accounts?.oauth2;
+      if (ready()) {
         resolve();
         return;
       }
       const start = Date.now();
       const id = setInterval(() => {
-        if (window.google?.accounts?.oauth2) {
+        if (ready()) {
           clearInterval(id);
           resolve();
         } else if (Date.now() - start > timeoutMs) {
           clearInterval(id);
           reject(new Error("No se cargó Google Identity Services. Recarga la página."));
+        }
+      }, 100);
+    });
+  }
+
+  function waitForGoogleSignIn(timeoutMs = 12000) {
+    return new Promise((resolve, reject) => {
+      const ready = () => window.google?.accounts?.id;
+      if (ready()) {
+        resolve();
+        return;
+      }
+      const start = Date.now();
+      const id = setInterval(() => {
+        if (ready()) {
+          clearInterval(id);
+          resolve();
+        } else if (Date.now() - start > timeoutMs) {
+          clearInterval(id);
+          reject(new Error("No se cargó Google Sign-In. Recarga la página."));
         }
       }, 100);
     });
@@ -100,6 +121,72 @@
     return profile;
   }
 
+  async function signInCredential() {
+    await waitForGoogleSignIn();
+    const clientId = cfg().clientId;
+    if (!clientId) throw new Error("Falta GoogleConfig.clientId");
+
+    return new Promise((resolve, reject) => {
+      const hostId = "barbercloud-google-credential-host";
+      let host = document.getElementById(hostId);
+      if (!host) {
+        host = document.createElement("div");
+        host.id = hostId;
+        host.className = "google-credential-overlay";
+        host.innerHTML =
+          '<div class="google-credential-overlay__card" role="dialog" aria-modal="true" aria-labelledby="google-credential-title">' +
+          '<p class="google-credential-overlay__lead" id="google-credential-title">Continúa con tu cuenta de Google</p>' +
+          '<div id="barbercloud-google-credential-btn"></div>' +
+          '<button type="button" class="btn btn--ghost btn--sm" id="barbercloud-google-credential-cancel">Cancelar</button>' +
+          "</div>";
+        document.body.appendChild(host);
+      }
+
+      host.hidden = false;
+      const btnWrap = host.querySelector("#barbercloud-google-credential-btn");
+      const cancelBtn = host.querySelector("#barbercloud-google-credential-cancel");
+      if (!btnWrap || !cancelBtn) {
+        reject(new Error("No se pudo abrir el inicio de sesión con Google."));
+        return;
+      }
+      btnWrap.innerHTML = "";
+
+      const cleanup = () => {
+        host.hidden = true;
+        btnWrap.innerHTML = "";
+      };
+
+      cancelBtn.onclick = () => {
+        cleanup();
+        reject(new Error("Inicio de sesión con Google cancelado."));
+      };
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response) => {
+          cleanup();
+          if (response?.credential) resolve(response.credential);
+          else reject(new Error("No se obtuvo credencial de Google."));
+        },
+        auto_select: false,
+        cancel_on_tap_outside: false,
+      });
+
+      google.accounts.id.renderButton(btnWrap, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "rectangular",
+        width: 280,
+      });
+
+      requestAnimationFrame(() => {
+        btnWrap.querySelector('[role="button"]')?.click();
+      });
+    });
+  }
+
   function currentPageUrl() {
     return location.href.split("#")[0].split("?")[0];
   }
@@ -148,7 +235,9 @@
 
   window.GoogleAuth = {
     signIn,
+    signInCredential,
     signInIdToken,
     waitForGis,
+    waitForGoogleSignIn,
   };
 })();
