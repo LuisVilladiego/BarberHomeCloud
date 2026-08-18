@@ -18,12 +18,19 @@
   const recoverDemo = document.getElementById("recover-demo");
   const recoverDemoCode = document.getElementById("recover-demo-code");
   const resendBtn = document.getElementById("verify-resend");
-  const googleWrap = document.getElementById("google-auth-wrap");
+  const authHub = document.getElementById("auth-hub");
+  const authEmailPanel = document.getElementById("auth-email-panel");
   const googleBtn = document.getElementById("btn-google-auth");
+  const emailAuthBtn = document.getElementById("btn-email-auth");
+  const emailAuthBack = document.getElementById("auth-email-back");
+  const authSwitchBtn = document.getElementById("btn-auth-switch");
+  const authSwitchLead = document.getElementById("auth-switch-lead");
+  const googleAuthLabel = document.getElementById("google-auth-label");
+  const emailAuthLabel = document.getElementById("email-auth-label");
   const forgotWrap = document.getElementById("forgot-wrap");
   const tabs = document.querySelector(".auth-tabs");
   const passwordInput = form?.querySelector('input[name="password"]');
-  let mode = "login";
+  let mode = "signup";
   let pending = null;
 
   function showBox(el, msg) {
@@ -44,12 +51,30 @@
     return String(Math.floor(100000 + Math.random() * 900000));
   }
 
-  function setChrome({ title, lead, showTabs, showGoogle, showForgot }) {
-    if (titleEl && title) titleEl.textContent = title;
-    if (leadEl && lead) leadEl.textContent = lead;
-    if (tabs) tabs.hidden = !showTabs;
-    if (googleWrap) googleWrap.hidden = !showGoogle;
-    if (forgotWrap) forgotWrap.hidden = !showForgot;
+  function hubCopy(nextMode) {
+    const isSignup = nextMode === "signup";
+    return {
+      title: isSignup ? "Crea tu cuenta" : "Entra a tu barbería",
+      lead: isSignup
+        ? "Gestiona citas, clientes y reservas de tu barbería. Es súper fácil, tomará 2 minutos."
+        : "Abre tu panel para gestionar citas, clientes, reservas y puntos de fidelidad.",
+      googleLabel: isSignup ? "Crear cuenta con Gmail" : "Entrar con Gmail",
+      emailLabel: isSignup
+        ? "Crear cuenta con email y contraseña"
+        : "Entrar con email y contraseña",
+      switchLead: isSignup ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?",
+      switchAction: isSignup ? "Entrar" : "Crear cuenta",
+    };
+  }
+
+  function applyHubCopy(nextMode) {
+    const copy = hubCopy(nextMode);
+    if (titleEl) titleEl.textContent = copy.title;
+    if (leadEl) leadEl.textContent = copy.lead;
+    if (googleAuthLabel) googleAuthLabel.textContent = copy.googleLabel;
+    if (emailAuthLabel) emailAuthLabel.textContent = copy.emailLabel;
+    if (authSwitchLead) authSwitchLead.textContent = copy.switchLead;
+    if (authSwitchBtn) authSwitchBtn.textContent = copy.switchAction;
   }
 
   function hideAllForms() {
@@ -57,43 +82,55 @@
     if (verifyForm) verifyForm.hidden = true;
     if (recoverRequestForm) recoverRequestForm.hidden = true;
     if (recoverResetForm) recoverResetForm.hidden = true;
+    if (authEmailPanel) authEmailPanel.hidden = true;
   }
 
-  function setMode(next) {
-    mode = next;
+  function showHub(nextMode = mode) {
+    mode = nextMode;
+    hideAllForms();
+    if (authHub) authHub.hidden = false;
+    if (tabs) tabs.hidden = true;
+    applyHubCopy(mode);
+    showError("");
+  }
+
+  function showEmailPanel(nextMode = mode) {
+    mode = nextMode;
+    hideAllForms();
+    if (authHub) authHub.hidden = true;
+    if (authEmailPanel) authEmailPanel.hidden = false;
+    if (form) form.hidden = false;
+    if (tabs) tabs.hidden = false;
     document.querySelectorAll("[data-auth-mode]").forEach((btn) => {
       btn.classList.toggle("is-active", btn.getAttribute("data-auth-mode") === mode);
     });
-    hideAllForms();
-    if (form) form.hidden = false;
     if (nameField) nameField.hidden = mode !== "signup";
     if (submitBtn) submitBtn.textContent = mode === "signup" ? "Crear cuenta" : "Entrar";
     if (passwordInput) {
       passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
     }
-    setChrome({
-      title: mode === "signup" ? "Crea tu cuenta" : "Entra a tu barbería",
-      lead:
-        mode === "signup"
-          ? "Crea tu cuenta. Te enviaremos un código de 6 dígitos a tu correo."
-          : "Usa tu correo y contraseña para abrir el panel y gestionar citas, clientes y reservas.",
-      showTabs: true,
-      showGoogle: true,
-      showForgot: mode === "login",
-    });
+    if (forgotWrap) forgotWrap.hidden = mode !== "login";
+    applyHubCopy(mode);
     showError("");
+    form?.querySelector('input[name="email"]')?.focus();
+  }
+
+  function setMode(next) {
+    if (authEmailPanel && !authEmailPanel.hidden) {
+      showEmailPanel(next);
+      return;
+    }
+    showHub(next);
   }
 
   function showVerifyStep(send) {
     hideAllForms();
+    if (authHub) authHub.hidden = true;
     if (verifyForm) verifyForm.hidden = false;
-    setChrome({
-      title: "Verifica tu correo",
-      lead: `Enviamos un código de 6 dígitos a ${pending.email}.`,
-      showTabs: false,
-      showGoogle: false,
-      showForgot: false,
-    });
+    if (titleEl) titleEl.textContent = "Verifica tu correo";
+    if (leadEl) {
+      leadEl.textContent = `Enviamos un código de 6 dígitos a ${pending.email}.`;
+    }
     const failed = !send || send.ok === false || send.demo;
     if (verifyLead) {
       verifyLead.hidden = false;
@@ -113,27 +150,22 @@
 
   function showRecoverRequest() {
     hideAllForms();
+    if (authHub) authHub.hidden = true;
     if (recoverRequestForm) recoverRequestForm.hidden = false;
-    setChrome({
-      title: "Recuperar contraseña",
-      lead: "Te enviaremos un código de 6 dígitos a tu correo para crear una contraseña nueva.",
-      showTabs: false,
-      showGoogle: true,
-      showForgot: false,
-    });
+    if (titleEl) titleEl.textContent = "Recuperar contraseña";
+    if (leadEl) {
+      leadEl.textContent =
+        "Te enviaremos un código de 6 dígitos a tu correo para crear una contraseña nueva.";
+    }
     showBox(recoverRequestError, "");
   }
 
   function showRecoverReset(send) {
     hideAllForms();
+    if (authHub) authHub.hidden = true;
     if (recoverResetForm) recoverResetForm.hidden = false;
-    setChrome({
-      title: "Nueva contraseña",
-      lead: `Enviamos un código a ${pending.email}.`,
-      showTabs: false,
-      showGoogle: false,
-      showForgot: false,
-    });
+    if (titleEl) titleEl.textContent = "Nueva contraseña";
+    if (leadEl) leadEl.textContent = `Enviamos un código a ${pending.email}.`;
     const failed = !send || send.ok === false || send.demo;
     if (recoverDemo && recoverDemoCode) {
       recoverDemo.hidden = !failed;
@@ -148,7 +180,7 @@
     if (verifyForm) verifyForm.reset();
     if (verifyDemo) verifyDemo.hidden = true;
     showVerifyError("");
-    setMode("login");
+    showHub("signup");
   }
 
   async function afterAuth() {
@@ -192,7 +224,14 @@
   }
 
   document.querySelectorAll("[data-auth-mode]").forEach((btn) => {
-    btn.addEventListener("click", () => setMode(btn.getAttribute("data-auth-mode")));
+    btn.addEventListener("click", () => showEmailPanel(btn.getAttribute("data-auth-mode")));
+  });
+
+  emailAuthBtn?.addEventListener("click", () => showEmailPanel(mode));
+  emailAuthBack?.addEventListener("click", () => showHub(mode));
+
+  authSwitchBtn?.addEventListener("click", () => {
+    showHub(mode === "signup" ? "login" : "signup");
   });
 
   form?.addEventListener("submit", async (e) => {
@@ -265,7 +304,7 @@
     input?.focus();
   });
 
-  document.getElementById("recover-back")?.addEventListener("click", () => setMode("login"));
+  document.getElementById("recover-back")?.addEventListener("click", () => showEmailPanel("login"));
   document.getElementById("recover-reset-back")?.addEventListener("click", () => showRecoverRequest());
 
   recoverRequestForm?.addEventListener("submit", async (e) => {
@@ -319,7 +358,7 @@
     }
     const result = await window.BarberAuth.completePasswordReset(pending.email, password);
     if (result.needsGoogle) {
-      setMode("login");
+      showEmailPanel("login");
       showError(result.message);
       return;
     }
@@ -329,7 +368,7 @@
     }
     const login = await window.BarberAuth.signIn(pending.email, password);
     if (!login.ok) {
-      setMode("login");
+      showEmailPanel("login");
       showError("Contraseña actualizada. Entra con tu correo.");
       return;
     }
@@ -393,16 +432,19 @@
   const params = new URLSearchParams(location.search);
   const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
   const authError = params.get("error_description") || hashParams.get("error_description");
-  if (authError) showError(decodeURIComponent(authError.replace(/\+/g, " ")));
-  if (params.get("idle") === "1") {
-    showError("Cerramos la sesión por inactividad. Vuelve a entrar.");
-  }
+  const initialMode = params.get("mode") === "login" ? "login" : "signup";
+  const bootError = authError
+    ? decodeURIComponent(authError.replace(/\+/g, " "))
+    : params.get("idle") === "1"
+      ? "Cerramos la sesión por inactividad. Vuelve a entrar."
+      : "";
 
   const googleIdToken = hashParams.get("id_token");
   if (googleIdToken) {
     history.replaceState(null, "", location.pathname + location.search);
     window.BarberAuth.signInWithGoogleIdToken(googleIdToken).then((result) => {
       if (!result.ok) {
+        showHub(initialMode);
         showError(result.message);
         return;
       }
@@ -410,6 +452,9 @@
     });
     return;
   }
+
+  showHub(initialMode);
+  if (bootError) showError(bootError);
 
   window.BarberAuth?.session?.().then((s) => {
     if (s && params.get("idle") !== "1") afterAuth();

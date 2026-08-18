@@ -4239,6 +4239,189 @@ body.nav-open .backdrop {
   background: #f9fafb;
 }
 
+.auth-page .tutorial-card--auth {
+  width: min(440px, 100%);
+  padding: 28px 28px 24px;
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.1);
+}
+
+.auth-page .tutorial-card__brand {
+  margin-bottom: 20px;
+}
+
+.auth-page .tutorial-card__brand strong {
+  font-size: 1.05rem;
+  color: #1f2937;
+}
+
+.auth-page .tutorial-card h1 {
+  font-size: 1.75rem;
+  color: #1e293b;
+  margin-bottom: 10px;
+}
+
+.auth-page .tutorial-card__lead {
+  margin-bottom: 24px;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.auth-page .auth-error:not([hidden]) {
+  margin-bottom: 16px;
+}
+
+.auth-hub[hidden],
+.auth-email[hidden] {
+  display: none !important;
+}
+
+.auth-hub__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-hub__switch {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 0.92rem;
+  color: #64748b;
+}
+
+.auth-hub__switch-btn {
+  margin-left: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #4285f4;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-hub__switch-btn:hover {
+  color: #1d4ed8;
+}
+
+.auth-hub__guest {
+  display: block;
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.auth-hub__guest:hover {
+  color: #64748b;
+  text-decoration: underline;
+}
+
+.auth-email__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-email__back:hover {
+  color: #334155;
+}
+
+.auth-form .auth-error,
+.auth-form .auth-notice {
+  margin-bottom: 12px;
+}
+
+.tutorial-card__actions--stack {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 18px;
+}
+
+.tutorial-card__actions--stack .btn {
+  width: 100%;
+}
+
+.btn--google-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #4285f4;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.98rem;
+  box-shadow: 0 8px 20px rgba(66, 133, 244, 0.28);
+}
+
+.btn--google-primary:hover {
+  background: #3367d6;
+}
+
+.btn--google-primary:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.btn--google-primary__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.btn--email-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.96rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.btn--email-outline:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn--email-outline:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.btn--email-outline__icon {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
 .auth-tabs__btn {
   border: 0;
   background: transparent;
@@ -4321,8 +4504,7 @@ body.nav-open .backdrop {
   text-align: right;
 }
 
-.auth-help[hidden],
-#google-auth-wrap[hidden] {
+.auth-help[hidden] {
   display: none !important;
 }
 
