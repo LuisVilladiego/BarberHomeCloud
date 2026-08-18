@@ -32,6 +32,15 @@
   const passwordInput = form?.querySelector('input[name="password"]');
   let mode = "signup";
   let pending = null;
+  let submitLockedUntil = 0;
+
+  function lockSubmit(ms) {
+    submitLockedUntil = Date.now() + ms;
+  }
+
+  function submitLockRemainingSec() {
+    return Math.max(0, Math.ceil((submitLockedUntil - Date.now()) / 1000));
+  }
 
   function showBox(el, msg) {
     if (!el) return;
@@ -237,10 +246,19 @@
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     showError("");
+    const waitSec = submitLockRemainingSec();
+    if (waitSec > 0) {
+      showError(`Espera ${waitSec} segundos e inténtalo de nuevo.`);
+      return;
+    }
     const fd = new FormData(form);
     const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
     const name = String(fd.get("name") || "").trim();
+    if (mode === "signup" && !name) {
+      showError("Escribe tu nombre.");
+      return;
+    }
     submitBtn.disabled = true;
     const prev = submitBtn.textContent;
     submitBtn.textContent = mode === "signup" ? "Creando…" : "Entrando…";
@@ -250,6 +268,10 @@
       submitBtn.disabled = false;
       submitBtn.textContent = prev;
       if (!result.ok) {
+        if (/espera \d+ segundos/i.test(result.message || "")) {
+          const sec = Number(result.message.match(/(\d+)/)?.[1] || 10);
+          lockSubmit(sec * 1000);
+        }
         showError(result.message);
         return;
       }
@@ -262,7 +284,22 @@
     if (!signup.ok) {
       submitBtn.disabled = false;
       submitBtn.textContent = prev;
+      if (/espera \d+ segundos/i.test(signup.message || "")) {
+        const sec = Number(signup.message.match(/(\d+)/)?.[1] || 10);
+        lockSubmit(sec * 1000);
+      }
+      if (signup.existing) {
+        showEmailPanel("login");
+        form.querySelector('input[name="email"]').value = email;
+      }
       showError(signup.message);
+      return;
+    }
+
+    if (signup.session) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = prev;
+      await afterAuth();
       return;
     }
 

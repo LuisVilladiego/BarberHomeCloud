@@ -20,20 +20,32 @@
 
   function authErrorMessage(err) {
     const raw = String(err?.message || err || "");
-    if (/rate limit/i.test(raw)) return "";
+    const secMatch = raw.match(/after (\d+) seconds?/i);
+    if (/security purposes|rate limit|too many requests|after \d+ second/i.test(raw)) {
+      return secMatch
+        ? `Por seguridad, espera ${secMatch[1]} segundos e inténtalo de nuevo.`
+        : "Demasiados intentos seguidos. Espera un momento e inténtalo de nuevo.";
+    }
     if (/not enabled|issuer.*accounts\.google\.com|provider.*google/i.test(raw)) {
       return "Google no está activado en Supabase. Ve a Authentication → Providers → Google, actívalo con tu Client ID y Secret, y vuelve a intentar.";
     }
     if (/pkce|code verifier/i.test(raw)) {
       return "La sesión de Google expiró. Vuelve a pulsar «Crear cuenta con Gmail» e inténtalo de nuevo.";
     }
-    if (/email not confirmed/i.test(raw)) {
-      return "Correo o contraseña incorrectos. Si acabas de registrarte, revisa el código que te enviamos al correo.";
+    if (/email not confirmed|email address not confirmed/i.test(raw)) {
+      return "Tu cuenta existe pero el correo no está confirmado. Entra con Gmail o contacta soporte.";
     }
-    if (/invalid login/i.test(raw)) return "Correo o contraseña incorrectos.";
-    if (/already registered/i.test(raw)) return "Ese correo ya tiene una cuenta. Entra en su lugar.";
-    if (/password/i.test(raw) && /6/i.test(raw)) return "La contraseña debe tener al menos 6 caracteres.";
-    if (/email/i.test(raw) && /invalid/i.test(raw)) return "Revisa el correo.";
+    if (/invalid login|invalid credentials|invalid email or password/i.test(raw)) {
+      return "Correo o contraseña incorrectos.";
+    }
+    if (/already registered|user already|already been registered/i.test(raw)) {
+      return "Ese correo ya tiene una cuenta. Pulsa «Entrar» e inicia sesión.";
+    }
+    if (/password/i.test(raw) && /6|short|least/i.test(raw)) {
+      return "La contraseña debe tener al menos 6 caracteres.";
+    }
+    if (/email/i.test(raw) && /invalid|format/i.test(raw)) return "Revisa el formato del correo.";
+    if (/signup is disabled/i.test(raw)) return "El registro está desactivado temporalmente.";
     return raw || "No se pudo completar la acción.";
   }
 
@@ -49,22 +61,27 @@
   async function signUp(email, password, name) {
     const client = await getClient();
     if (!client) return { ok: false, message: "Supabase no está configurado." };
+    const cleanEmail = String(email || "").trim();
     const { data, error } = await client.auth.signUp({
-      email: String(email || "").trim(),
+      email: cleanEmail,
       password,
       options: {
         data: { name: String(name || "").trim() },
         emailRedirectTo: authRedirectUrl(),
       },
     });
-    if (
-      error &&
-      /rate limit|already registered|user already|límite de correos/i.test(error.message || "")
-    ) {
-      return { ok: true, session: null, existing: true };
+    if (error) {
+      if (/already registered|user already|already been registered/i.test(error.message || "")) {
+        return { ok: false, message: authErrorMessage(error), existing: true };
+      }
+      return { ok: false, message: authErrorMessage(error) };
     }
-    if (error) return { ok: false, message: authErrorMessage(error) };
-    return { ok: true, user: data.user, session: data.session };
+    return {
+      ok: true,
+      user: data.user,
+      session: data.session,
+      needsVerify: !data.session,
+    };
   }
 
   async function signIn(email, password) {
@@ -187,8 +204,7 @@
     try {
       if (window.GoogleAuth?.signInCredential) {
         const credential = await window.GoogleAuth.signInCredential();
-        const result = await signInWithGoogleIdToken(credential);
-        if (result.ok) return result;
+        return await signInWithGoogleIdToken(credential);
       }
     } catch (err) {
       const msg = String(err?.message || "");

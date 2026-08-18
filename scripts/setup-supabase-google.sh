@@ -35,6 +35,13 @@ payload=$(cat <<EOF
 EOF
 )
 
+echo "→ Autoconfirm de correo (evita bloqueo tras registro)..."
+curl -sS -o /tmp/supabase-auth-autoconfirm.json -w "HTTP %{http_code}\n" \
+  -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth" \
+  -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"mailer_autoconfirm":true}' || true
+
 echo "→ Configurando Google Auth en Supabase (${PROJECT_REF})..."
 http_code=$(curl -sS -o /tmp/supabase-auth-patch.json -w "%{http_code}" \
   -X PATCH "https://api.supabase.com/v1/projects/${PROJECT_REF}/config/auth" \
