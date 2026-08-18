@@ -12,6 +12,15 @@
     cancelada: "Cancelada",
     recordatorio: "Recordatorio",
     alerta: "Próxima cita",
+    retencion: "Retención",
+  };
+
+  const RETENTION_KIND_LABEL = {
+    inactive: "Inactivo",
+    lost: "Perdido",
+    milestone: "Hito",
+    near_reward: "Cerca de canje",
+    birthday: "Cumpleaños",
   };
 
   function safeParse(raw, fallback) {
@@ -257,24 +266,42 @@
     listEl.innerHTML = Array.from(groups.entries())
       .map(([label, items]) => {
         const cards = items
-          .map(
-            (n) => `
-          <article class="notif-card ${n.read ? "" : "is-unread"}" data-id="${escapeHtml(n.id)}">
+          .map((n) => {
+            const isRetention = n.type === "retencion";
+            const subLabel = isRetention
+              ? RETENTION_KIND_LABEL[n.retentionKind] || n.retentionKind
+              : "";
+            const detail = n.body || formatAppt(n.appointmentAt);
+            const canWa = isRetention && String(n.phone || "").replace(/\D/g, "").length >= 7;
+            return `
+          <article class="notif-card ${n.read ? "" : "is-unread"}${isRetention ? " notif-card--retencion" : ""}" data-id="${escapeHtml(n.id)}"${isRetention ? ` data-retention-kind="${escapeHtml(n.retentionKind || "")}" data-client-key="${escapeHtml(n.clientKey || "")}"` : ""}>
             <div class="notif-card__main">
               <strong>${escapeHtml(n.title)}</strong>
-              <p>
+              <p class="notif-card__detail">${escapeHtml(detail)}</p>
+              ${
+                isRetention && subLabel
+                  ? `<p class="notif-card__sub">${escapeHtml(subLabel)}</p>`
+                  : !isRetention
+                    ? `<p>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/>
                   <path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                 </svg>
                 ${escapeHtml(formatAppt(n.appointmentAt))}
-              </p>
+              </p>`
+                    : ""
+              }
+              ${
+                canWa
+                  ? `<button type="button" class="btn btn--whatsapp btn--sm notif-card__wa" data-wa-notif="${escapeHtml(n.id)}">📲 WhatsApp</button>`
+                  : ""
+              }
             </div>
             <span class="notif-badge notif-badge--${escapeHtml(n.type)}">${escapeHtml(
               BADGE_LABEL[n.type] || n.type
             )}</span>
-          </article>`
-          )
+          </article>`;
+          })
           .join("");
         return `<section class="notif-group">
           <h2 class="notif-group__title">${escapeHtml(label)}</h2>
@@ -297,6 +324,24 @@
   });
 
   listEl?.addEventListener("click", (e) => {
+    const waBtn = e.target.closest("[data-wa-notif]");
+    if (waBtn) {
+      e.stopPropagation();
+      const id = waBtn.getAttribute("data-wa-notif");
+      const notif = loadNotifications().find((n) => n.id === id);
+      if (!notif || notif.type !== "retencion") return;
+      const client = { name: notif.title.split(" — ")[0] || "Cliente", phone: notif.phone };
+      const signal = { kind: notif.retentionKind || "inactive" };
+      if (notif.body?.includes("canjear")) {
+        const m = notif.body.match(/«([^»]+)»/);
+        if (m) signal.productName = m[1];
+        const gap = notif.body.match(/faltan (\d+) pts/i);
+        if (gap) signal.pointsGap = Number(gap[1]);
+      }
+      window.RetentionEngine?.openWhatsApp?.(client, signal);
+      return;
+    }
+
     const card = e.target.closest(".notif-card");
     if (!card) return;
     const id = card.getAttribute("data-id");

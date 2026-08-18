@@ -30,7 +30,11 @@
   let selectedBookingId = null;
   let selectedEvent = null;
   let services = loadServices();
-  let activeCalendarId = localStorage.getItem(ACTIVE_CAL_KEY) || "barberhome";
+  let activeCalendarId = localStorage.getItem(ACTIVE_CAL_KEY) || "negocio";
+  if (activeCalendarId === "barberhome" || activeCalendarId === "barbercloud") {
+    activeCalendarId = "negocio";
+    localStorage.setItem(ACTIVE_CAL_KEY, "negocio");
+  }
   let googleWeekEvents = [];
   let loadSeq = 0;
 
@@ -134,13 +138,20 @@
       .join("");
   }
 
+  function businessName() {
+    try {
+      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      if (auto.title) return String(auto.title);
+    } catch {
+      /* ignore */
+    }
+    return window.Tenant?.cached?.()?.name || "Mi barbería";
+  }
+
   function availableCalendars() {
-    const list = [
-      { id: "barberhome", label: "BarberHome", type: "local" },
-      { id: "barbercloud", label: "Calendario en BarberCloud", type: "local" },
-    ];
+    const list = [{ id: "negocio", label: businessName(), type: "local" }];
     const g = window.GoogleCalendar?.getConnection?.();
-    list.splice(1, 0, {
+    list.push({
       id: "gmail",
       label: g?.email || "Google Calendar (sin conectar)",
       type: "google",
@@ -156,7 +167,7 @@
     if (!sourceSelect) return;
     const calendars = availableCalendars();
     if (!calendars.some((c) => c.id === activeCalendarId)) {
-      activeCalendarId = calendars[0]?.id || "barberhome";
+      activeCalendarId = calendars[0]?.id || "negocio";
       localStorage.setItem(ACTIVE_CAL_KEY, activeCalendarId);
     }
     sourceSelect.innerHTML = calendars
@@ -169,22 +180,8 @@
   }
 
   function matchesLocalCalendar(booking) {
-    const raw = String(booking.calendarId || booking.business || "barberhome").toLowerCase();
-    if (activeCalendarId === "barberhome") {
-      return (
-        raw.includes("barberhome") ||
-        raw === "barberhome" ||
-        (!booking.calendarId && (!booking.business || booking.business === "BarberHome"))
-      );
-    }
-    if (activeCalendarId === "barbercloud") {
-      return (
-        raw.includes("barbercloud") ||
-        raw === "native" ||
-        raw === "calendario en barbercloud"
-      );
-    }
-    return false;
+    if (booking?.source === "google") return false;
+    return true;
   }
 
   function extractPhone(text) {
@@ -400,7 +397,8 @@
         const top = ((start - dayStart) / SLOT_MIN) * ROW_PX;
         const height = Math.max((duration / SLOT_MIN) * ROW_PX - 2, ROW_PX - 2);
         const googleClass = b.source === "google" ? " gcal__event--google" : "";
-        cols += `<button type="button" class="gcal__event${googleClass}" data-booking-id="${escapeHtml(b.id)}" style="top:${top}px;height:${height}px" title="${escapeHtml(b.name)}">
+        const statusClass = b.source === "google" ? "" : ` gcal__event--${b.status || "confirmed"}`;
+        cols += `<button type="button" class="gcal__event${googleClass}${statusClass}" data-booking-id="${escapeHtml(b.id)}" style="top:${top}px;height:${height}px" title="${escapeHtml(b.name)} · ${escapeHtml(statusLabel(b.status || "confirmed"))}">
           <strong>${escapeHtml(b.allDay ? "Todo el día" : b.time)} · ${escapeHtml(b.serviceName || "Cita")}</strong>
           <span>${escapeHtml(b.name || "")}</span>
         </button>`;
@@ -439,18 +437,42 @@
     return store.loadBookings().find((b) => b.id === id) || null;
   }
 
+  const APPT_STATUSES = [
+    { id: "pending_confirmation", label: "Pendiente" },
+    { id: "confirmed", label: "Confirmada" },
+    { id: "in_service", label: "En servicio" },
+    { id: "completed", label: "Completada" },
+    { id: "cancelled", label: "Cancelada" },
+    { id: "no_show", label: "No-show" },
+  ];
+
+  function statusLabel(status) {
+    return APPT_STATUSES.find((s) => s.id === status)?.label || status || "Confirmada";
+  }
+
   function openDetail(id) {
     const booking = findEventById(id);
     if (!booking) return;
     selectedBookingId = booking.source === "google" ? null : id;
     selectedEvent = booking;
     const isGoogle = booking.source === "google";
+    const status = booking.status || "confirmed";
+    const statusOptions = APPT_STATUSES.map(
+      (s) =>
+        `<option value="${s.id}" ${s.id === status ? "selected" : ""}>${s.label}</option>`
+    ).join("");
     document.getElementById("appt-detail-body").innerHTML = `
       <p><strong>${escapeHtml(booking.serviceName || "Cita")}</strong></p>
       <p>${escapeHtml(booking.date)} · ${escapeHtml(booking.time)} (${booking.duration || 60} min)</p>
       <p><strong>Cliente:</strong> ${escapeHtml(booking.name || "—")}</p>
       <p><strong>WhatsApp:</strong> ${escapeHtml(booking.phone || "—")}</p>
-      <p><strong>Estado:</strong> ${escapeHtml(isGoogle ? "Google Calendar" : booking.status || "confirmed")}</p>
+      ${
+        isGoogle
+          ? `<p><strong>Estado:</strong> Google Calendar</p>`
+          : `<label class="field"><span class="field__label">Estado</span>
+             <select id="appt-status">${statusOptions}</select></label>
+             <p class="section-lead">Al marcar <strong>Completada</strong> se suman ${window.LoyaltyEngine?.POINTS_PER_SERVICE || 5} puntos al cliente (si está en Puntos).</p>`
+      }
       ${booking.notes ? `<p><strong>Notas:</strong> ${escapeHtml(booking.notes)}</p>` : ""}
       ${
         isGoogle && booking.htmlLink
@@ -467,6 +489,11 @@
           : ""
       }
     `;
+    const completeBtn = document.getElementById("btn-complete-appt");
+    if (completeBtn) {
+      completeBtn.hidden =
+        isGoogle || status === "completed" || status === "cancelled" || status === "no_show";
+    }
     if (cancelBtn) cancelBtn.hidden = isGoogle;
     detailModal.hidden = false;
   }
@@ -492,7 +519,7 @@
     const slot = e.target.closest(".gcal__slot");
     if (!slot) return;
     if (isGoogleSource()) {
-      window.AppShell?.toast("Cambia a BarberHome o BarberCloud para crear citas aquí");
+      window.AppShell?.toast(`Cambia al calendario de ${businessName()} para crear citas aquí`);
       return;
     }
     const date = slot.getAttribute("data-date");
@@ -539,7 +566,7 @@
   });
   document.getElementById("btn-new-appt")?.addEventListener("click", () => {
     if (isGoogleSource()) {
-      window.AppShell?.toast("Cambia a BarberHome o BarberCloud para crear citas");
+      window.AppShell?.toast(`Cambia al calendario de ${businessName()} para crear citas`);
       return;
     }
     openModal({});
@@ -590,8 +617,7 @@
     submitBtn.disabled = true;
     submitBtn.textContent = "Reservando…";
 
-    const businessLabel =
-      activeCalendarId === "barbercloud" ? "BarberCloud" : "BarberHome";
+    const businessLabel = businessName();
     const result = await store.bookAtomically({
       name,
       phone,
@@ -605,7 +631,7 @@
       status: "confirmed",
       source: "admin",
       business: businessLabel,
-      calendarId: activeCalendarId,
+      calendarId: activeCalendarId === "gmail" ? "negocio" : activeCalendarId,
     });
 
     submitBtn.disabled = false;
@@ -621,6 +647,44 @@
     render();
     window.AppShell?.toast(`Cita agendada · ${name} · ${time}`);
   });
+
+  document.getElementById("btn-complete-appt")?.addEventListener("click", () => {
+    if (!selectedBookingId) return;
+    applyStatus(selectedBookingId, "completed");
+  });
+
+  document.getElementById("appt-detail-body")?.addEventListener("change", (e) => {
+    const sel = e.target.closest("#appt-status");
+    if (!sel || !selectedBookingId) return;
+    applyStatus(selectedBookingId, sel.value);
+  });
+
+  function applyStatus(id, status) {
+    const prev = store.loadBookings().find((b) => b.id === id);
+    if (!prev) return;
+    const patch = { status };
+    if (status === "completed") {
+      const award = window.LoyaltyEngine?.awardForCompletedBooking?.(prev);
+      if (award?.ok) {
+        patch.pointsAwarded = true;
+        window.AppShell?.toast(`Servicio completado · +${award.amount} puntos a ${award.user.name}`);
+      } else if (award?.message && !award.skipped) {
+        window.AppShell?.toast(award.message);
+      } else if (award?.skipped && prev.pointsAwarded) {
+        window.AppShell?.toast("Servicio completado");
+      } else if (award?.skipped) {
+        window.AppShell?.toast("Servicio completado. Falta el WhatsApp del cliente para sumar puntos.");
+      } else {
+        window.AppShell?.toast("Servicio completado");
+      }
+      patch.completedAt = new Date().toISOString();
+    } else {
+      window.AppShell?.toast(`Estado: ${statusLabel(status)}`);
+    }
+    store.patchBooking(id, patch);
+    closeDetail();
+    render();
+  }
 
   document.getElementById("btn-cancel-appt")?.addEventListener("click", () => {
     if (!selectedBookingId) return;

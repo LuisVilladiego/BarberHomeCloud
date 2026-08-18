@@ -89,7 +89,7 @@
   let types =
     Array.isArray(config.appointmentTypes) && config.appointmentTypes.length
       ? config.appointmentTypes
-      : [{ id: "type-1", name: "Agendar cita en BarberHome", duration: 60, price: 0, scheduleId: "" }];
+      : [{ id: "type-1", name: "Agendar cita", duration: 60, price: 0, scheduleId: "" }];
   let schedules = Array.isArray(config.schedules) ? config.schedules : [];
 
   const title = document.getElementById("public-title");
@@ -125,19 +125,43 @@
   if (config.title) title.textContent = config.title;
   if (config.description) description.textContent = config.description;
   avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
-  document.title = `${config.title || "Agendar"} · BarberHome`;
+  document.title = `${config.title || "Agendar"} · BarberCloud`;
+
+  function rewardsBrand() {
+    const name = String(config.title || "").trim();
+    return name ? `${name} Rewards` : "Rewards";
+  }
+
+  function applyRewardsCopy() {
+    const brand = rewardsBrand();
+    document.querySelectorAll("[data-rewards-brand]").forEach((el) => {
+      el.textContent = brand;
+    });
+  }
+
+  function syncPublicExtras() {
+    const shopBtn = document.getElementById("btn-shop");
+    const puntosBtn = document.getElementById("btn-puntos");
+    if (shopBtn) shopBtn.hidden = false;
+    if (puntosBtn) puntosBtn.hidden = false;
+  }
+
+  applyRewardsCopy();
+  syncPublicExtras();
 
   function applyPublicConfig(next) {
     config = next || {};
     types =
       Array.isArray(config.appointmentTypes) && config.appointmentTypes.length
         ? config.appointmentTypes
-        : [{ id: "type-1", name: "Agendar cita en BarberHome", duration: 60, price: 0, scheduleId: "" }];
+        : [{ id: "type-1", name: "Agendar cita", duration: 60, price: 0, scheduleId: "" }];
     schedules = Array.isArray(config.schedules) ? config.schedules : [];
     if (config.title && title) title.textContent = config.title;
     if (config.description && description) description.textContent = config.description;
     if (avatar) avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
-    document.title = `${config.title || "Agendar"} · BarberHome`;
+    document.title = `${config.title || "Agendar"} · BarberCloud`;
+    applyRewardsCopy();
+    syncPublicExtras();
     renderServices();
   }
 
@@ -171,6 +195,20 @@
     window.Tenant?.setCurrent?.(negocio);
     const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
     applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
+    try {
+      const slots = await window.SupabaseData.fetchOcupacion?.(negocio.slug);
+      if (slots?.length) window.BookingStore?.setOccupancy?.(slots);
+      const sale = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "sale");
+      const redeem = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "redeem");
+      if (sale?.length) {
+        localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
+      }
+      if (redeem?.length) {
+        localStorage.setItem("barbercloud.loyalty_redeem_products", JSON.stringify(redeem));
+      }
+    } catch (err) {
+      console.warn("[booking] ocupacion/productos", err);
+    }
   }
 
   let selectedType = null;
@@ -847,7 +885,7 @@
       publicShopGrid.innerHTML = `
         <div class="mkt-empty">
           <strong>Pronto habrá productos</strong>
-          <p>Aún no hay artículos publicados en la tienda BarberHome.</p>
+          <p>Aún no hay artículos publicados en la tienda.</p>
         </div>`;
       return;
     }
@@ -1837,7 +1875,7 @@
           ? `Tienes ${cart.length} producto${cart.length === 1 ? "" : "s"} en el carrito (${cartTotal} pts).`
           : affordable
             ? `Puedes agregar ${affordable} producto${affordable === 1 ? "" : "s"} con tus ${points} puntos.`
-            : `Sigue acumulando puntos. Recuerda pedirle al barbero cargar tus ${LOYALTY.earnPerService} pts por servicio.`
+            : `Sigue acumulando: cada servicio completado te suma ${LOYALTY.earnPerService} pts.`
         : "Por ahora no hay productos con stock para canjear.";
     }
 
@@ -1866,6 +1904,18 @@
             <div class="loyalty-redeem-item__body">
               <h4>${escapeShopHtml(p.name)}</h4>
               <p class="loyalty-redeem-item__price"><strong>${cost}</strong> puntos</p>
+              <div class="loyalty-redeem-item__progress">
+                <div class="points-progress">
+                  <div class="points-progress__bar" style="width:${Math.min(100, Math.round((points / Math.max(cost, 1)) * 100))}%"></div>
+                </div>
+                <p class="loyalty-redeem-item__progress-meta">
+                  ${
+                    points >= cost
+                      ? "¡Puedes canjearlo!"
+                      : `${points} / ${cost} pts · faltan ${Math.max(0, cost - points)}`
+                  }
+                </p>
+              </div>
               <p class="loyalty-redeem-item__status">
                 ${
                   inCart
@@ -2372,7 +2422,8 @@
       pending.passwordSalt = passwordBundle.salt;
       pending.passwordHash = passwordBundle.hash;
       pending.acceptedTermsAt = new Date().toISOString();
-      saveLoyaltyUsers(users);
+      const pendingMerged = window.LoyaltyEngine?.absorbPhoneStub?.(users, pending);
+      saveLoyaltyUsers(pendingMerged?.users || users);
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = "Enviando código…";
@@ -2401,7 +2452,8 @@
       createdAt: new Date().toISOString(),
     };
     users.push(user);
-    saveLoyaltyUsers(users);
+    const registeredMerged = window.LoyaltyEngine?.absorbPhoneStub?.(users, user);
+    saveLoyaltyUsers(registeredMerged?.users || users);
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = "Enviando código…";
@@ -2683,7 +2735,8 @@
       users.push(user);
     }
 
-    saveLoyaltyUsers(users);
+    const googleMerged = window.LoyaltyEngine?.absorbPhoneStub?.(users, user);
+    saveLoyaltyUsers(googleMerged?.users || users);
     pendingGoogleProfile = null;
     pendingGoogleUserId = null;
     googleCompleteForm.reset();

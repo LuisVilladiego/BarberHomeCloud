@@ -212,6 +212,23 @@
 
           <section class="settings-card">
             <div class="settings-card__left">
+              <h2>Cuenta BarberCloud</h2>
+              <p>Inicia sesión para aislar los datos de tu negocio en la nube. Sin sesión, el panel sigue en este dispositivo.</p>
+            </div>
+            <div class="settings-card__right">
+              <p class="settings-field__value" id="auth-session-label">Revisando sesión…</p>
+              <p class="settings-field__hint">
+                Tras ejecutar <code>supabase/rls.sql</code>, entra con tu correo para que otro negocio no vea tus clientes.
+              </p>
+              <div class="settings-field__row">
+                <a class="btn btn--primary" href="login.html" id="btn-auth-login">Entrar / crear cuenta</a>
+                <button class="btn btn--secondary" type="button" id="btn-auth-logout" hidden>Cerrar sesión</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-card">
+            <div class="settings-card__left">
               <h2>Idioma</h2>
               <p>Idioma del app. Cambiarlo no modificará el idioma de tus mensajes.</p>
             </div>
@@ -426,6 +443,8 @@
         <script src="js/supabase-client.js?v=20260816s"></script>
         <script src="js/supabase-data.js?v=20260816t"></script>
         <script src="js/security.js?v=20260816"></script>
+    <script src="js/tenant.js?v=20260818"></script>
+    <script src="js/auth.js?v=20260818"></script>
     <script src="js/app.js"></script>
     <script src="js/configuracion.js?v=20260816t"></script>
   </body>

@@ -1,6 +1,9 @@
 {
   "cleanUrls": false,
   "rewrites": [
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/onboarding", "destination": "/onboarding.html" },
+    { "source": "/registro", "destination": "/login.html" },
     {
       "source": "/:slug((?!.*\\.).*)",
       "destination": "/booking.html"

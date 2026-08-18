@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Configura tu barbería · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  </head>
+  <body class="tutorial-body">
+    <main class="tutorial-shell">
+      <div class="tutorial-card tutorial-card--page tutorial-card--wide">
+        <div class="tutorial-card__progress" aria-hidden="true">
+          <span id="ob-progress" style="width: 16%"></span>
+        </div>
+        <div class="tutorial-card__brand">
+          <img src="assets/logo.png" alt="" width="28" height="28" />
+          <strong>BarberCloud</strong>
+        </div>
+        <p class="ob-account-link">
+          ¿Ya tienes cuenta? <a href="login.html">Entra aquí</a>
+        </p>
+
+        <section data-step="1">
+          <h1>Cuéntanos sobre tu negocio</h1>
+          <p class="tutorial-card__lead">
+            Así te van a ver tus clientes en la autoagenda. Puedes cambiarlo después.
+          </p>
+          <label class="field">
+            <span class="field__label">Nombre de la barbería</span>
+            <input id="ob-business" type="text" required maxlength="80" placeholder="Barbería Juan" />
+          </label>
+          <label class="field">
+            <span class="field__label">Tu nombre</span>
+            <input id="ob-owner" type="text" maxlength="80" placeholder="Juan Pérez" />
+          </label>
+          <label class="field">
+            <span class="field__label">Ciudad (opcional)</span>
+            <input id="ob-city" type="text" maxlength="80" placeholder="Barranquilla" />
+          </label>
+        </section>
+
+        <section data-step="2" hidden>
+          <h1>Configura tu horario</h1>
+          <p class="tutorial-card__lead">Marca los días que atiendes y el rango de horas.</p>
+          <div class="ob-days" id="ob-days"></div>
+        </section>
+
+        <section data-step="3" hidden>
+          <h1>Agrega tus servicios</h1>
+          <p class="tutorial-card__lead">Al menos uno. Luego puedes editarlos en Autoagenda.</p>
+          <div class="ob-services" id="ob-services"></div>
+          <button class="btn btn--ghost" type="button" id="ob-add-service">+ Otro servicio</button>
+        </section>
+
+        <section data-step="4" hidden>
+          <h1>Conecta WhatsApp</h1>
+          <p class="tutorial-card__lead">
+            Lo usaremos para recordatorios y para que el cliente te escriba tras un canje.
+          </p>
+          <label class="field">
+            <span class="field__label">WhatsApp del negocio</span>
+            <div class="phone-input">
+              <select class="phone-input__select" id="ob-cc" aria-label="Código de país">
+                <option value="+57" selected>🇨🇴 +57</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+52">🇲🇽 +52</option>
+                <option value="+54">🇦🇷 +54</option>
+                <option value="+51">🇵🇪 +51</option>
+                <option value="+56">🇨🇱 +56</option>
+              </select>
+              <input
+                id="ob-phone"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel"
+                placeholder="300 000 0000"
+              />
+            </div>
+          </label>
+        </section>
+
+        <section data-step="5" hidden>
+          <h1>Personaliza tu autoagenda</h1>
+          <p class="tutorial-card__lead">
+            El slug es la URL pública de tu barbería: barbercloud.com/<strong id="ob-slug-live">tu-barberia</strong>
+          </p>
+          <label class="field">
+            <span class="field__label">Enlace público</span>
+            <input id="ob-slug" type="text" maxlength="50" placeholder="barberiajuan" />
+            <span class="field__hint" id="ob-slug-hint"></span>
+          </label>
+          <label class="field">
+            <span class="field__label">Descripción que verá el cliente</span>
+            <textarea id="ob-desc" rows="3" maxlength="400" placeholder="Cortes, barba y el mejor servicio en casa."></textarea>
+          </label>
+        </section>
+
+        <section data-step="6" hidden>
+          <h1>Comparte tu enlace</h1>
+          <p class="tutorial-card__lead">Cuando termines, tus clientes reservan aquí. Cópialo o ábrelo para probarlo.</p>
+          <div class="ob-share">
+            <code id="ob-share-link">barber-home-cloud.vercel.app/tu-barberia</code>
+            <div class="ob-share__actions">
+              <button class="btn btn--secondary" type="button" id="ob-copy">Copiar enlace</button>
+              <a class="btn btn--ghost" id="ob-open" href="#" target="_blank" rel="noopener">Abrir autoagenda</a>
+            </div>
+          </div>
+        </section>
+
+        <section data-step="7" hidden>
+          <h1>Tu BarberCloud está listo</h1>
+          <p class="tutorial-card__lead">
+            Ya puedes agendar, cargar Rewards y recibir reservas en tu enlace.
+          </p>
+          <p class="ob-share">
+            Tu enlace:<br />
+            <code id="ob-final-link"></code>
+          </p>
+          <p class="tutorial-card__lead" id="ob-cloud-hint">
+            Para guardar el negocio en la nube y que nadie más vea tus clientes,
+            <a href="login.html">crea tu cuenta BarberCloud</a>.
+          </p>
+        </section>
+
+        <p class="auth-error" id="ob-error" hidden></p>
+        <div class="tutorial-card__actions">
+          <button class="btn btn--secondary" type="button" id="ob-back" hidden>Atrás</button>
+          <button class="btn btn--primary" type="button" id="ob-next">Siguiente</button>
+        </div>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js?v=20260816s"></script>
+    <script src="js/supabase-client.js?v=20260818a"></script>
+    <script src="js/tenant.js?v=20260818f"></script>
+    <script src="js/supabase-data.js?v=20260818f"></script>
+    <script src="js/auth.js?v=20260818f"></script>
+    <script src="js/onboarding.js?v=20260818f"></script>
+  </body>
+</html>

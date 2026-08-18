@@ -88,7 +88,7 @@
         <header class="page-header page-header--stack">
           <h1>Puntos</h1>
           <p class="page-lead">
-            Revisa canjes de productos, busca clientes por cédula y ajusta puntos de fidelidad.
+            Revisa canjes, busca clientes por documento y ajusta puntos solo en excepciones.
           </p>
         </header>
 
@@ -106,18 +106,18 @@
         </section>
 
         <section class="panel config-panel loyalty-rules-admin">
-          <h2 class="config-panel__title">Reglas BarberHome</h2>
+          <h2 class="config-panel__title">Reglas de puntos</h2>
           <ul class="section-lead" style="margin: 8px 0 0; padding-left: 1.2rem; max-width: none">
-            <li>Acumulación: 5 puntos por cada servicio (tú los cargas aquí cuando el cliente te lo pida)</li>
-            <li>Canje: el cliente canjea por productos del inventario de canje según los puntos de cada producto</li>
-            <li>Al canjear, los puntos se descuentan solos; el cliente te escribe por WhatsApp</li>
-            <li>Tú entregas el producto y marcas “Entregado” en Canjes de productos</li>
+            <li>Acumulación: 5 puntos por servicio cuando marcas la cita como <strong>Completada</strong> en Calendario</li>
+            <li>El administrador solo ajusta puntos aquí en casos especiales</li>
+            <li>Canje: el cliente usa Rewards según el costo en puntos de cada producto</li>
+            <li>Al canjear, los puntos se descuentan solos; tú marcas “Entregado” cuando entregues el producto</li>
             <li>Los puntos vencen a los 12 meses</li>
           </ul>
         </section>
 
         <section class="panel config-panel" aria-labelledby="assign-title">
-          <h2 id="assign-title" class="config-panel__title">Asignar puntos por cédula</h2>
+          <h2 id="assign-title" class="config-panel__title">Ajustar puntos (excepciones)</h2>
           <form class="points-admin-form" id="points-assign-form">
             <div class="points-admin-form__grid">
               <label class="field">
@@ -154,7 +154,7 @@
                   step="1"
                   placeholder="5"
                 />
-                <span class="field__hint">Por servicio suma +5. Usa negativo para descontar (ej. -5).</span>
+                <span class="field__hint">Solo para casos especiales. El servicio completado ya suma +5 solo.</span>
               </label>
               <label class="field">
                 <span class="field__label">Motivo (opcional)</span>
@@ -186,7 +186,7 @@
           <div class="config-panel__toolbar">
             <div>
               <h2 id="clients-title" class="config-panel__title">Clientes con puntos</h2>
-              <p class="section-lead">Listado de cuentas registradas en Puntos Barberhome.</p>
+              <p class="section-lead">Cuentas de Rewards de este negocio.</p>
             </div>
             <label class="points-search">
               <span class="sr-only">Buscar</span>
@@ -228,7 +228,7 @@
     </button>
     <div class="backdrop" aria-hidden="true"></div>
 
-    <script src="js/email-config.js?v=20260816c"></script>
+    <script src="js/email-config.js?v=20260818g"></script>
     <script src="js/email-service.js?v=20260807"></script>
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>

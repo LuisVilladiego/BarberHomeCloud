@@ -170,7 +170,12 @@
   async function upsertCita(booking) {
     const client = db();
     if (!client || !booking?.id) return { ok: false, skipped: true };
-    const { error } = await client.from("citas").upsert(bookingToRow(booking), { onConflict: "id" });
+    const row = bookingToRow(booking);
+    const { data: authData } = await client.auth.getSession();
+    const query = authData?.session
+      ? client.from("citas").upsert(row, { onConflict: "id" })
+      : client.from("citas").insert(row);
+    const { error } = await query;
     if (error) {
       console.warn("[Supabase] upsert cita", error.message);
       return { ok: false, message: error.message };
@@ -181,19 +186,15 @@
   async function fetchCitas() {
     const client = db();
     if (!client) return [];
-    const { data, error } = await client
-      .from("citas")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(2000);
+    let q = client.from("citas").select("*").order("created_at", { ascending: false }).limit(2000);
+    const nid = currentNegocioId();
+    if (nid) q = q.eq("negocio_id", nid);
+    const { data, error } = await q;
     if (error) {
       console.warn("[Supabase] fetch citas", error.message);
       return [];
     }
-    const nid = currentNegocioId();
-    const rows = (data || []).map(rowToBooking);
-    if (!nid) return rows;
-    return rows.filter((b) => !b.negocioId || b.negocioId === nid);
+    return (data || []).map(rowToBooking);
   }
 
   async function upsertProducto(product, kind) {
@@ -219,16 +220,14 @@
     if (!client) return [];
     let q = client.from("productos").select("*").eq("active", true).order("created_at", { ascending: false });
     if (kind) q = q.eq("kind", kind);
+    const nid = currentNegocioId();
+    if (nid) q = q.eq("negocio_id", nid);
     const { data, error } = await q;
     if (error) {
       console.warn("[Supabase] fetch productos", error.message);
       return [];
     }
-    return (data || []).map(rowToProduct).filter((p) => {
-      const nid = currentNegocioId();
-      if (!nid) return true;
-      return !p.negocioId || p.negocioId === nid;
-    });
+    return (data || []).map(rowToProduct);
   }
 
   async function upsertCliente(user) {
@@ -245,7 +244,10 @@
   async function fetchClientes() {
     const client = db();
     if (!client) return [];
-    const { data, error } = await client.from("clientes").select("*").order("created_at", { ascending: false });
+    let q = client.from("clientes").select("*").order("created_at", { ascending: false });
+    const nid = currentNegocioId();
+    if (nid) q = q.eq("negocio_id", nid);
+    const { data, error } = await q;
     if (error) {
       console.warn("[Supabase] fetch clientes", error.message);
       return [];
@@ -265,6 +267,7 @@
       amount: Number(entry.amount) || 0,
       note: entry.note || "",
       balance: entry.balance ?? null,
+      negocio_id: entry.negocioId || currentNegocioId() || null,
       created_at: entry.at || new Date().toISOString(),
     });
     if (error) {
@@ -286,6 +289,7 @@
       points_cost: redeem.pointsCost ?? 0,
       value_cop: redeem.valueCop ?? 0,
       customer,
+      negocio_id: redeem.negocioId || currentNegocioId() || null,
       created_at: redeem.createdAt || new Date().toISOString(),
     });
     if (error) {
@@ -426,14 +430,35 @@
             pointsCost: p.pointsCost,
             stock: p.stock,
             images: p.images,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-      negocioId: r.negocio_id,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+            negocioId: p.negocioId,
           }))
         )
       );
     }
     return { ok: true, citas: citas.length, clientes: clientes.length, productos: sale.length + redeem.length };
+  }
+
+  async function fetchOwnNegocio() {
+    const client = db();
+    if (!client) return null;
+    const { data: sessionData } = await client.auth.getUser();
+    const uid = sessionData?.user?.id;
+    if (!uid) return null;
+    const { data, error } = await client
+      .from("negocios")
+      .select("*")
+      .eq("owner_id", uid)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      console.warn("[Supabase] fetch own negocio", error.message);
+      return null;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) window.Tenant?.setCurrent?.(row);
+    return row || null;
   }
 
   async function fetchNegocioBySlug(slug) {
@@ -471,6 +496,9 @@
       autoagenda: payload.autoagenda || {},
       updated_at: new Date().toISOString(),
     };
+    if (payload.owner_id) row.owner_id = payload.owner_id;
+    if (payload.whatsapp != null) row.whatsapp = payload.whatsapp;
+    if (payload.onboarding_completed != null) row.onboarding_completed = payload.onboarding_completed;
     if (!row.id) delete row.id;
     let query;
     if (row.id) {
@@ -487,6 +515,31 @@
     return { ok: true, negocio: data };
   }
 
+  async function fetchOcupacion(slug) {
+    const client = db();
+    if (!client || !slug) return [];
+    const { data, error } = await client.rpc("ocupacion_por_slug", { p_slug: slug });
+    if (error) {
+      console.warn("[Supabase] ocupacion", error.message);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function fetchProductosPorSlug(slug, kind) {
+    const client = db();
+    if (!client || !slug) return [];
+    const { data, error } = await client.rpc("productos_por_slug", {
+      p_slug: slug,
+      p_kind: kind || null,
+    });
+    if (error) {
+      console.warn("[Supabase] productos slug", error.message);
+      return [];
+    }
+    return (data || []).map(rowToProduct);
+  }
+
   window.SupabaseData = {
     enabled,
     upsertCita,
@@ -501,8 +554,11 @@
     uploadProductImages,
     migrateFromLocalStorage,
     pullToLocalCache,
+    fetchOwnNegocio,
     fetchNegocioBySlug,
     slugAvailability,
     upsertNegocio,
+    fetchOcupacion,
+    fetchProductosPorSlug,
   };
 })();

@@ -124,6 +124,7 @@
       id: window.Tenant.currentId() || undefined,
       slug: v.slug,
       name: state.title || v.slug,
+      owner_id: (await window.BarberAuth?.currentUser?.())?.id,
       subscription_status: sub.status || "active",
       plan_id: sub.planId || "100",
       autoagenda: { ...state, slug: v.slug },
@@ -284,6 +285,10 @@
     title.textContent = state.title || "Tu negocio";
     desc.textContent = state.description || "";
     avatar.src = state.avatarDataUrl || "assets/barberhome-avatar.png";
+    const rewardsName = document.getElementById("preview-rewards-name");
+    if (rewardsName) {
+      rewardsName.textContent = state.title ? `${state.title} Rewards` : "Rewards";
+    }
     services.innerHTML = state.appointmentTypes
       .map(
         (t) => `

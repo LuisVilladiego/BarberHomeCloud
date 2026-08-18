@@ -123,9 +123,21 @@
               <span class="intel-badge intel-badge--vip">⭐ VIP</span>
               <p>Más de 20 servicios en total</p>
             </article>
+            <article class="intel-legend__card intel-legend__card--near">
+              <span class="intel-badge intel-badge--near">🎁 Cerca de canje</span>
+              <p>A ≤25 pts de un producto del marketplace</p>
+            </article>
+            <article class="intel-legend__card intel-legend__card--milestone">
+              <span class="intel-badge intel-badge--milestone">🏆 Hito</span>
+              <p>Cada 10 servicios completados</p>
+            </article>
+            <article class="intel-legend__card intel-legend__card--birthday">
+              <span class="intel-badge intel-badge--birthday">🎂 Cumpleaños</span>
+              <p>Cumple hoy (si tiene fecha en Puntos)</p>
+            </article>
           </div>
 
-          <div class="intel-kpis" aria-label="Resumen por estado">
+          <div class="intel-kpis intel-kpis--wrap" aria-label="Resumen por estado">
             <button type="button" class="intel-kpi is-active" data-intel-filter="all">
               <span class="intel-kpi__label">Todos</span>
               <strong id="intel-count-all">0</strong>
@@ -145,6 +157,22 @@
             <button type="button" class="intel-kpi" data-intel-filter="vip">
               <span class="intel-kpi__label">⭐ VIP</span>
               <strong id="intel-count-vip">0</strong>
+            </button>
+            <button type="button" class="intel-kpi intel-kpi--accent" data-intel-filter="retencion">
+              <span class="intel-kpi__label">🎯 Oportunidades</span>
+              <strong id="intel-count-retencion">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="near_reward">
+              <span class="intel-kpi__label">🎁 Cerca de canje</span>
+              <strong id="intel-count-near">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="milestone">
+              <span class="intel-kpi__label">🏆 Hitos</span>
+              <strong id="intel-count-milestone">0</strong>
+            </button>
+            <button type="button" class="intel-kpi" data-intel-filter="birthday">
+              <span class="intel-kpi__label">🎂 Cumpleaños</span>
+              <strong id="intel-count-birthday">0</strong>
             </button>
           </div>
 
@@ -202,6 +230,7 @@
 <script src="js/security.js?v=20260816"></script>
     <script src="js/app.js"></script>
     <script src="js/booking-store.js?v=20260806"></script>
-    <script src="js/contactos.js?v=20260815f"></script>
+    <script src="js/retention-engine.js?v=20260818"></script>
+    <script src="js/contactos.js?v=20260818"></script>
   </body>
 </html>

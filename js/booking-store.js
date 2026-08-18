@@ -51,12 +51,34 @@
   }
 
   function loadBookings() {
-    const list = safeParse(localStorage.getItem(BOOKINGS_KEY), []);
-    return Array.isArray(list) ? list : [];
+    const raw = safeParse(localStorage.getItem(BOOKINGS_KEY), []);
+    const persisted = (Array.isArray(raw) ? raw : []).filter((b) => !b?.occupancyOnly);
+    return persisted.concat(occupancyOverlay);
+  }
+
+  let occupancyOverlay = [];
+
+  function setOccupancy(slots) {
+    occupancyOverlay = (Array.isArray(slots) ? slots : []).map((s, i) => {
+      const date = s.fecha || s.date;
+      const time = s.hora || s.time;
+      return {
+        id: `occ-${date}-${time}-${i}`,
+        date,
+        time,
+        duration: Number(s.duration) || 60,
+        status: s.status || "confirmed",
+        occupancyOnly: true,
+        name: "",
+        phone: "",
+      };
+    });
+    listeners.forEach((fn) => fn({ type: "occupancy" }));
   }
 
   function saveBookings(list) {
-    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
+    const persisted = (Array.isArray(list) ? list : []).filter((b) => !b?.occupancyOnly);
+    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(persisted));
     const payload = { type: "bookings-updated" };
     bc?.postMessage(payload);
     listeners.forEach((fn) => fn(payload));
@@ -65,7 +87,7 @@
     if (window.SupabaseData?.enabled?.()) {
       Promise.resolve()
         .then(async () => {
-          const recent = (Array.isArray(list) ? list : []).slice(0, 40);
+          const recent = persisted.slice(0, 40);
           for (const b of recent) {
             await window.SupabaseData.upsertCita(b);
           }
@@ -222,9 +244,10 @@
       notes: bookingInput.notes || "",
       status: bookingInput.status || "confirmed",
       source: bookingInput.source || "admin",
-      business: bookingInput.business || "BarberHome",
-      calendarId: bookingInput.calendarId || "",
-      slug: bookingInput.slug || "",
+      business: bookingInput.business || window.Tenant?.cached?.()?.name || "Mi barbería",
+      calendarId: bookingInput.calendarId || "negocio",
+      slug: bookingInput.slug || window.Tenant?.cached?.()?.slug || "",
+      negocioId: bookingInput.negocioId || window.Tenant?.currentId?.() || "",
       createdAt: new Date().toISOString(),
       claimAt: claim.at,
     };
@@ -282,12 +305,18 @@
     return { ok: true, booking };
   }
 
-  function cancelBooking(id) {
-    const list = loadBookings().map((b) =>
-      b.id === id ? { ...b, status: "cancelled", cancelledAt: new Date().toISOString() } : b
-    );
+  function patchBooking(id, patch) {
+    const list = loadBookings();
+    const idx = list.findIndex((b) => b.id === id);
+    if (idx < 0) return null;
+    list[idx] = { ...list[idx], ...patch, updatedAt: new Date().toISOString() };
     saveBookings(list);
-    return true;
+    window.SupabaseData?.upsertCita?.(list[idx]);
+    return list[idx];
+  }
+
+  function cancelBooking(id) {
+    return patchBooking(id, { status: "cancelled", cancelledAt: new Date().toISOString() });
   }
 
   function subscribe(fn) {
@@ -303,12 +332,15 @@
     isSlotFree,
     bookAtomically,
     cancelBooking,
+    patchBooking,
+    setOccupancy,
     subscribe,
     toMinutes,
     isActive,
   };
 
-  if (window.SupabaseData?.enabled?.()) {
+  const isDashboard = !!document.querySelector(".sidebar");
+  if (isDashboard && window.SupabaseData?.enabled?.()) {
     window.SupabaseData.pullToLocalCache?.().catch((err) =>
       console.warn("[booking-store] pull inicial", err)
     );

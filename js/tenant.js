@@ -39,6 +39,9 @@
     "notificaciones",
     "suscripcion",
     "feedback",
+    "onboarding",
+    "signup",
+    "cuenta",
     "assets",
     "js",
     "css",
@@ -117,8 +120,23 @@
   }
 
   function isSubscriptionActive(status) {
-    const s = String(status || "active").toLowerCase();
+    const s = String(status || "").toLowerCase();
     return s === "active" || s === "trialing";
+  }
+
+  function hasActiveSubscription() {
+    const biz = cached();
+    if (biz && biz.subscription_status) {
+      return isSubscriptionActive(biz.subscription_status);
+    }
+    try {
+      const raw = localStorage.getItem("barbercloud.subscription");
+      if (!raw) return false;
+      const sub = JSON.parse(raw);
+      return isSubscriptionActive(sub?.status);
+    } catch {
+      return false;
+    }
   }
 
   function currentId() {
@@ -148,18 +166,43 @@
     }
   }
 
+  const ONBOARDED_KEY = "barbercloud.onboarded";
+
+  function hasExistingBusiness() {
+    try {
+      if (localStorage.getItem(ONBOARDED_KEY) === "1") return true;
+      if (currentId()) return true;
+      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      return !!(auto.slug && validateSlug(auto.slug).ok);
+    } catch {
+      return false;
+    }
+  }
+
+  function markOnboarded() {
+    try {
+      localStorage.setItem(ONBOARDED_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  }
+
   window.Tenant = {
     RESERVED_SLUGS,
     NEGOCIO_ID_KEY,
+    ONBOARDED_KEY,
     normalizeSlug,
     validateSlug,
     publicUrl,
     displayLink,
     slugFromLocation,
     isSubscriptionActive,
+    hasActiveSubscription,
     currentId,
     setCurrent,
     cached,
     isLocalHost,
+    hasExistingBusiness,
+    markOnboarded,
   };
 })();

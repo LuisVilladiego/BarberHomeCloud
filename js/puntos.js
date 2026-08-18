@@ -376,7 +376,7 @@
     table.innerHTML =
       head +
       (rows ||
-        `<p class="empty-hint" style="padding:16px 22px">Aún no hay clientes registrados en Puntos Barberhome.</p>`);
+        `<p class="empty-hint" style="padding:16px 22px">Aún no hay clientes registrados en Rewards.</p>`);
   }
 
   function renderHistory() {

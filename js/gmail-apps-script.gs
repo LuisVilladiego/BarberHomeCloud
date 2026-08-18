@@ -50,12 +50,24 @@ function doPost(e) {
   }
 }
 
-function doGet() {
-  return json_({
-    ok: true,
-    message:
-      "BarberHome mail OK. Usa POST type=verify, recover, booking o redeem.",
-  });
+function doGet(e) {
+  try {
+    var p = (e && e.parameter) || {};
+    var type = String(p.type || "").toLowerCase();
+    if (type && p.to_email && p.secret) {
+      return doPost({
+        postData: { contents: JSON.stringify(p) },
+        parameter: p,
+      });
+    }
+    return json_({
+      ok: true,
+      message:
+        "BarberHome mail OK. Usa POST type=verify, recover, booking o redeem.",
+    });
+  } catch (err) {
+    return json_({ ok: false, message: "Error interno" });
+  }
 }
 
 function sendVerifyCode_(data) {
@@ -74,15 +86,18 @@ function sendVerifyCode_(data) {
     return json_({ ok: false, message: "Código inválido" });
   }
 
-  var subject = "Tu código Puntos BarberHome: " + code;
+  var product = String(data.product_label || "Puntos BarberHome").trim();
+  var subject = "Tu código " + product + ": " + code;
   var body =
     "Hola " +
     name +
     ",\n\n" +
-    "Tu código de verificación de Puntos BarberHome es: " +
+    "Tu código de verificación de " +
+    product +
+    " es: " +
     code +
     "\n\n" +
-    "Escríbelo en la app para activar tu cuenta y canjear puntos por productos.\n" +
+    "Escríbelo en la app para continuar.\n" +
     "Si no solicitaste este código, ignora este mensaje.\n\n" +
     "— " +
     fromName;
@@ -92,11 +107,13 @@ function sendVerifyCode_(data) {
     "<p>Hola <strong>" +
     escapeHtml_(name) +
     "</strong>,</p>" +
-    "<p>Tu código de verificación de <strong>Puntos BarberHome</strong> es:</p>" +
+    "<p>Tu código de verificación de <strong>" +
+    escapeHtml_(product) +
+    "</strong> es:</p>" +
     '<p style="font-size:32px;letter-spacing:6px;font-weight:700;margin:24px 0;color:#5b21b6">' +
     escapeHtml_(code) +
     "</p>" +
-    "<p>Escríbelo en la app para activar tu cuenta y canjear puntos por productos.</p>" +
+    "<p>Escríbelo en la app para continuar.</p>" +
     '<p style="color:#6b7280;font-size:13px">Si no solicitaste este código, ignora este mensaje.</p>' +
     "<p>— " +
     escapeHtml_(fromName) +

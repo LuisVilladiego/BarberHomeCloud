@@ -32,24 +32,60 @@
     }
   }
 
+  function isMailSent(data) {
+    return data?.ok === true && /enviado/i.test(String(data.message || ""));
+  }
+
+  function mailBody(payload) {
+    const c = cfg();
+    return {
+      secret: c.appsScriptSecret,
+      from_name: payload.from_name || c.fromName || "BarberCloud",
+      ...payload,
+    };
+  }
+
+  async function getAppsScript(url, bodyObj) {
+    const params = new URLSearchParams();
+    Object.entries(bodyObj).forEach(([key, value]) => {
+      if (value == null || value === "") return;
+      if (typeof value === "object") return;
+      params.set(key, String(value));
+    });
+    params.set("_", String(Date.now()));
+    const res = await fetch(`${url}?${params.toString()}`, {
+      method: "GET",
+      redirect: "follow",
+    });
+    return readJsonSafe(res);
+  }
+
   async function postAppsScript(payload) {
     const c = cfg();
     const url = String(c.appsScriptUrl || "").trim();
     if (!/^https:\/\/script\.google\.com\//i.test(url)) {
       throw new Error("URL de Apps Script inválida");
     }
+    const bodyObj = mailBody(payload);
+    const type = String(bodyObj.type || "verify").toLowerCase();
+
+    if (type === "verify" || type === "recover") {
+      const getData = await getAppsScript(url, bodyObj);
+      if (isMailSent(getData)) return { ok: true, demo: false, data: getData };
+      if (getData && getData.ok === false) {
+        throw new Error(getData.message || "No se pudo enviar el correo");
+      }
+    }
+
     const res = await fetch(url, {
       method: "POST",
       redirect: "follow",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        secret: c.appsScriptSecret,
-        from_name: c.fromName || "BarberHome",
-        ...payload,
-      }),
+      body: JSON.stringify(bodyObj),
     });
-
     const data = await readJsonSafe(res);
+
+    if (isMailSent(data)) return { ok: true, demo: false, data };
 
     if (res.status === 401 || res.status === 403) {
       throw new Error(
@@ -57,20 +93,20 @@
           "Apps Script sin permiso. Implementa de nuevo con acceso «Cualquier persona»."
       );
     }
-
-    if (!res.ok || (data && data.ok === false)) {
-      throw new Error(data?.message || `Error HTTP ${res.status}`);
+    if (data && data.ok === false) {
+      throw new Error(data.message || "No se pudo enviar el correo");
     }
-
-    return { ok: true, demo: false, data };
+    throw new Error(data?.message || "No se pudo enviar el correo. Revisa spam o pulsa Reenviar.");
   }
 
-  async function sendViaAppsScript({ toEmail, toName, code, type = "verify" }) {
+  async function sendViaAppsScript({ toEmail, toName, code, type = "verify", productLabel, fromName }) {
     await postAppsScript({
       type: type || "verify",
       to_email: toEmail,
       to_name: toName || "cliente",
       code: String(code),
+      product_label: productLabel || "",
+      from_name: fromName || cfg().fromName || "BarberCloud",
     });
     return { ok: true, demo: false, message: "Código enviado al correo." };
   }
@@ -89,19 +125,26 @@
     return { ok: true, demo: false, message: "Código enviado al correo." };
   }
 
-  async function sendVerificationCode({ toEmail, toName, code }) {
+  async function sendVerificationCode({ toEmail, toName, code, productLabel }) {
     const c = cfg();
     if (!isConfigured()) {
       return {
         ok: false,
         demo: true,
-        message: "Correo no configurado. Se muestra el código en pantalla (modo demo).",
+        message: "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
       };
     }
 
     try {
       if (c.provider === "appscript") {
-        return await sendViaAppsScript({ toEmail, toName, code, type: "verify" });
+        return await sendViaAppsScript({
+          toEmail,
+          toName,
+          code,
+          type: "verify",
+          productLabel: productLabel || "BarberCloud",
+          fromName: "BarberCloud",
+        });
       }
       return await sendViaEmailJs({ toEmail, toName, code });
     } catch (err) {
@@ -109,9 +152,7 @@
       return {
         ok: false,
         demo: true,
-        message:
-          err?.message ||
-          "No se pudo enviar el correo. Mientras tanto usamos el código en pantalla.",
+        message: err?.message || "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
         error: err,
       };
     }
@@ -123,7 +164,7 @@
       return {
         ok: false,
         demo: true,
-        message: "Correo no configurado. Se muestra el código en pantalla (modo demo).",
+        message: "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
       };
     }
 
@@ -137,9 +178,7 @@
       return {
         ok: false,
         demo: true,
-        message:
-          err?.message ||
-          "No se pudo enviar el correo. Mientras tanto usamos el código en pantalla.",
+        message: err?.message || "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
         error: err,
       };
     }
