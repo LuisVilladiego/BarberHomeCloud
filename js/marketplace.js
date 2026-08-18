@@ -51,17 +51,39 @@
     }));
   }
 
-  function saveProducts(list) {
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(list));
-    if (window.SupabaseData?.enabled?.()) {
-      Promise.resolve()
-        .then(async () => {
-          for (const p of list.slice(0, 50)) {
-            await window.SupabaseData.upsertProducto(p, "sale");
-          }
-        })
-        .catch((err) => console.warn("[marketplace] sync sale", err));
+  function negocioId() {
+    try {
+      return (
+        window.Tenant?.currentId?.() ||
+        localStorage.getItem("barbercloud.negocio_id") ||
+        ""
+      );
+    } catch {
+      return "";
     }
+  }
+
+  function stampNegocio(list) {
+    const nid = negocioId();
+    if (!nid) return list;
+    return list.map((p) => ({ ...p, negocioId: p.negocioId || nid }));
+  }
+
+  async function syncProductsToCloud(list, kind) {
+    if (!window.SupabaseData?.enabled?.()) return { ok: true, skipped: true };
+    const stamped = stampNegocio(list);
+    let failed = 0;
+    for (const p of stamped.slice(0, 50)) {
+      const res = await window.SupabaseData.upsertProducto(p, kind);
+      if (!res.ok && !res.skipped) failed += 1;
+    }
+    return failed ? { ok: false, failed } : { ok: true };
+  }
+
+  async function saveProducts(list) {
+    const stamped = stampNegocio(list);
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(stamped));
+    return syncProductsToCloud(stamped, "sale");
   }
 
   function pointsCostFromPrice(price) {
@@ -93,17 +115,10 @@
     }));
   }
 
-  function saveRedeemProducts(list) {
-    localStorage.setItem(REDEEM_PRODUCTS_KEY, JSON.stringify(list));
-    if (window.SupabaseData?.enabled?.()) {
-      Promise.resolve()
-        .then(async () => {
-          for (const p of list.slice(0, 50)) {
-            await window.SupabaseData.upsertProducto(p, "redeem");
-          }
-        })
-        .catch((err) => console.warn("[marketplace] sync redeem", err));
-    }
+  async function saveRedeemProducts(list) {
+    const stamped = stampNegocio(list);
+    localStorage.setItem(REDEEM_PRODUCTS_KEY, JSON.stringify(stamped));
+    return syncProductsToCloud(stamped, "redeem");
   }
 
   function loadSales() {
@@ -759,7 +774,10 @@
         });
       }
       try {
-        saveProducts(list);
+        const sync = await saveProducts(list);
+        if (sync && !sync.ok && !sync.skipped) {
+          showError("Producto guardado localmente, pero no se pudo subir a la nube. Revisa tu sesión.");
+        }
       } catch {
         showError("No se pudo guardar. Prueba con menos imágenes o fotos más livianas.");
         return;
@@ -791,7 +809,10 @@
         });
       }
       try {
-        saveRedeemProducts(list);
+        const sync = await saveRedeemProducts(list);
+        if (sync && !sync.ok && !sync.skipped) {
+          showError("Producto guardado localmente, pero no se pudo subir a la nube. Revisa tu sesión.");
+        }
       } catch {
         showError("No se pudo guardar. Prueba con menos imágenes o fotos más livianas.");
         return;
@@ -847,10 +868,24 @@
   grid?.addEventListener("click", (e) => handleCatalogClick(e, "sale"));
   redeemGrid?.addEventListener("click", (e) => handleCatalogClick(e, "redeem"));
 
+  async function resyncCatalogToCloud() {
+    if (!window.SupabaseData?.enabled?.() || !negocioId()) return;
+    await syncProductsToCloud(loadProducts(), "sale");
+    await syncProductsToCloud(loadRedeemProducts(), "redeem");
+  }
+
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) renderAllCatalogs();
   });
 
-  setActiveTab("sale");
-  renderAllCatalogs();
+  (async function boot() {
+    try {
+      await window.SupabaseData?.fetchOwnNegocio?.();
+      await resyncCatalogToCloud();
+    } catch (err) {
+      console.warn("[marketplace] sync inicial", err);
+    }
+    setActiveTab("sale");
+    renderAllCatalogs();
+  })();
 })();

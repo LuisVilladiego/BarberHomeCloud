@@ -200,12 +200,11 @@
       if (slots?.length) window.BookingStore?.setOccupancy?.(slots);
       const sale = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "sale");
       const redeem = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "redeem");
-      if (sale?.length) {
-        localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
-      }
-      if (redeem?.length) {
-        localStorage.setItem("barbercloud.loyalty_redeem_products", JSON.stringify(redeem));
-      }
+      localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(Array.isArray(sale) ? sale : []));
+      localStorage.setItem(
+        "barbercloud.loyalty_redeem_products",
+        JSON.stringify(Array.isArray(redeem) ? redeem : [])
+      );
     } catch (err) {
       console.warn("[booking] ocupacion/productos", err);
     }
@@ -875,6 +874,25 @@
     );
   }
 
+  async function refreshPublicProducts() {
+    const s =
+      window.Tenant?.slugFromLocation?.() ||
+      window.Tenant?.normalizeSlug?.(new URLSearchParams(location.search).get("s") || "") ||
+      "";
+    if (s && window.SupabaseData?.enabled?.()) {
+      try {
+        const sale = await window.SupabaseData.fetchProductosPorSlug?.(s, "sale");
+        localStorage.setItem(
+          "barbercloud.marketplace_products",
+          JSON.stringify(Array.isArray(sale) ? sale : [])
+        );
+      } catch (err) {
+        console.warn("[booking] refresh productos", err);
+      }
+    }
+    return loadShopProducts();
+  }
+
   function renderPublicShop() {
     const products = loadShopProducts();
     updatePublicCartBadge();
@@ -1217,9 +1235,13 @@
     openPuntosFlow();
   });
 
-  document.getElementById("btn-shop")?.addEventListener("click", () => {
+  document.getElementById("btn-shop")?.addEventListener("click", async () => {
     hideAll();
     if (shopStep) shopStep.hidden = false;
+    if (publicShopGrid) {
+      publicShopGrid.innerHTML = `<p class="public-desc public-desc--block">Cargando productos…</p>`;
+    }
+    await refreshPublicProducts();
     renderPublicShop();
   });
   document.getElementById("btn-back-shop")?.addEventListener("click", showServices);

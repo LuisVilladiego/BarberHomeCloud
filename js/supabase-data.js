@@ -12,7 +12,15 @@
   }
 
   function currentNegocioId() {
-    return window.Tenant?.currentId?.() || "";
+    try {
+      return (
+        window.Tenant?.currentId?.() ||
+        localStorage.getItem("barbercloud.negocio_id") ||
+        ""
+      );
+    } catch {
+      return window.Tenant?.currentId?.() || "";
+    }
   }
 
   function bookingToRow(b) {
