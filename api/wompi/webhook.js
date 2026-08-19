@@ -57,11 +57,16 @@ module.exports = async function handler(req, res) {
       String(transaction.currency || "").toUpperCase() === String(pago.currency).toUpperCase();
     const approved = status === "APPROVED" && paidEnough && sameCurrency;
 
+    // Mensual o anual se guardó en raw al crear el checkout. Hay que conservarlo:
+    // PSE puede mandar varios transaction.updated y si el primero lo borrara, el
+    // pago anual acabaría dando un solo mes.
+    const billingPeriod = pago.raw?.billingPeriod === "annual" ? "annual" : "monthly";
+
     const patch = {
       status: approved ? "APPROVED" : status || "ERROR",
       wompi_transaction_id: transaction.id || null,
       payment_method: transaction.payment_method_type || "",
-      raw: transaction,
+      raw: { ...transaction, billingPeriod },
     };
 
     if (!approved) {
@@ -77,7 +82,6 @@ module.exports = async function handler(req, res) {
     const previousEnd = negocio?.current_period_end ? new Date(negocio.current_period_end) : null;
     // Pagar antes de vencer no debe perder los días restantes.
     const start = previousEnd && previousEnd > now ? previousEnd : now;
-    const billingPeriod = pago.raw?.billingPeriod === "annual" ? "annual" : "monthly";
     const end = addMonths(start, billingPeriod === "annual" ? 12 : 1);
 
     await updatePago(pago.reference, {
