@@ -23,8 +23,22 @@ module.exports = async function handler(req, res) {
 
   const publicKey = process.env.WOMPI_PUBLIC_KEY;
   const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;
-  if (!publicKey || !integritySecret) {
-    return res.status(500).json({ error: "Wompi no está configurado en el servidor" });
+
+  // Nombrar la variable que falta ahorra adivinar; los nombres no son secretos.
+  const missing = [
+    ["WOMPI_PUBLIC_KEY", publicKey],
+    ["WOMPI_INTEGRITY_SECRET", integritySecret],
+    ["SUPABASE_URL", process.env.SUPABASE_URL],
+    ["SUPABASE_SERVICE_ROLE_KEY", process.env.SUPABASE_SERVICE_ROLE_KEY],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missing.length) {
+    console.error("[wompi/checkout] variables sin configurar:", missing.join(", "));
+    return res.status(500).json({
+      error: `Faltan variables de entorno en Vercel: ${missing.join(", ")}. Guárdalas y vuelve a desplegar.`,
+    });
   }
 
   try {
@@ -35,11 +49,13 @@ module.exports = async function handler(req, res) {
     const plan = findPlan(body.planId);
     if (!plan) return res.status(400).json({ error: "Plan no válido" });
 
+    const billingPeriod = body.billingPeriod === "annual" ? "annual" : "monthly";
+
     const negocio = await negocioOfOwner(user.id);
     if (!negocio) return res.status(409).json({ error: "Todavía no tienes una barbería creada" });
 
     const currency = "COP";
-    const cents = amountInCents(plan);
+    const cents = amountInCents(plan, billingPeriod);
     const reference = newReference(negocio.id, plan.id);
 
     await insertPago({
@@ -49,6 +65,7 @@ module.exports = async function handler(req, res) {
       amount_in_cents: cents,
       currency,
       status: "PENDING",
+      raw: { billingPeriod },
     });
 
     const signature = integritySignature({
