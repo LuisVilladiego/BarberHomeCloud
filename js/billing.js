@@ -34,6 +34,14 @@
     return new Date(s.periodEnd).getTime() > Date.now();
   }
 
+  /** Periodo de prueba gratuito (no confundir con membresía pagada `active`). */
+  function isTrialing(state) {
+    const s = state || cached();
+    if (!s) return false;
+    if (String(s.status || "").toLowerCase() !== "trialing") return false;
+    return isActive(s);
+  }
+
   function daysLeft(state) {
     const s = state || cached();
     if (!s?.periodEnd) return 0;
@@ -54,17 +62,22 @@
     try {
       if (state) localStorage.setItem(CACHE_KEY, JSON.stringify(state));
       else localStorage.removeItem(CACHE_KEY);
+      window.dispatchEvent(new CustomEvent("barbercloud:billing-updated"));
     } catch {
       /* ignore */
     }
   }
 
-  /** Relee el negocio desde Supabase y actualiza la caché. */
+  /** Relee el negocio desde Supabase y alinea todas las cachés locales. */
   async function refresh() {
     if (!enabled()) return cached();
     const row = await window.SupabaseData?.fetchOwnNegocio?.();
     const state = fromNegocio(row);
     cache(state);
+    if (row) {
+      window.Tenant?.setCurrent?.(row);
+      window.Tenant?.hydrateNegocioCaches?.(row);
+    }
     return state;
   }
 
@@ -80,7 +93,7 @@
   }
 
   /** Pide la referencia y la firma al backend, que decide el monto. */
-  async function startCheckout(planId) {
+  async function startCheckout(planId, billingPeriod = "monthly") {
     const token = await accessToken();
     if (!token) return { ok: false, message: "Inicia sesión para pagar." };
 
@@ -88,11 +101,12 @@
       const res = await fetch("/api/wompi/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, billingPeriod }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.checkoutUrl) {
-        return { ok: false, message: data?.error || "No se pudo iniciar el pago." };
+        const base = data?.error || "No se pudo iniciar el pago.";
+        return { ok: false, message: data?.detail ? `${base} (${data.detail})` : base };
       }
       return { ok: true, ...data };
     } catch (err) {
@@ -190,6 +204,7 @@
     fromNegocio,
     guard,
     isActive,
+    isTrialing,
     pagoByReference,
     refresh,
     startCheckout,

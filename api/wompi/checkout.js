@@ -95,6 +95,10 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error("[wompi/checkout]", err);
-    return res.status(500).json({ error: "No se pudo iniciar el pago" });
+    // El detalle son errores de configuración o de esquema, no datos sensibles,
+    // y sin él hay que ir a los logs de Vercel para saber qué pasó.
+    return res
+      .status(500)
+      .json({ error: "No se pudo iniciar el pago", detail: err?.message || String(err) });
   }
 };

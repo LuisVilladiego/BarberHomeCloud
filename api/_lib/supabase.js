@@ -3,13 +3,31 @@
  * Se usa REST directo con fetch para no añadir dependencias al proyecto.
  * La service role key salta RLS: nunca la expongas al navegador.
  */
+/**
+ * Deja solo el origen del proyecto. Es fácil pegar en SUPABASE_URL el endpoint
+ * REST en vez de la Project URL, y entonces Supabase responde
+ * {"error":"requested path is invalid"} porque la ruta queda duplicada.
+ */
+function projectOrigin(raw) {
+  const trimmed = String(raw).trim().replace(/\/+$/, "");
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return new URL(withScheme).origin;
+}
+
 function config() {
-  const url = process.env.SUPABASE_URL;
+  const rawUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
+  if (!rawUrl || !serviceKey) {
     throw new Error("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");
   }
-  return { url: url.replace(/\/+$/, ""), serviceKey };
+
+  let url;
+  try {
+    url = projectOrigin(rawUrl);
+  } catch {
+    throw new Error(`SUPABASE_URL no es una URL válida: ${rawUrl}`);
+  }
+  return { url, serviceKey };
 }
 
 async function rest(path, { method = "GET", body, headers = {}, query } = {}) {

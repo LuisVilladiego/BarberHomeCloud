@@ -4,6 +4,7 @@
  * Si cambias precios, actualiza también js/plans.js (solo para mostrar).
  */
 const USD_TO_COP = 4000;
+const ANNUAL_DISCOUNT = 0.16;
 
 const PLANS = [
   { id: "50", limit: 50, priceUsd: 12, label: "50 citas al mes" },
@@ -16,8 +17,14 @@ function findPlan(planId) {
   return PLANS.find((plan) => plan.id === String(planId)) || null;
 }
 
-function amountInCents(plan) {
-  return Math.round(Number(plan.price) * 100);
+function amountForPlan(plan, billingPeriod = "monthly") {
+  const monthly = Number(plan.price) || 0;
+  if (billingPeriod === "annual") return Math.round(monthly * 12 * (1 - ANNUAL_DISCOUNT));
+  return monthly;
 }
 
-module.exports = { PLANS, USD_TO_COP, amountInCents, findPlan };
+function amountInCents(plan, billingPeriod = "monthly") {
+  return Math.round(amountForPlan(plan, billingPeriod) * 100);
+}
+
+module.exports = { ANNUAL_DISCOUNT, PLANS, USD_TO_COP, amountForPlan, amountInCents, findPlan };

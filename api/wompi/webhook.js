@@ -1,11 +1,11 @@
 const { verifyEvent } = require("../_lib/wompi");
 const { negocioById, pagoByReference, updateNegocio, updatePago } = require("../_lib/supabase");
 
-/** Suma un mes sin desbordar en meses cortos (31 ene → 28/29 feb). */
-function addOneMonth(date) {
+/** Suma meses sin desbordar en meses cortos (31 ene → 28/29 feb). */
+function addMonths(date, months) {
   const next = new Date(date.getTime());
   const day = next.getDate();
-  next.setMonth(next.getMonth() + 1);
+  next.setMonth(next.getMonth() + months);
   if (next.getDate() < day) next.setDate(0);
   return next;
 }
@@ -77,7 +77,8 @@ module.exports = async function handler(req, res) {
     const previousEnd = negocio?.current_period_end ? new Date(negocio.current_period_end) : null;
     // Pagar antes de vencer no debe perder los días restantes.
     const start = previousEnd && previousEnd > now ? previousEnd : now;
-    const end = addOneMonth(start);
+    const billingPeriod = pago.raw?.billingPeriod === "annual" ? "annual" : "monthly";
+    const end = addMonths(start, billingPeriod === "annual" ? 12 : 1);
 
     await updatePago(pago.reference, {
       ...patch,
