@@ -9,8 +9,31 @@
   const pagosBody = document.getElementById("pagos-body");
   const userEmailEl = document.getElementById("admin-user-email");
 
+  const PLATFORM_ADMIN_EMAILS = new Set(["adminbarbercloud@gmail.com"]);
+
   let negocios = [];
   let activeTab = "negocios";
+
+  function withTimeout(promise, ms, message) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error(message || "Tiempo de espera agotado.")), ms);
+      }),
+    ]);
+  }
+
+  async function sessionUser() {
+    const client = window.SupabaseClient?.getClient?.();
+    if (!client) return null;
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    return data?.session?.user || null;
+  }
+
+  function isKnownPlatformAdmin(email) {
+    return PLATFORM_ADMIN_EMAILS.has(String(email || "").trim().toLowerCase());
+  }
 
   const formatMoney = (amount) =>
     new Intl.NumberFormat("es-CO", {
@@ -67,21 +90,33 @@
 
   async function api(path, options = {}) {
     const token = await accessToken();
-    const res = await fetch(path, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...(options.headers || {}),
-      },
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      const err = new Error(data?.error || `Error ${res.status}`);
-      err.status = res.status;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const res = await fetch(path, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          ...(options.headers || {}),
+        },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const err = new Error(data?.error || `Error ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    } catch (err) {
+      if (err.name === "AbortError") {
+        throw new Error("El servidor tardó demasiado. Revisa SUPABASE_SERVICE_ROLE_KEY en Vercel.");
+      }
       throw err;
+    } finally {
+      window.clearTimeout(timer);
     }
-    return data;
   }
 
   function showGate(message, withLogin = false) {
@@ -98,14 +133,30 @@
   }
 
   async function ensureAccess() {
-    const user = await window.BarberAuth?.currentUser?.();
+    if (!window.SupabaseClient?.isConfigured?.()) {
+      showGate("Supabase no está configurado. Revisa js/supabase-config.js.");
+      return false;
+    }
+
+    let user = null;
+    try {
+      user = await withTimeout(
+        sessionUser(),
+        10000,
+        "No se pudo leer la sesión. Prueba recargar o entrar de nuevo."
+      );
+    } catch (err) {
+      showGate(err.message || "No se pudo verificar la sesión.", true);
+      return false;
+    }
+
     if (!user) {
       showGate("Inicia sesión con tu cuenta de administrador de plataforma.", true);
       return false;
     }
 
     const email = String(user.email || "").trim().toLowerCase();
-    if (email === "adminbarbercloud@gmail.com") {
+    if (isKnownPlatformAdmin(email)) {
       showApp(email);
       return true;
     }
@@ -116,11 +167,15 @@
       return true;
     } catch (err) {
       if (err.status === 403) {
-        showGate("Tu cuenta no tiene permisos de administrador de plataforma.");
+        showGate(`La cuenta ${email} no tiene permisos de administrador.`);
         return false;
       }
       if (err.status === 503) {
         showGate("El panel aún no está configurado en el servidor (PLATFORM_ADMIN_EMAILS).");
+        return false;
+      }
+      if (err.status === 401) {
+        showGate("Sesión expirada. Vuelve a entrar.", true);
         return false;
       }
       showGate(err.message || "No se pudo verificar el acceso.", true);
@@ -318,12 +373,21 @@
   });
 
   (async () => {
-    const ok = await ensureAccess();
-    if (!ok) return;
+    appEl.hidden = true;
+    gateEl.hidden = false;
+    gateMsg.textContent = "Verificando acceso…";
+    gateLogin.hidden = true;
+
     try {
-      await refreshAll();
+      const ok = await ensureAccess();
+      if (!ok) return;
+      try {
+        await refreshAll();
+      } catch (err) {
+        showError(err.message || "No se pudo cargar el panel.");
+      }
     } catch (err) {
-      showError(err.message || "No se pudo cargar el panel.");
+      showGate(err.message || "Error al iniciar el panel.", true);
     }
   })();
 })();
