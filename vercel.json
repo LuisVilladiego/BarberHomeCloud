@@ -1,7 +1,9 @@
 {
   "cleanUrls": false,
+  "redirects": [
+    { "source": "/", "destination": "/landing.html", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
     { "source": "/landing", "destination": "/landing.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/onboarding", "destination": "/onboarding.html" },
