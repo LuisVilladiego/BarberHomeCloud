@@ -15,13 +15,32 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="robots" content="noindex, nofollow" />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("barbercloud.auth");
+          if (!raw) {
+            location.replace("admin-login.html");
+            return;
+          }
+          var data = JSON.parse(raw);
+          var token = data.access_token || (data.currentSession && data.currentSession.access_token);
+          var email = String((data.user && data.user.email) || "").toLowerCase();
+          if (!token || email !== "adminbarbercloud@gmail.com") {
+            location.replace("admin-login.html");
+          }
+        } catch (e) {
+          location.replace("admin-login.html");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="admin-gate" class="admin-gate">
       <div class="admin-gate__card">
         <h1>Panel de plataforma</h1>
-        <p id="admin-gate-msg">Verificando acceso…</p>
-        <a class="btn btn--primary" id="admin-gate-login" href="login.html?next=admin" hidden>Entrar</a>
+        <p id="admin-gate-msg">Cargando panel…</p>
+        <a class="btn btn--primary" id="admin-gate-login" href="admin-login.html">Entrar</a>
         <a class="btn btn--secondary" href="landing.html">Volver al sitio</a>
       </div>
     </div>
@@ -166,7 +185,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/supabase-client.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/admin.js?v=20260822b"></script>
+    <script src="js/admin.js?v=20260822c"></script>
   </body>
 </html>

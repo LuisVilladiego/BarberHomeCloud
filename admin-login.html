@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Admin · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("barbercloud.auth");
+          if (!raw) return;
+          var data = JSON.parse(raw);
+          var token = data.access_token || (data.currentSession && data.currentSession.access_token);
+          var email = String((data.user && data.user.email) || "").toLowerCase();
+          if (token && email === "adminbarbercloud@gmail.com") {
+            location.replace("admin.html");
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
+  </head>
+  <body class="tutorial-body auth-page">
+    <main class="admin-gate">
+      <div class="admin-gate__card">
+        <div class="tutorial-card__brand" style="justify-content:center;margin-bottom:1rem">
+          <img src="assets/logo.png" alt="" width="28" height="28" />
+          <strong>BarberCloud Admin</strong>
+        </div>
+        <h1>Acceso de plataforma</h1>
+        <p class="tutorial-card__lead">Solo el administrador del SaaS puede entrar aquí.</p>
+        <p class="auth-error" id="admin-login-error" hidden></p>
+        <form class="form auth-form" id="admin-login-form">
+          <label class="field">
+            <span class="field__label">Correo administrador</span>
+            <input id="admin-email" name="email" type="email" value="adminbarbercloud@gmail.com" readonly />
+          </label>
+          <label class="field">
+            <span class="field__label">Contraseña</span>
+            <input name="password" type="password" required minlength="6" autocomplete="current-password" />
+          </label>
+          <button class="btn btn--primary btn--block" type="submit" id="admin-login-submit">Entrar al panel</button>
+        </form>
+        <p style="margin-top:1rem;text-align:center">
+          <a class="auth-help__link" href="landing.html">← Volver al sitio público</a>
+        </p>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/admin-login.js?v=20260822c"></script>
+  </body>
+</html>

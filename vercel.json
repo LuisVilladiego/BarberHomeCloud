@@ -10,6 +10,7 @@
     { "source": "/registro", "destination": "/login.html" },
     { "source": "/app", "destination": "/index.html" },
     { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/admin-login", "destination": "/admin-login.html" },
     {
       "source": "/:slug((?!api/)(?!.*\\.).*)",
       "destination": "/booking.html"

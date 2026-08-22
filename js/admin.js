@@ -23,12 +23,24 @@
     ]);
   }
 
-  async function sessionUser() {
-    const client = window.SupabaseClient?.getClient?.();
-    if (!client) return null;
-    const { data, error } = await client.auth.getSession();
-    if (error) throw error;
-    return data?.session?.user || null;
+  function readSessionFromStorage() {
+    try {
+      const raw = localStorage.getItem("barbercloud.auth");
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      const email = String(data?.user?.email || data?.currentSession?.user?.email || "")
+        .trim()
+        .toLowerCase();
+      const token = data?.access_token || data?.currentSession?.access_token || "";
+      if (!token || !email) return null;
+      return { email, token };
+    } catch {
+      return null;
+    }
+  }
+
+  function accessTokenFromStorage() {
+    return readSessionFromStorage()?.token || "";
   }
 
   function isKnownPlatformAdmin(email) {
@@ -82,6 +94,8 @@
   }
 
   async function accessToken() {
+    const stored = accessTokenFromStorage();
+    if (stored) return stored;
     const client = window.SupabaseClient?.getClient?.();
     if (!client) return "";
     const { data } = await client.auth.getSession();
@@ -132,55 +146,18 @@
     if (userEmailEl) userEmailEl.textContent = email || "";
   }
 
-  async function ensureAccess() {
-    if (!window.SupabaseClient?.isConfigured?.()) {
-      showGate("Supabase no está configurado. Revisa js/supabase-config.js.");
-      return false;
+  function ensureAccessSync() {
+    const session = readSessionFromStorage();
+    if (!session) {
+      location.replace("admin-login.html");
+      return null;
     }
-
-    let user = null;
-    try {
-      user = await withTimeout(
-        sessionUser(),
-        10000,
-        "No se pudo leer la sesión. Prueba recargar o entrar de nuevo."
-      );
-    } catch (err) {
-      showGate(err.message || "No se pudo verificar la sesión.", true);
-      return false;
+    if (!isKnownPlatformAdmin(session.email)) {
+      showGate(`La cuenta ${session.email} no está autorizada.`, false);
+      return null;
     }
-
-    if (!user) {
-      showGate("Inicia sesión con tu cuenta de administrador de plataforma.", true);
-      return false;
-    }
-
-    const email = String(user.email || "").trim().toLowerCase();
-    if (isKnownPlatformAdmin(email)) {
-      showApp(email);
-      return true;
-    }
-
-    try {
-      const me = await api("/api/admin/me");
-      showApp(me.email);
-      return true;
-    } catch (err) {
-      if (err.status === 403) {
-        showGate(`La cuenta ${email} no tiene permisos de administrador.`);
-        return false;
-      }
-      if (err.status === 503) {
-        showGate("El panel aún no está configurado en el servidor (PLATFORM_ADMIN_EMAILS).");
-        return false;
-      }
-      if (err.status === 401) {
-        showGate("Sesión expirada. Vuelve a entrar.", true);
-        return false;
-      }
-      showGate(err.message || "No se pudo verificar el acceso.", true);
-      return false;
-    }
+    showApp(session.email);
+    return session;
   }
 
   function renderKpis(data) {
@@ -367,27 +344,21 @@
   });
 
   document.getElementById("admin-logout")?.addEventListener("click", async () => {
-    const client = window.SupabaseClient?.getClient?.();
-    await client?.auth?.signOut?.();
-    location.href = "landing.html";
+    try {
+      localStorage.removeItem("barbercloud.auth");
+      const client = window.SupabaseClient?.getClient?.();
+      await client?.auth?.signOut?.();
+    } catch {
+      /* ignore */
+    }
+    location.href = "admin-login.html";
   });
 
-  (async () => {
-    appEl.hidden = true;
-    gateEl.hidden = false;
-    gateMsg.textContent = "Verificando acceso…";
-    gateLogin.hidden = true;
-
-    try {
-      const ok = await ensureAccess();
-      if (!ok) return;
-      try {
-        await refreshAll();
-      } catch (err) {
-        showError(err.message || "No se pudo cargar el panel.");
-      }
-    } catch (err) {
-      showGate(err.message || "Error al iniciar el panel.", true);
-    }
+  (function boot() {
+    const session = ensureAccessSync();
+    if (!session) return;
+    refreshAll().catch((err) => {
+      showError(err.message || "No se pudo cargar el panel.");
+    });
   })();
 })();

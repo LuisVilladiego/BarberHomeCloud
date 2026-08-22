@@ -7,6 +7,7 @@
 
   const RESERVED_SLUGS = [
     "admin",
+    "admin-login",
     "api",
     "landing",
     "login",
