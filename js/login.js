@@ -192,6 +192,22 @@
     showHub("signup");
   }
 
+  async function isPlatformAdmin() {
+    try {
+      const client = await window.SupabaseClient?.getClient?.();
+      if (!client) return false;
+      const { data } = await client.auth.getSession();
+      const token = data?.session?.access_token;
+      if (!token) return false;
+      const res = await fetch("/api/admin/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
   async function afterAuth() {
     await window.BarberAuth?.applyPendingPassword?.();
     const params = new URLSearchParams(location.search);
@@ -208,7 +224,8 @@
       return;
     }
 
-    if (next === "admin") {
+    // Dueño de la plataforma → panel SaaS (/admin), no el panel de barbería.
+    if (next === "admin" || (!next && (await isPlatformAdmin()))) {
       location.href = "admin.html";
       return;
     }
