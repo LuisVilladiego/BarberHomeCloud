@@ -11,27 +11,19 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="css/admin.css" />
+    <link rel="stylesheet" href="css/admin.css?v=20260822d" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="robots" content="noindex, nofollow" />
+    <script src="js/admin-session.js?v=20260822d"></script>
     <script>
       (function () {
-        try {
-          var raw = localStorage.getItem("barbercloud.auth");
-          if (!raw) {
-            location.replace("admin-login.html");
-            return;
-          }
-          var data = JSON.parse(raw);
-          var token = data.access_token || (data.currentSession && data.currentSession.access_token);
-          var email = String((data.user && data.user.email) || "").toLowerCase();
-          if (!token || email !== "adminbarbercloud@gmail.com") {
-            location.replace("admin-login.html");
-          }
-        } catch (e) {
+        var session = window.AdminSession && window.AdminSession.readAdminSession();
+        if (!session) {
           location.replace("admin-login.html");
+          return;
         }
+        document.documentElement.classList.add("admin-authed");
       })();
     </script>
   </head>
@@ -185,6 +177,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/supabase-client.js"></script>
-    <script src="js/admin.js?v=20260822c"></script>
+    <script src="js/admin-session.js?v=20260822d"></script>
+    <script src="js/admin.js?v=20260822d"></script>
   </body>
 </html>

@@ -24,19 +24,7 @@
   }
 
   function readSessionFromStorage() {
-    try {
-      const raw = localStorage.getItem("barbercloud.auth");
-      if (!raw) return null;
-      const data = JSON.parse(raw);
-      const email = String(data?.user?.email || data?.currentSession?.user?.email || "")
-        .trim()
-        .toLowerCase();
-      const token = data?.access_token || data?.currentSession?.access_token || "";
-      if (!token || !email) return null;
-      return { email, token };
-    } catch {
-      return null;
-    }
+    return window.AdminSession?.readAdminSession?.() || null;
   }
 
   function accessTokenFromStorage() {
@@ -141,6 +129,7 @@
   }
 
   function showApp(email) {
+    document.documentElement.classList.add("admin-authed");
     gateEl.hidden = true;
     appEl.hidden = false;
     if (userEmailEl) userEmailEl.textContent = email || "";

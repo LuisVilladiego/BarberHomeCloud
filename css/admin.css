@@ -1,4 +1,16 @@
 /* BarberCloud · panel de plataforma (super-admin) */
+html.admin-authed #admin-gate {
+  display: none !important;
+}
+
+html.admin-authed #admin-app {
+  display: block !important;
+}
+
+html:not(.admin-authed) #admin-app {
+  display: none !important;
+}
+
 .admin-app {
   min-height: 100vh;
   background: #f4f6f9;
@@ -170,6 +182,10 @@
   place-items: center;
   padding: 1.5rem;
   background: #f4f6f9;
+}
+
+.admin-gate[hidden] {
+  display: none !important;
 }
 
 .admin-gate__card {
