@@ -147,16 +147,16 @@
   const CANONICAL_ORIGIN = "https://barber-home-cloud.vercel.app";
 
   function oauthRedirectUrl() {
+    const qs = location.search || "";
     const origin = location.origin;
     const host = location.hostname;
     if (host === "localhost" || host === "127.0.0.1") {
-      return `${origin}/login.html`;
+      return `${origin}/login.html${qs}`;
     }
     if (origin === CANONICAL_ORIGIN || /barber-home-cloud.*\.vercel\.app$/i.test(host)) {
-      return `${origin}/login.html`;
+      return `${origin}/login.html${qs}`;
     }
-    // Preview rara, archivo local o navegador embebido: Google rechaza el origen.
-    return `${CANONICAL_ORIGIN}/login.html`;
+    return `${CANONICAL_ORIGIN}/login.html${qs}`;
   }
 
   const PENDING_PW_KEY = "barbercloud.pending_pw";

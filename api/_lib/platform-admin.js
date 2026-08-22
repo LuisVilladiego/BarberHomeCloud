@@ -6,23 +6,19 @@ function bearer(req) {
   return match ? match[1].trim() : "";
 }
 
+const DEFAULT_PLATFORM_ADMIN_EMAILS = ["adminbarbercloud@gmail.com"];
+
 function platformAdminEmails() {
-  return String(process.env.PLATFORM_ADMIN_EMAILS || "")
+  const fromEnv = String(process.env.PLATFORM_ADMIN_EMAILS || "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
+  if (fromEnv.length) return fromEnv;
+  return DEFAULT_PLATFORM_ADMIN_EMAILS;
 }
 
 async function requirePlatformAdmin(req) {
   const emails = platformAdminEmails();
-  if (!emails.length) {
-    return {
-      ok: false,
-      status: 503,
-      error: "PLATFORM_ADMIN_EMAILS no está configurado en el servidor.",
-    };
-  }
-
   const user = await userFromToken(bearer(req));
   if (!user?.id) {
     return { ok: false, status: 401, error: "Sesión no válida." };

@@ -192,6 +192,35 @@
     showHub("signup");
   }
 
+  const AUTH_NEXT_KEY = "barbercloud.auth.next";
+  const PLATFORM_ADMIN_EMAIL = "adminbarbercloud@gmail.com";
+
+  function readAuthNext() {
+    const params = new URLSearchParams(location.search);
+    const fromUrl = params.get("next");
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(AUTH_NEXT_KEY, fromUrl);
+      } catch {
+        /* ignore */
+      }
+      return fromUrl;
+    }
+    try {
+      return sessionStorage.getItem(AUTH_NEXT_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function clearAuthNext() {
+    try {
+      sessionStorage.removeItem(AUTH_NEXT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+
   async function isPlatformAdmin() {
     try {
       const client = await window.SupabaseClient?.getClient?.();
@@ -211,22 +240,27 @@
   async function afterAuth() {
     await window.BarberAuth?.applyPendingPassword?.();
     const params = new URLSearchParams(location.search);
-    const next = params.get("next");
+    const next = readAuthNext();
     const plan = params.get("plan");
+    const user = await window.BarberAuth?.currentUser?.();
+    const userEmail = String(user?.email || "").trim().toLowerCase();
+    const isKnownPlatformAdmin = userEmail === PLATFORM_ADMIN_EMAIL;
+
+    // Dueño de la plataforma → panel SaaS (/admin), antes del flujo de barbería.
+    if (next === "admin" || isKnownPlatformAdmin || (!next && (await isPlatformAdmin()))) {
+      clearAuthNext();
+      location.href = "admin.html";
+      return;
+    }
 
     const sync = await window.Tenant?.syncWithAuthenticatedUser?.();
 
     // Desde landing «Elegir plan»: login primero, pago después.
     if (next === "suscripcion") {
+      clearAuthNext();
       const qs = new URLSearchParams({ need: "1" });
       if (plan) qs.set("plan", plan);
       location.href = `suscripcion.html?${qs.toString()}#plans`;
-      return;
-    }
-
-    // Dueño de la plataforma → panel SaaS (/admin), no el panel de barbería.
-    if (next === "admin" || (!next && (await isPlatformAdmin()))) {
-      location.href = "admin.html";
       return;
     }
 
@@ -530,6 +564,8 @@
       : "";
 
   async function bootstrap() {
+    readAuthNext();
+
     const googleIdToken = hashParams.get("id_token");
     if (googleIdToken) {
       history.replaceState(null, "", location.pathname + location.search);
