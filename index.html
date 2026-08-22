@@ -13,6 +13,12 @@
     <link rel="stylesheet" href="styles.css" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <script>
+      (function () {
+        var path = location.pathname.replace(/\/+$/, "") || "/";
+        if (path === "/") location.replace("landing.html");
+      })();
+    </script>
   </head>
   <body>
     <div class="app">

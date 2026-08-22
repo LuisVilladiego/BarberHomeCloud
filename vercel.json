@@ -1,9 +1,12 @@
 {
   "cleanUrls": false,
   "rewrites": [
+    { "source": "/", "destination": "/landing.html" },
+    { "source": "/landing", "destination": "/landing.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/onboarding", "destination": "/onboarding.html" },
     { "source": "/registro", "destination": "/login.html" },
+    { "source": "/app", "destination": "/index.html" },
     {
       "source": "/:slug((?!api/)(?!.*\\.).*)",
       "destination": "/booking.html"
