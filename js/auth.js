@@ -26,6 +26,9 @@
         ? `Por seguridad, espera ${secMatch[1]} segundos e inténtalo de nuevo.`
         : "Demasiados intentos seguidos. Espera un momento e inténtalo de nuevo.";
     }
+    if (/origin_mismatch|javascript origin|origen.*autorizad/i.test(raw)) {
+      return "Google no autoriza esta dirección. Entra desde https://barber-home-cloud.vercel.app/login.html";
+    }
     if (/not enabled|issuer.*accounts\.google\.com|provider.*google/i.test(raw)) {
       return "Google no está activado en Supabase. Ve a Authentication → Providers → Google, actívalo con tu Client ID y Secret, y vuelve a intentar.";
     }
@@ -133,16 +136,27 @@
       slug: cached?.slug || auto.slug,
       name: cached?.name || auto.title || "",
       owner_id: user.id,
-      subscription_status: sub.status || cached?.subscription_status || "trialing",
-      plan_id: sub.planId || cached?.plan_id || "100",
+      subscription_status: sub.status || cached?.subscription_status || "trial",
+      plan_id: window.BusinessModel?.normalizePlanId?.(sub.planId || cached?.plan_id) || sub.planId || cached?.plan_id || "pro",
       autoagenda: auto,
       whatsapp: "",
       onboarding_completed: true,
     });
   }
 
+  const CANONICAL_ORIGIN = "https://barber-home-cloud.vercel.app";
+
   function oauthRedirectUrl() {
-    return `${location.origin}/login.html`;
+    const origin = location.origin;
+    const host = location.hostname;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return `${origin}/login.html`;
+    }
+    if (origin === CANONICAL_ORIGIN || /barber-home-cloud.*\.vercel\.app$/i.test(host)) {
+      return `${origin}/login.html`;
+    }
+    // Preview rara, archivo local o navegador embebido: Google rechaza el origen.
+    return `${CANONICAL_ORIGIN}/login.html`;
   }
 
   const PENDING_PW_KEY = "barbercloud.pending_pw";
@@ -208,18 +222,9 @@
   }
 
   async function signInWithGoogle() {
-    try {
-      if (window.GoogleAuth?.signInCredential) {
-        const credential = await window.GoogleAuth.signInCredential();
-        return await signInWithGoogleIdToken(credential);
-      }
-    } catch (err) {
-      const msg = String(err?.message || "");
-      if (/cancelado/i.test(msg)) {
-        return { ok: false, message: "Inicio de sesión con Google cancelado." };
-      }
-      console.warn("Google credential", err);
-    }
+    // Siempre redirección OAuth de Supabase. GIS (botón/popup) exige orígenes JS
+    // exactos y termina en Error 400 origin_mismatch en previews o si falta el
+    // dominio en Google Cloud. El callback de Supabase no depende de eso.
     return signInWithGoogleOAuth();
   }
 

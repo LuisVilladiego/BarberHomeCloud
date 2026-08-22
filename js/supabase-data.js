@@ -630,7 +630,7 @@
       slug: payload.slug,
       name: payload.name || "",
       subscription_status: payload.subscription_status || "active",
-      plan_id: payload.plan_id || "100",
+      plan_id: payload.plan_id || "pro",
       autoagenda: payload.autoagenda || {},
       updated_at: new Date().toISOString(),
     };

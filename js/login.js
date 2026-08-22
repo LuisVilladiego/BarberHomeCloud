@@ -194,19 +194,44 @@
 
   async function afterAuth() {
     await window.BarberAuth?.applyPendingPassword?.();
+    const params = new URLSearchParams(location.search);
+    const next = params.get("next");
+    const plan = params.get("plan");
+
     const sync = await window.Tenant?.syncWithAuthenticatedUser?.();
-    if (sync?.needsOnboarding) {
-      location.href = "onboarding.html";
+
+    // Desde landing «Elegir plan»: login primero, pago después.
+    if (next === "suscripcion") {
+      const qs = new URLSearchParams({ need: "1" });
+      if (plan) qs.set("plan", plan);
+      location.href = `suscripcion.html?${qs.toString()}#plans`;
       return;
     }
+
+    if (sync?.needsOnboarding) {
+      const trial = await window.Billing?.startTrial?.();
+      if (trial?.ok) {
+        await window.Tenant?.syncWithAuthenticatedUser?.();
+      } else if (trial?.message && next !== "suscripcion") {
+        location.href = "suscripcion.html?need=1";
+        return;
+      }
+      location.href = "index.html";
+      return;
+    }
+
     if (window.Tenant?.hasActiveSubscription?.()) {
       location.href = "index.html";
       return;
     }
-    // Si ya pagó antes y se le venció, entra al panel en modo lectura.
-    // Si nunca pagó, va directo a activar la suscripción.
+
     const billing = window.Billing?.cached?.();
-    location.href = billing?.periodEnd ? "index.html" : "suscripcion.html?need=1";
+    if (billing?.periodEnd) {
+      location.href = "index.html";
+      return;
+    }
+
+    location.href = "suscripcion.html?need=1";
   }
 
   async function sendStaffCode(email, name, type) {

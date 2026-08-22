@@ -85,7 +85,7 @@
       </aside>
 
       <main class="main">
-        <header class="page-header">
+        <header class="page-header" id="sub-page-header">
           <h1>Suscripción</h1>
         </header>
         <p class="sub-need" id="sub-need" hidden>
@@ -93,10 +93,47 @@
           <strong>Wompi</strong> para activarla.
         </p>
 
+        <section class="sub-checkout" id="sub-checkout" hidden aria-labelledby="sub-checkout-title">
+          <header class="sub-checkout__hero">
+            <span class="sub-checkout__icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2.5 14.8 8.5 21.5 9.2l-5.2 4.5 1.5 6.7L12 17.8 6.2 20.4l1.5-6.7L2.5 9.2l6.7-.7L12 2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <h2 class="sub-checkout__title" id="sub-checkout-title">Suscríbete y accede a todo BarberCloud</h2>
+          </header>
+          <ul class="choose-plan-trust">
+            <li>Cambia de plan o cancela en 1 click</li>
+            <li>30 días de garantía. Te devolvemos tu dinero.</li>
+          </ul>
+          <div class="choose-plan-billing">
+            <span class="choose-plan-billing__label">¿Cómo prefieres pagar?</span>
+            <div class="choose-plan-toggle" id="sub-billing-toggle" role="group" aria-label="Frecuencia de pago">
+              <button type="button" class="choose-plan-toggle__btn is-active" data-period="monthly">Mensual</button>
+              <button type="button" class="choose-plan-toggle__btn" data-period="annual">
+                Anual <small>Ahorras 16%</small>
+              </button>
+            </div>
+          </div>
+          <p class="choose-plan-question">¿Cuántas citas atiendes al mes?</p>
+          <div class="choose-plan-cards" id="sub-plan-cards"></div>
+          <p class="choose-plan-error auth-error" id="sub-plan-error" hidden></p>
+        </section>
+
+        <div class="sub-checkout-bar" id="sub-checkout-bar" hidden>
+          <button type="button" class="btn btn--dark choose-plan-cta" id="sub-plan-cta">
+            Empezar con el plan Basic
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m10 7 6 5-6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div id="sub-active" hidden>
         <section class="panel config-panel plan-summary">
           <div class="plan-summary__row">
             <div>
-              <h2 class="plan-summary__title" id="plan-title">Tienes el plan de 100 citas al mes</h2>
+              <h2 class="plan-summary__title" id="plan-title">Tienes el plan Pro</h2>
               <p class="section-lead" id="plan-next-charge">Próximo cargo: 17/08/2026</p>
             </div>
             <span class="status status--ok" id="plan-status">Activo</span>
@@ -217,6 +254,7 @@
             </div>
           </dl>
         </section>
+        </div>
       </main>
 
       <a class="help" href="https://wa.me/" target="_blank" rel="noreferrer">
@@ -229,17 +267,6 @@
       </a>
     </div>
 
-    <div class="modal" id="plan-modal" hidden>
-      <div class="modal__backdrop" data-close-plan></div>
-      <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title">
-        <h3 id="plan-modal-title">Cambiar de plan</h3>
-        <p class="modal__lead">Elige cuántas citas quieres incluir cada mes.</p>
-        <div class="plan-options" id="plan-options"></div>
-        <div class="modal__actions">
-          <button class="btn btn--secondary" type="button" data-close-plan>Cancelar</button>
-        </div>
-      </div>
-    </div>
 
     <div class="modal" id="payment-modal" hidden>
       <div class="modal__backdrop" data-close-payment></div>
@@ -347,12 +374,14 @@
     <script src="js/supabase-client.js?v=20260818a"></script>
     <script src="js/tenant.js?v=20260818m"></script>
     <script src="js/supabase-data.js?v=20260818m"></script>
-    <script src="js/plans.js?v=20260818m"></script>
-    <script src="js/billing.js?v=20260818m"></script>
+    <script src="js/business-model.js?v=20260822"></script>
+    <script src="js/plans.js?v=20260818n"></script>
+    <script src="js/billing.js?v=20260818q"></script>
+    <script src="js/plan-picker.js?v=20260818n"></script>
     <script src="js/booking-store.js?v=20260818m"></script>
     <script src="js/auth.js?v=20260818m"></script>
     <script src="js/app.js?v=20260818m"></script>
-    <script src="js/welcome.js?v=20260818m"></script>
-    <script src="js/suscripcion.js?v=20260818m"></script>
+    <script src="js/welcome.js?v=20260818q"></script>
+    <script src="js/suscripcion.js?v=20260818q"></script>
   </body>
 </html>

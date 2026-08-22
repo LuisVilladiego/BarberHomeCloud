@@ -49,30 +49,31 @@
     },
   };
 
-  const defaults = {
-    slug: "barberhomeluisvilladiego",
-    title: "BarberHome",
-    description:
-      "EL mejor servicio de 💈Barbería💈, ahora en la comodidad de tu hogar 🏡 gracias a BarberHome😎",
-    avatarDataUrl: "",
-    schedules: [defaultSchedule],
-    appointmentTypes: [
-      {
-        id: "type-1",
-        name: "Corte",
-        duration: 60,
-        price: 25000,
-        scheduleId: "sch-default",
-      },
-      {
-        id: "type-2",
-        name: "Corte + Barba",
-        duration: 60,
-        price: 35000,
-        scheduleId: "sch-default",
-      },
-    ],
-  };
+  function emptyState() {
+    return {
+      slug: "",
+      title: "",
+      description: "",
+      avatarDataUrl: "",
+      schedules: [],
+      appointmentTypes: [],
+    };
+  }
+
+  function normalizeLoaded(raw) {
+    const next = { ...emptyState(), ...raw };
+    if (!Array.isArray(next.schedules)) next.schedules = [];
+    if (!Array.isArray(next.appointmentTypes)) next.appointmentTypes = [];
+    next.appointmentTypes = next.appointmentTypes.map((t) => ({
+      scheduleId: next.schedules[0]?.id || "sch-default",
+      price: 0,
+      ...t,
+    }));
+    if (window.Tenant?.isDemoSlug?.(next.slug)) {
+      next.slug = "";
+    }
+    return next;
+  }
 
   let state = load();
   let editingScheduleId = null;
@@ -81,20 +82,13 @@
   let reorderMode = false;
 
   function load() {
+    const useEmpty = window.Tenant?.shouldUseEmptyForms?.() ?? true;
     try {
-      const raw = { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
-      if (!Array.isArray(raw.schedules) || !raw.schedules.length) raw.schedules = [defaultSchedule];
-      if (!Array.isArray(raw.appointmentTypes) || !raw.appointmentTypes.length) {
-        raw.appointmentTypes = defaults.appointmentTypes;
-      }
-      raw.appointmentTypes = raw.appointmentTypes.map((t) => ({
-        scheduleId: raw.schedules[0]?.id || "sch-default",
-        price: 0,
-        ...t,
-      }));
-      return raw;
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      if (useEmpty) return emptyState();
+      return normalizeLoaded(stored);
     } catch {
-      return structuredClone(defaults);
+      return emptyState();
     }
   }
 
@@ -126,7 +120,7 @@
       name: state.title || v.slug,
       owner_id: (await window.BarberAuth?.currentUser?.())?.id,
       subscription_status: sub.status || "active",
-      plan_id: sub.planId || "100",
+      plan_id: window.BusinessModel?.normalizePlanId?.(sub.planId) || sub.planId || "pro",
       autoagenda: { ...state, slug: v.slug },
     });
     if (!r.ok && r.message && /duplicate|unique|23505/i.test(r.message)) {
@@ -197,15 +191,19 @@
   }
 
   function applyBasic() {
-    slugInput.value = state.slug;
-    titleInput.value = state.title;
-    descriptionInput.value = state.description;
-    const defaultAvatar = "assets/barberhome-avatar.png";
-    const src = state.avatarDataUrl || defaultAvatar;
-    avatarPreview.src = src;
-    avatarPreview.hidden = false;
-    dropzoneIdle.hidden = true;
-    pendingAvatar = state.avatarDataUrl || "";
+    slugInput.value = state.slug || "";
+    titleInput.value = state.title || "";
+    descriptionInput.value = state.description || "";
+    if (state.avatarDataUrl) {
+      avatarPreview.src = state.avatarDataUrl;
+      avatarPreview.hidden = false;
+      dropzoneIdle.hidden = true;
+      pendingAvatar = state.avatarDataUrl;
+    } else {
+      avatarPreview.hidden = true;
+      dropzoneIdle.hidden = false;
+      pendingAvatar = "";
+    }
   }
 
   function renderSchedules() {
@@ -284,7 +282,13 @@
     if (!title) return;
     title.textContent = state.title || "Tu negocio";
     desc.textContent = state.description || "";
-    avatar.src = state.avatarDataUrl || "assets/barberhome-avatar.png";
+    if (state.avatarDataUrl) {
+      avatar.src = state.avatarDataUrl;
+      avatar.hidden = false;
+    } else {
+      avatar.removeAttribute("src");
+      avatar.hidden = true;
+    }
     const rewardsName = document.getElementById("preview-rewards-name");
     if (rewardsName) {
       rewardsName.textContent = state.title ? `${state.title} Rewards` : "Rewards";
@@ -436,9 +440,16 @@
 
   const urlPrefix = document.getElementById("url-prefix");
   if (urlPrefix) {
-    urlPrefix.textContent = window.Tenant?.isLocalHost?.()
-      ? "barber-home-cloud.vercel.app/"
-      : `${location.host}/`;
+    const host = window.Tenant?.isLocalHost?.()
+      ? "barber-home-cloud.vercel.app"
+      : location.host.replace(/:\d+$/, "");
+    urlPrefix.textContent = `${host}/`;
+  }
+
+  if (/[?&]setup=1/.test(location.search)) {
+    document.querySelector(".page-header--stack")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    slugInput?.focus();
+    window.AppShell?.toast?.("Personaliza tu enlace público de reservas");
   }
 
   const slugStatus = document.getElementById("slug-status");
@@ -527,7 +538,7 @@
   document.getElementById("btn-copy")?.addEventListener("click", async () => {
     syncBasicFields();
     try {
-      await navigator.clipboard.writeText(publicUrl(state.slug));
+      await navigator.clipboard.writeText(displayLink(state.slug));
       const label = document.querySelector("[data-copy-label]");
       if (label) label.textContent = "¡Copiado!";
       window.AppShell?.toast("Link copiado");

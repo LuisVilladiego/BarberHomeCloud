@@ -3,82 +3,92 @@
   const CLIENT_VAR = "{{nombreCliente}}";
   const DEFAULT_LOGO = "assets/barberhome-logo-full.png";
 
-  const DEFAULT_BODY =
-    "Hola! {{nombreCliente}} recuerda: Tienes una cita en BarberHome con Luis Villadiego.\n\nNos vemos 👍🏻💇‍♂️💈✅";
+  function businessContext() {
+    if (window.Tenant?.getBusinessContext) return window.Tenant.getBusinessContext();
+    try {
+      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      return {
+        title: String(auto.title || "").trim(),
+        slug: String(auto.slug || "").trim(),
+        description: String(auto.description || "").trim(),
+      };
+    } catch {
+      return { title: "", slug: "", description: "" };
+    }
+  }
 
-  const sharedExtras = {
-    sendSameTime: false,
-    msgTitle: "Recordatorio de Cita BarberHome",
-    msgBody: DEFAULT_BODY,
-    showDateTime: "both",
-    msgLogoName: "barberhome-logo-full.png",
-    msgLogoData: DEFAULT_LOGO,
-    secondReminder: false,
-    secondHoursBefore: "12",
-    secondMsgTitle: "Recordatorio de cita de Barberia con Luis Villadiego",
-    secondMsgBody: "Tienes una cita con Barber Home",
-    secondIncludeTime: true,
-    secondExtraInfo: false,
-    createMsgEnabled: true,
-    createMsgDelay: "5",
-    createMsgTitle: "Confirmación de cita BarberHome",
-    createMsgBody:
-      "Hola {{nombreCliente}}, se ha confirmado tu cita con BarberHome. Información de tu cita:",
-    createShowDateTime: "both",
-    createExtraInfo: false,
-    afterMsgEnabled: true,
-    afterMsgDelay: "0.5",
-    afterMsgTitle: "BarberHome",
-    afterMsgBody: `Gracias por confiar en BarberHome 💈
+  function buildSharedExtras(ctx) {
+    const name = ctx.title || "tu negocio";
+    const link =
+      ctx.slug && window.Tenant?.displayLink
+        ? window.Tenant.displayLink(ctx.slug)
+        : window.Tenant?.displayLink?.("mi-barberia") || "barber-home-cloud.vercel.app/mi-barberia";
+    return {
+      sendSameTime: false,
+      msgTitle: `Recordatorio de cita ${name}`,
+      msgBody: `Hola {{nombreCliente}}, recuerda tu cita en ${name}.`,
+      showDateTime: "both",
+      msgLogoName: "barberhome-logo-full.png",
+      msgLogoData: DEFAULT_LOGO,
+      secondReminder: false,
+      secondHoursBefore: "12",
+      secondMsgTitle: `Recordatorio de cita ${name}`,
+      secondMsgBody: `Tienes una cita con ${name}.`,
+      secondIncludeTime: true,
+      secondExtraInfo: false,
+      createMsgEnabled: true,
+      createMsgDelay: "5",
+      createMsgTitle: `Confirmación de cita ${name}`,
+      createMsgBody: `Hola {{nombreCliente}}, se ha confirmado tu cita con ${name}. Información de tu cita:`,
+      createShowDateTime: "both",
+      createExtraInfo: false,
+      afterMsgEnabled: true,
+      afterMsgDelay: "0.5",
+      afterMsgTitle: name,
+      afterMsgBody: `Gracias por confiar en ${name} 💈
 
 Siempre es un gusto atenderte.
 
-🔥 Recomendación: agenda tu próxima cita desde ya para asegurar tu horario
-
 📅 Agenda tu próxima cita aquí:
-https://barbercloud.com/barberhomeluisvilladiego
+${link}`,
+      addTimezone: false,
+      multiWhatsapp: false,
+    };
+  }
 
-Te espero para el próximo corte 👊`,
-    addTimezone: false,
-    multiWhatsapp: false,
-  };
+  function buildDefaults(calendarId, calendarName) {
+    const ctx = businessContext();
+    const name = ctx.title || calendarName || "Calendario";
+    const shared = buildSharedExtras(ctx);
+    const base = {
+      whatsappCc: "+57",
+      whatsappPhone: "",
+      timeFormat: "12",
+      language: "es",
+      timezone: "America/Bogota",
+      paused: calendarId === "barbercloud",
+      messageType: "reminder",
+      sendHoursBefore: "24",
+      ...shared,
+    };
+    if (calendarId === "gmail") {
+      return { businessName: ctx.title ? `${ctx.title} Gmail` : "Google Calendar", ...base };
+    }
+    if (calendarId === "barbercloud") {
+      return { businessName: ctx.title ? `Calendario ${ctx.title}` : "Calendario en BarberCloud", ...base };
+    }
+    return { businessName: name, ...base };
+  }
 
   const DEFAULTS = {
-    barberhome: {
-      businessName: "Barber Home",
-      whatsappCc: "+57",
-      whatsappPhone: "311 6962326",
-      timeFormat: "12",
-      language: "es",
-      timezone: "America/Bogota",
-      paused: false,
-      messageType: "reminder",
-      sendHoursBefore: "24",
-      ...sharedExtras,
+    get barberhome() {
+      return buildDefaults("barberhome", "Calendario");
     },
-    gmail: {
-      businessName: "BarberHome Gmail",
-      whatsappCc: "+57",
-      whatsappPhone: "311 6962326",
-      timeFormat: "12",
-      language: "es",
-      timezone: "America/Bogota",
-      paused: false,
-      messageType: "reminder",
-      sendHoursBefore: "24",
-      ...sharedExtras,
+    get gmail() {
+      return buildDefaults("gmail", "Google Calendar");
     },
-    barbercloud: {
-      businessName: "Calendario en BarberCloud",
-      whatsappCc: "+57",
-      whatsappPhone: "311 6962326",
-      timeFormat: "12",
-      language: "es",
-      timezone: "America/Bogota",
-      paused: true,
-      messageType: "reminder",
-      sendHoursBefore: "24",
-      ...sharedExtras,
+    get barbercloud() {
+      return buildDefaults("barbercloud", "Calendario en BarberCloud");
     },
   };
 
@@ -212,7 +222,7 @@ Te espero para el próximo corte 👊`,
         paused: false,
         messageType: "reminder",
         sendHoursBefore: "24",
-        ...sharedExtras,
+        ...buildSharedExtras(businessContext()),
       }
     );
   }
@@ -427,10 +437,12 @@ Te espero para el próximo corte 👊`,
     }
     if (fields.secondMsgTitle) {
       fields.secondMsgTitle.value =
-        cfg.secondMsgTitle || "Recordatorio de cita de Barberia con Luis Villadiego";
+        cfg.secondMsgTitle || buildSharedExtras(businessContext()).secondMsgTitle;
     }
     if (fields.secondMsgBody) {
-      fields.secondMsgBody.value = cfg.secondMsgBody || "Tienes una cita con Barber Home";
+      const ctx = businessContext();
+      fields.secondMsgBody.value =
+        cfg.secondMsgBody || `Tienes una cita con ${ctx.title || "tu negocio"}.`;
     }
     if (fields.secondIncludeTime) {
       fields.secondIncludeTime.checked = cfg.secondIncludeTime !== false;

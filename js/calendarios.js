@@ -1,4 +1,5 @@
 (function () {
+  const CAL_CONFIGS_KEY = "barbercloud.calendar_configs";
   const PAUSE_ICON =
     '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7" y="6.5" width="3.2" height="11" rx="1" fill="currentColor"/><rect x="13.8" y="6.5" width="3.2" height="11" rx="1" fill="currentColor"/></svg>';
   const PLAY_ICON =
@@ -6,6 +7,79 @@
 
   function calendarName(row) {
     return row.querySelector(".calendar-cell span:not(.calendar-icon)")?.textContent?.trim() || "Calendario";
+  }
+
+  function loadCalendarConfigs() {
+    try {
+      return JSON.parse(localStorage.getItem(CAL_CONFIGS_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function saveCalendarConfigs(all) {
+    try {
+      localStorage.setItem(CAL_CONFIGS_KEY, JSON.stringify(all));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Solo calendarios que el usuario guardó o conectó explícitamente. */
+  function isCalendarConfigured(calendarId) {
+    if (calendarId === "gmail") {
+      const auth = window.GoogleCalendar?.getConnection?.();
+      return !!(auth?.email || window.GoogleCalendar?.isConnected?.());
+    }
+    return !!loadCalendarConfigs()[calendarId];
+  }
+
+  function syncEmptyState() {
+    const rows = [...document.querySelectorAll(".table__row[data-calendar-id]")];
+    const visible = rows.some((row) => !row.hidden);
+    const emptyEl = document.getElementById("calendars-empty");
+    if (emptyEl) emptyEl.hidden = visible;
+  }
+
+  /** Muestra u oculta filas según calendarios configurados por el usuario. */
+  function syncCalendarRows() {
+    const configs = loadCalendarConfigs();
+    const ctx = window.Tenant?.getBusinessContext?.() || {};
+    const bizName = ctx.title || "";
+
+    document.querySelectorAll('[data-calendar-id="barberhome"]').forEach((row) => {
+      const cfg = configs.barberhome;
+      const show = isCalendarConfigured("barberhome");
+      row.hidden = !show;
+      if (!show) return;
+
+      const name = cfg?.businessName || bizName || "Tu negocio";
+      const nameSpan = row.querySelector(".calendar-cell span:not(.calendar-icon)");
+      if (nameSpan) nameSpan.textContent = name;
+      const menuBtn = row.querySelector(".row-menu__trigger");
+      if (menuBtn) menuBtn.setAttribute("aria-label", `Opciones de ${name}`);
+      if (typeof cfg?.paused === "boolean") setPaused(row, cfg.paused);
+    });
+
+    document.querySelectorAll('[data-calendar-id="barbercloud"]').forEach((row) => {
+      const cfg = configs.barbercloud;
+      const show = isCalendarConfigured("barbercloud");
+      row.hidden = !show;
+      if (!show) return;
+
+      const name = cfg?.businessName || (bizName ? `Calendario ${bizName}` : "Calendario en BarberCloud");
+      const nameSpan = row.querySelector(".calendar-cell span:not(.calendar-icon)");
+      if (nameSpan) nameSpan.textContent = name;
+      const menuBtn = row.querySelector(".row-menu__trigger");
+      if (menuBtn) menuBtn.setAttribute("aria-label", `Opciones de ${name}`);
+      if (typeof cfg?.paused === "boolean") setPaused(row, cfg.paused);
+    });
+
+    document.querySelectorAll('[data-calendar-id="gmail"]').forEach((row) => {
+      row.hidden = !isCalendarConfigured("gmail");
+    });
+
+    syncEmptyState();
   }
 
   async function refreshGoogleRow() {
@@ -24,6 +98,7 @@
       statusEl.classList.add("status--paused");
       if (countEl) countEl.textContent = "—";
       if (row) row.dataset.paused = "true";
+      syncCalendarRows();
       return;
     }
 
@@ -39,6 +114,8 @@
     } catch {
       if (countEl) countEl.textContent = "—";
     }
+
+    syncCalendarRows();
   }
 
   async function connectGoogleCalendar() {
@@ -67,7 +144,7 @@
       }
       if (/origin|redirect|invalid_client|idpiframe/i.test(msg)) {
         window.AppShell?.toast?.(
-          "Revisa orígenes JS en Google Cloud (localhost) y usuarios de prueba"
+          "Google no autoriza esta dirección. Abre el panel en https://barber-home-cloud.vercel.app"
         );
         return;
       }
@@ -154,7 +231,13 @@
           return;
         }
         if (!confirm(`¿Eliminar el calendario "${name}"?`)) return;
+        if (id) {
+          const all = loadCalendarConfigs();
+          delete all[id];
+          saveCalendarConfigs(all);
+        }
         row.remove();
+        syncCalendarRows();
         window.AppShell?.toast(`Calendario eliminado · ${name}`);
         return;
       }
@@ -183,5 +266,11 @@
     connectGoogleCalendar();
   });
 
+  document.getElementById("btn-empty-add-calendar")?.addEventListener("click", () => {
+    connectGoogleCalendar();
+  });
+
+  syncCalendarRows();
+  window.addEventListener("barbercloud:panel-ready", syncCalendarRows);
   refreshGoogleRow();
 })();

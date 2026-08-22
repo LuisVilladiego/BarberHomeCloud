@@ -5,7 +5,16 @@
   const AUTH_KEY = "barbercloud.google_auth";
   const BUSY_KEY = "barbercloud.google_busy_cache";
   const ACTIVE_CAL_KEY = "barbercloud.active_calendar";
+  const CANONICAL_ORIGIN = "https://barber-home-cloud.vercel.app";
   const cfg = () => window.GoogleConfig || {};
+
+  function googleAuthError(err) {
+    const raw = String(err?.type || err?.message || err || "");
+    if (/origin/i.test(raw)) {
+      return `Google no autoriza esta dirección. Abre el panel en ${CANONICAL_ORIGIN}`;
+    }
+    return err?.message || raw || "Error de autenticación Google";
+  }
 
   let tokenClient = null;
   let pendingResolve = null;
@@ -61,7 +70,7 @@
       scope: cfg().scopes,
       callback: (response) => {
         if (response.error) {
-          pendingReject?.(new Error(response.error));
+          pendingReject?.(new Error(googleAuthError(response)));
           pendingResolve = null;
           pendingReject = null;
           return;
@@ -71,7 +80,7 @@
         pendingReject = null;
       },
       error_callback: (err) => {
-        pendingReject?.(new Error(err?.message || "Error de autenticación Google"));
+        pendingReject?.(new Error(googleAuthError(err)));
         pendingResolve = null;
         pendingReject = null;
       },
@@ -162,6 +171,15 @@
 
   async function connect({ forceConsent = false } = {}) {
     await waitForGis();
+    const host = location.hostname;
+    const known =
+      location.origin === CANONICAL_ORIGIN ||
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      /barber-home-cloud.*\.vercel\.app$/i.test(host);
+    if (!known) {
+      throw new Error(`Google no autoriza esta dirección. Abre el panel en ${CANONICAL_ORIGIN}`);
+    }
     const tokenRes = await requestToken(forceConsent ? "consent" : "");
     const accessToken = tokenRes.access_token;
     const expiresIn = Number(tokenRes.expires_in || 3600);

@@ -527,12 +527,21 @@
   startIdleWatch();
 
   function hasExistingBusiness() {
+    if (window.Tenant?.hasConfiguredBusiness?.()) return true;
     if (window.Tenant?.hasExistingBusiness?.()) return true;
     try {
       if (localStorage.getItem("barbercloud.onboarded") === "1") return true;
-      if (localStorage.getItem("barbercloud.negocio_id")) return true;
+      if (localStorage.getItem("barbercloud.negocio_id")) {
+        const biz = window.Tenant?.cached?.();
+        if (biz?.slug && !window.Tenant?.isDemoSlug?.(biz.slug)) return true;
+      }
       const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
-      return !!(auto.slug && String(auto.slug).length >= 3);
+      const slug = auto.slug || "";
+      const title = String(auto.title || "").trim();
+      if (title && slug && String(slug).length >= 3 && !window.Tenant?.isDemoSlug?.(slug)) {
+        return true;
+      }
+      return false;
     } catch {
       return false;
     }
@@ -550,15 +559,127 @@
   }
 
   function hasActiveSub() {
+    if (window.Billing?.isActive) {
+      return window.Billing.isActive(window.Billing.cached?.());
+    }
     if (window.Tenant?.hasActiveSubscription) return window.Tenant.hasActiveSubscription();
     try {
       const raw = localStorage.getItem("barbercloud.subscription");
       if (!raw) return false;
-      const status = String(JSON.parse(raw)?.status || "").toLowerCase();
-      return status === "active" || status === "trialing";
+      const sub = JSON.parse(raw);
+      if (window.BusinessModel?.hasSubscriptionAccess) {
+        return window.BusinessModel.hasSubscriptionAccess(sub?.status, sub?.periodEnd);
+      }
+      const status = String(sub?.status || "").toLowerCase();
+      return (
+        status === "active" ||
+        status === "trialing" ||
+        status === "trial" ||
+        status === "past_due" ||
+        status === "canceled"
+      );
     } catch {
       return false;
     }
+  }
+
+  /** Banner cuando la cancelación ya está programada pero aún hay acceso. */
+  function showCancellationBanner() {
+    if (document.querySelector(".cancel-banner")) return;
+    const billing = window.Billing?.cached?.();
+    if (!window.Billing?.isPendingCancellation?.(billing)) return;
+    const days = window.Billing?.daysLeft?.(billing) || 0;
+    if (days <= 0) return;
+
+    const end = billing?.periodEnd
+      ? new Date(billing.periodEnd).toLocaleDateString("es-CO", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+      : "—";
+
+    const banner = document.createElement("div");
+    banner.className = "billing-banner cancel-banner";
+    banner.setAttribute("role", "status");
+
+    const text = document.createElement("div");
+    text.className = "billing-banner__text";
+    const title = document.createElement("strong");
+    title.textContent = "Cancelación programada.";
+    const detail = document.createElement("span");
+    detail.textContent = `Tu plan sigue activo hasta el ${end}. Después el enlace público se desactiva y el panel queda solo para consultar.`;
+    text.append(title, detail);
+
+    const cta = document.createElement("a");
+    cta.className = "btn btn--primary";
+    cta.href = "suscripcion.html";
+    cta.textContent = "Reactivar plan";
+
+    banner.append(text, cta);
+    const main = document.querySelector(".main");
+    if (main) main.insertBefore(banner, main.firstChild);
+    else document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  /** Banner morado de prueba: solo usuarios en `trialing`, no membresía pagada. */
+  function showTrialBanner() {
+    if (document.querySelector(".trial-banner")) return;
+    const billing = window.Billing?.cached?.();
+    const trialing =
+      window.Billing?.isTrialing?.(billing) ||
+      (() => {
+        try {
+          const sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+          const s = String(sub?.status || "").toLowerCase();
+          return s === "trialing" || s === "trial";
+        } catch {
+          return false;
+        }
+      })();
+    if (!trialing) return;
+    const days = window.Billing?.daysLeft?.(billing) || 0;
+    if (days <= 0) return;
+
+    const banner = document.createElement("div");
+    banner.className = "trial-banner";
+    banner.setAttribute("role", "status");
+    banner.innerHTML = `
+      <p class="trial-banner__text">
+        <strong>Te quedan ${days} día${days === 1 ? "" : "s"} de prueba.</strong>
+        <span>Activa tu plan para seguir recibiendo reservas sin interrupciones.</span>
+      </p>
+      <a class="btn btn--light trial-banner__cta" href="suscripcion.html?need=1">Escoger plan</a>`;
+
+    const main = document.querySelector(".main");
+    if (main) main.insertBefore(banner, main.firstChild);
+    else document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  /** Tras el outro del tour, guía al paso Autoagenda desde Inicio. */
+  function maybePromptAutoagendaSetup() {
+    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    if (page !== "index.html" && page !== "") return;
+    let welcome = {};
+    try {
+      welcome = JSON.parse(localStorage.getItem("barbercloud.welcome") || "{}");
+    } catch {
+      return;
+    }
+    if (!welcome.pendingAutoagenda) return;
+    try {
+      localStorage.setItem(
+        "barbercloud.welcome",
+        JSON.stringify({ ...welcome, pendingAutoagenda: false })
+      );
+    } catch {
+      /* ignore */
+    }
+    window.AppShell?.toast?.("Siguiente paso: configura tu enlace público en Autoagenda.");
+    document.querySelector('a.nav__item[href="autoagenda.html"]')?.classList.add("nav__item--next");
+    window.setTimeout(() => {
+      location.assign("autoagenda.html?setup=1");
+    }, 1400);
   }
 
   /** Aviso fijo + panel solo de consulta cuando el pago está vencido. */
@@ -581,7 +702,7 @@
 
     const cta = document.createElement("a");
     cta.className = "btn btn--primary";
-    cta.href = "suscripcion.html";
+    cta.href = "suscripcion.html?need=1";
     cta.textContent = "Renovar ahora";
 
     banner.append(text, cta);
@@ -591,18 +712,30 @@
   }
 
   async function initTenantGate() {
-    if (hasAuthSession() && window.Tenant?.syncWithAuthenticatedUser) {
-      const sync = await window.Tenant.syncWithAuthenticatedUser();
-      if (sync?.needsOnboarding) {
-        location.replace("onboarding.html");
+    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    const isPanel = !!document.querySelector(".sidebar");
+
+    if (page === "suscripcion.html") {
+      if (!hasAuthSession()) {
+        const returnQs = location.search ? location.search.replace(/^\?/, "&") : "";
+        location.replace(`login.html?next=suscripcion${returnQs}`);
         return false;
       }
-    } else if (!hasExistingBusiness()) {
-      location.replace("onboarding.html");
+      return true;
+    }
+
+    if (hasAuthSession() && window.Tenant?.syncWithAuthenticatedUser) {
+      await window.Tenant.syncWithAuthenticatedUser();
+    } else if (isPanel && !hasAuthSession()) {
+      location.replace("login.html");
+      return false;
+    } else if (!hasExistingBusiness() && !hasAuthSession() && page === "onboarding.html") {
+      /* onboarding.html solo para modo local sin cuenta */
+    } else if (!hasExistingBusiness() && !hasAuthSession() && isPanel) {
+      location.replace("login.html");
       return false;
     }
 
-    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
     if (page === "suscripcion.html" || !hasAuthSession()) return true;
 
     // Sin Supabase (desarrollo local) se sigue con el estado guardado.
@@ -611,11 +744,16 @@
         location.replace("suscripcion.html?need=1");
         return false;
       }
+      showTrialBanner();
       return true;
     }
 
     const billing = await window.Billing.refresh();
-    if (window.Billing.isActive(billing)) return true;
+    if (window.Billing.isActive(billing)) {
+      showTrialBanner();
+      showCancellationBanner();
+      return true;
+    }
 
     // Nunca pagó: no hay nada que consultar, va directo a activar.
     if (!billing?.periodEnd) {
@@ -627,11 +765,26 @@
     return true;
   }
 
+  function loadPlansModal() {
+    if (!document.querySelector(".sidebar") || window.PlansModal) {
+      window.PlansModal?.init?.();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "js/plans-modal.js?v=20260818m";
+    script.onload = () => window.PlansModal?.init?.();
+    document.body.appendChild(script);
+  }
+
   initTenantGate().then((ok) => {
     if (!ok) return;
 
     window.AppShell.panelReady = true;
     window.dispatchEvent(new CustomEvent("barbercloud:panel-ready"));
+    loadPlansModal();
+    showTrialBanner();
+    showCancellationBanner();
+    maybePromptAutoagendaSetup();
 
     runNotificationJobs();
     setInterval(runNotificationJobs, 20000);

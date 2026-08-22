@@ -96,6 +96,7 @@ module.exports = async function handler(req, res) {
       current_period_start: start.toISOString(),
       current_period_end: end.toISOString(),
       last_payment_at: now.toISOString(),
+      cancel_at_period_end: false,
     });
 
     return res.status(200).json({ ok: true, approved: true, periodEnd: end.toISOString() });

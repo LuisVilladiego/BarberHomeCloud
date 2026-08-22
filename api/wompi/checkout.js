@@ -1,6 +1,12 @@
 const { amountInCents, findPlan } = require("../_lib/plans");
 const { buildCheckoutUrl, integritySignature, newReference } = require("../_lib/wompi");
-const { insertPago, negocioOfOwner, userFromToken } = require("../_lib/supabase");
+const {
+  insertNegocio,
+  insertPago,
+  negocioOfOwner,
+  provisionalSlug,
+  userFromToken,
+} = require("../_lib/supabase");
 
 function bearer(req) {
   const raw = req.headers.authorization || req.headers.Authorization || "";
@@ -48,10 +54,27 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
     const plan = findPlan(body.planId);
     if (!plan) return res.status(400).json({ error: "Plan no válido" });
+    if (!plan.priceUsd) {
+      return res.status(400).json({ error: "El plan gratis no requiere pago." });
+    }
 
     const billingPeriod = body.billingPeriod === "annual" ? "annual" : "monthly";
 
-    const negocio = await negocioOfOwner(user.id);
+    let negocio = await negocioOfOwner(user.id);
+    if (!negocio) {
+      const slug = provisionalSlug(user);
+      const name =
+        String(user.user_metadata?.name || "").trim() ||
+        String(user.email || "").split("@")[0] ||
+        "Mi barbería";
+      negocio = await insertNegocio({
+        slug,
+        name,
+        owner_id: user.id,
+        autoagenda: {},
+        onboarding_completed: false,
+      });
+    }
     if (!negocio) return res.status(409).json({ error: "Todavía no tienes una barbería creada" });
 
     const currency = "COP";

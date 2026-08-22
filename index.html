@@ -148,12 +148,12 @@
               <div role="columnheader" class="sr-only">Acciones</div>
             </div>
 
-            <div class="table__row" role="row" data-calendar-id="barberhome" data-paused="false">
+            <div class="table__row" role="row" data-calendar-id="barberhome" data-paused="false" hidden>
               <div class="calendar-cell" role="cell">
                 <span class="calendar-icon calendar-icon--photo" aria-hidden="true">
                   <img src="assets/barberhome-avatar.png" alt="" width="28" height="28" />
                 </span>
-                <span>BarberHome</span>
+                <span>Tu negocio</span>
               </div>
               <div role="cell">
                 <span class="status status--ok">Enviando mensajes</span>
@@ -201,7 +201,7 @@
               </div>
             </div>
 
-            <div class="table__row" role="row" data-calendar-id="gmail" data-paused="false">
+            <div class="table__row" role="row" data-calendar-id="gmail" data-paused="false" hidden>
               <div class="calendar-cell" role="cell">
                 <span class="calendar-icon" aria-hidden="true">
                   <svg viewBox="0 0 24 24" width="22" height="22">
@@ -263,7 +263,7 @@
               </div>
             </div>
 
-            <div class="table__row" role="row" data-calendar-id="barbercloud" data-paused="true">
+            <div class="table__row" role="row" data-calendar-id="barbercloud" data-paused="true" hidden>
               <div class="calendar-cell" role="cell">
                 <span class="calendar-icon calendar-icon--brand" aria-hidden="true">
                   <img src="assets/logo.png" alt="" width="22" height="22" />
@@ -315,6 +315,15 @@
                 </div>
               </div>
             </div>
+
+            <div class="calendars-empty" id="calendars-empty" hidden>
+              <strong>Aún no tienes calendarios</strong>
+              <p>Agrega tu primer calendario para empezar a enviar confirmaciones por WhatsApp.</p>
+              <button class="btn btn--primary" type="button" id="btn-empty-add-calendar">
+                <span aria-hidden="true">+</span>
+                Agregar Calendario
+              </button>
+            </div>
           </div>
         </section>
       </main>
@@ -339,18 +348,21 @@
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="js/google-config.js"></script>
-    <script src="js/google-calendar.js"></script>
+    <script src="js/google-calendar.js?v=20260819a"></script>
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>
     <script src="js/supabase-client.js?v=20260816s"></script>
     <script src="js/tenant.js?v=20260818m"></script>
     <script src="js/supabase-data.js?v=20260818m"></script>
+    <script src="js/business-model.js?v=20260822"></script>
+    <script src="js/barber-service.js?v=20260822"></script>
     <script src="js/plans.js?v=20260818m"></script>
-    <script src="js/billing.js?v=20260818m"></script>
+    <script src="js/billing.js?v=20260818q"></script>
 <script src="js/security.js?v=20260816"></script>
     <script src="js/auth.js?v=20260818m"></script>
+    <script src="js/booking-store.js?v=20260818m"></script>
     <script src="js/app.js?v=20260818m"></script>
-    <script src="js/welcome.js?v=20260818m"></script>
-    <script src="js/calendarios.js"></script>
+    <script src="js/welcome.js?v=20260818q"></script>
+    <script src="js/calendarios.js?v=20260819a"></script>
   </body>
 </html>

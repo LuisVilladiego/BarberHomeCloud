@@ -180,7 +180,7 @@ create policy "anon_insert_citas" on public.citas
     and exists (
       select 1 from public.negocios n
       where n.id = negocio_id
-        and n.subscription_status in ('active', 'trialing')
+        and n.subscription_status in ('trial', 'active', 'past_due', 'trialing', 'canceled')
     )
   );
 

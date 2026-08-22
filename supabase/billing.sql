@@ -11,13 +11,14 @@
 alter table public.negocios add column if not exists current_period_end timestamptz;
 alter table public.negocios add column if not exists current_period_start timestamptz;
 alter table public.negocios add column if not exists last_payment_at timestamptz;
+alter table public.negocios add column if not exists cancel_at_period_end boolean not null default false;
 
 -- —— Historial de pagos ——
 create table if not exists public.pagos (
   id uuid primary key default gen_random_uuid(),
   negocio_id uuid not null references public.negocios (id) on delete cascade,
   reference text not null unique,
-  plan_id text not null default '100',
+  plan_id text not null default 'pro',
   amount_in_cents bigint not null,
   currency text not null default 'COP',
   status text not null default 'PENDING',
@@ -48,7 +49,7 @@ as $$
     select 1
     from public.negocios n
     where n.id = p_negocio
-      and n.subscription_status in ('active', 'trialing')
+      and n.subscription_status in ('trial', 'active', 'past_due', 'trialing', 'canceled')
       and n.current_period_end is not null
       and n.current_period_end > now()
   );
@@ -67,10 +68,11 @@ begin
   end if;
 
   if tg_op = 'INSERT' then
-    new.subscription_status := 'incomplete';
+    new.subscription_status := 'expired';
     new.current_period_start := null;
     new.current_period_end := null;
     new.last_payment_at := null;
+    new.cancel_at_period_end := false;
     return new;
   end if;
 
@@ -79,6 +81,7 @@ begin
   new.current_period_start := old.current_period_start;
   new.current_period_end := old.current_period_end;
   new.last_payment_at := old.last_payment_at;
+  new.cancel_at_period_end := old.cancel_at_period_end;
   return new;
 end;
 $$;
@@ -217,5 +220,5 @@ create policy "staff_write_canjes" on public.canjes
 update public.negocios
 set current_period_start = coalesce(current_period_start, now()),
     current_period_end = coalesce(current_period_end, now() + interval '30 days')
-where subscription_status in ('active', 'trialing')
+where subscription_status in ('active', 'trial', 'trialing', 'past_due')
   and current_period_end is null;

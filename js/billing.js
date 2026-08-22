@@ -15,21 +15,28 @@
 
   function fromNegocio(row) {
     if (!row) return null;
+    const BM = window.BusinessModel;
     return {
       negocioId: row.id,
-      status: row.subscription_status || "incomplete",
-      planId: row.plan_id || "100",
+      status: BM?.normalizeStatus?.(row.subscription_status) || row.subscription_status || "expired",
+      planId: BM?.normalizePlanId?.(row.plan_id) || row.plan_id || "pro",
       periodStart: row.current_period_start || null,
       periodEnd: row.current_period_end || null,
       lastPaymentAt: row.last_payment_at || null,
+      cancelAtPeriodEnd: !!row.cancel_at_period_end,
     };
   }
 
   function isActive(state) {
     const s = state || cached();
     if (!s) return false;
+    if (window.BusinessModel?.hasSubscriptionAccess) {
+      return window.BusinessModel.hasSubscriptionAccess(s.status, s.periodEnd);
+    }
     const status = String(s.status || "").toLowerCase();
-    if (status !== "active" && status !== "trialing") return false;
+    if (status !== "active" && status !== "trialing" && status !== "trial" && status !== "past_due") {
+      return false;
+    }
     if (!s.periodEnd) return false;
     return new Date(s.periodEnd).getTime() > Date.now();
   }
@@ -38,8 +45,16 @@
   function isTrialing(state) {
     const s = state || cached();
     if (!s) return false;
-    if (String(s.status || "").toLowerCase() !== "trialing") return false;
+    const normalized = window.BusinessModel?.normalizeStatus?.(s.status) || s.status;
+    if (normalized !== "trial") return false;
     return isActive(s);
+  }
+
+  function isPendingCancellation(state) {
+    const s = state || cached();
+    if (!s || !isActive(s)) return false;
+    const normalized = window.BusinessModel?.normalizeStatus?.(s.status) || s.status;
+    return !!s.cancelAtPeriodEnd || normalized === "canceled";
   }
 
   function daysLeft(state) {
@@ -184,8 +199,18 @@
 
   function statusLabel(state) {
     const s = state || cached();
-    if (isActive(s)) return { text: "Activo", tone: "ok" };
-    const status = String(s?.status || "incomplete").toLowerCase();
+    if (isActive(s)) {
+      if (isPendingCancellation(s)) {
+        return { text: "Cancela al final del período", tone: "paused" };
+      }
+      const normalized = window.BusinessModel?.normalizeStatus?.(s?.status) || s?.status;
+      if (normalized === "trial") return { text: "Prueba gratis", tone: "ok" };
+      return { text: "Activo", tone: "ok" };
+    }
+    if (window.BusinessModel?.statusLabel) {
+      return window.BusinessModel.statusLabel(s?.status);
+    }
+    const status = String(s?.status || "expired").toLowerCase();
     if (status === "canceled" || status === "cancelled") {
       return { text: "Cancelado", tone: "paused" };
     }
@@ -193,21 +218,145 @@
     return { text: "Sin activar", tone: "paused" };
   }
 
+  /** Marca la suscripción para no renovar al final del período pagado. */
+  async function cancelSubscription() {
+    const current = cached();
+    if (!isActive(current)) {
+      return { ok: false, message: "Tu suscripción no está activa, así que no hay nada que cancelar." };
+    }
+    if (isPendingCancellation(current)) {
+      return { ok: true, alreadyCanceled: true, periodEnd: current.periodEnd };
+    }
+
+    if (enabled()) {
+      const token = await accessToken();
+      if (!token) return { ok: false, message: "Inicia sesión para cancelar." };
+
+      try {
+        const res = await fetch("/api/subscription/cancel", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          return { ok: false, message: data?.error || "No se pudo cancelar la suscripción." };
+        }
+        if (data.negocio) {
+          window.Tenant?.setCurrent?.(data.negocio);
+          window.Tenant?.hydrateNegocioCaches?.(data.negocio);
+        }
+        await refresh();
+        return {
+          ok: true,
+          alreadyCanceled: !!data.alreadyCanceled,
+          periodEnd: data.periodEnd || current.periodEnd,
+        };
+      } catch (err) {
+        console.warn("[billing] cancel", err);
+        return { ok: false, message: "No se pudo conectar para cancelar." };
+      }
+    }
+
+    const next = {
+      ...(current || {}),
+      status: "canceled",
+      cancelAtPeriodEnd: true,
+    };
+    cache(next);
+    try {
+      const subRaw = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+      localStorage.setItem(
+        "barbercloud.subscription",
+        JSON.stringify({
+          ...subRaw,
+          planId: next.planId || subRaw.planId || "pro",
+          status: "canceled",
+          periodStart: next.periodStart || subRaw.periodStart || null,
+          periodEnd: next.periodEnd || subRaw.periodEnd || null,
+          cancelAtPeriodEnd: true,
+          payment: subRaw.payment || { provider: "local" },
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+    return { ok: true, local: true, periodEnd: next.periodEnd };
+  }
+
+  /** Inicia 7 días de prueba (Confirmafy-style) vía backend con service role. */
+  async function startTrial() {
+    if (!enabled()) {
+      const now = new Date();
+      const end = new Date(now.getTime() + 7 * 86400000);
+      const local = {
+        negocioId: window.Tenant?.currentId?.() || null,
+        status: "trial",
+        planId: "pro",
+        periodStart: now.toISOString(),
+        periodEnd: end.toISOString(),
+        lastPaymentAt: null,
+      };
+      cache(local);
+      try {
+        localStorage.setItem(
+          "barbercloud.subscription",
+          JSON.stringify({
+            planId: local.planId,
+            status: local.status,
+            periodStart: local.periodStart,
+            periodEnd: local.periodEnd,
+            cancelAtPeriodEnd: false,
+            payment: { provider: "trial" },
+          })
+        );
+      } catch {
+        /* ignore */
+      }
+      return { ok: true, local: true, periodEnd: end.toISOString() };
+    }
+
+    const token = await accessToken();
+    if (!token) return { ok: false, message: "Inicia sesión para empezar la prueba." };
+
+    try {
+      const res = await fetch("/api/trial/start", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        return { ok: false, message: data?.error || "No se pudo iniciar la prueba gratis." };
+      }
+      if (data.negocio) {
+        window.Tenant?.setCurrent?.(data.negocio);
+        window.Tenant?.hydrateNegocioCaches?.(data.negocio);
+      }
+      await refresh();
+      return { ok: true, periodEnd: data.periodEnd, alreadyActive: !!data.alreadyActive };
+    } catch (err) {
+      console.warn("[billing] trial", err);
+      return { ok: false, message: "No se pudo conectar para iniciar la prueba." };
+    }
+  }
+
   window.Billing = {
     CACHE_KEY,
     blocksWrites,
     cache,
     cached,
+    cancelSubscription,
     daysLeft,
     enabled,
     fetchPagos,
     fromNegocio,
     guard,
     isActive,
+    isPendingCancellation,
     isTrialing,
     pagoByReference,
     refresh,
     startCheckout,
+    startTrial,
     statusLabel,
     waitForPayment,
   };

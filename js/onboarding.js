@@ -2,11 +2,11 @@
   async function initOnboarding() {
     if (/force=1/.test(location.search)) return;
     const user = await window.BarberAuth?.currentUser?.();
-    if (user && window.Tenant?.syncWithAuthenticatedUser) {
-      const sync = await window.Tenant.syncWithAuthenticatedUser();
-      if (!sync?.needsOnboarding && sync?.negocio) {
-        location.replace("index.html");
+    if (user) {
+      if (window.Tenant?.syncWithAuthenticatedUser) {
+        await window.Tenant.syncWithAuthenticatedUser();
       }
+      location.replace("index.html");
       return;
     }
     if (!window.SupabaseData?.enabled?.() && window.Tenant?.hasExistingBusiness?.()) {
@@ -215,6 +215,15 @@
         state.description ||
         `Reserva con ${state.business}${state.city ? ` en ${state.city}` : ""}.`,
       avatarDataUrl: "",
+      barbers: [
+        {
+          id: "barber-1",
+          name: state.owner || state.business,
+          phone: `${state.cc} ${state.phone}`.trim(),
+          active: true,
+          scheduleId: "sch-default",
+        },
+      ],
       schedules: [
         {
           id: "sch-default",
@@ -254,13 +263,16 @@
       localStorage.setItem("barbercloud_settings", JSON.stringify(settings));
     }
     window.Tenant.markOnboarded();
+    window.BarberService?.createFirstFromOnboarding?.({
+      name: state.owner || state.business,
+      phone: `${state.cc} ${state.phone}`.trim(),
+    });
     const user = await window.BarberAuth?.currentUser?.();
-    // En la nube el estado real lo fija el webhook de Wompi: nace sin pagar.
-    const subStatus = user ? "incomplete" : "trialing";
+    const subStatus = user ? "expired" : "trial";
     localStorage.setItem(
       "barbercloud.subscription",
       JSON.stringify({
-        planId: "100",
+        planId: "pro",
         status: subStatus,
         cancelAtPeriodEnd: false,
         payment: { provider: "pending" },
@@ -272,7 +284,9 @@
         name: auto.title,
         owner_id: user?.id || undefined,
         subscription_status: subStatus,
-        plan_id: "100",
+        plan_id: "pro",
+        phone: `${state.cc} ${state.phone}`.trim(),
+        description: auto.description,
         autoagenda: auto,
         whatsapp: settings.waPhone,
         onboarding_completed: true,

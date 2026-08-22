@@ -4,9 +4,18 @@
  */
 (function () {
   const SCOPES = "openid email profile";
+  const CANONICAL_ORIGIN = "https://barber-home-cloud.vercel.app";
   let tokenClient = null;
   let pendingResolve = null;
   let pendingReject = null;
+
+  function googleAuthError(err) {
+    const raw = String(err?.type || err?.message || err || "");
+    if (/origin/i.test(raw)) {
+      return `Google no autoriza esta dirección. Entra desde ${CANONICAL_ORIGIN}`;
+    }
+    return err?.message || raw || "Error de autenticación Google";
+  }
 
   function cfg() {
     return window.GoogleConfig || {};
@@ -62,7 +71,7 @@
       scope: SCOPES,
       callback: (response) => {
         if (response.error) {
-          pendingReject?.(new Error(response.error));
+          pendingReject?.(new Error(googleAuthError(response)));
           pendingResolve = null;
           pendingReject = null;
           return;
@@ -72,7 +81,7 @@
         pendingReject = null;
       },
       error_callback: (err) => {
-        pendingReject?.(new Error(err?.message || "Error de autenticación Google"));
+        pendingReject?.(new Error(googleAuthError(err)));
         pendingResolve = null;
         pendingReject = null;
       },
@@ -109,6 +118,15 @@
 
   async function signIn(options = {}) {
     await waitForGis();
+    const host = location.hostname;
+    const local = host === "localhost" || host === "127.0.0.1";
+    const known =
+      location.origin === CANONICAL_ORIGIN ||
+      local ||
+      /barber-home-cloud.*\.vercel\.app$/i.test(host);
+    if (!known) {
+      throw new Error(`Google no autoriza esta dirección. Entra desde ${CANONICAL_ORIGIN}`);
+    }
     const response = await requestToken(options.prompt || "select_account");
     const profile = await fetchUserProfile(response.access_token);
     if (!profile.sub) throw new Error("No se pudo identificar tu cuenta de Google.");

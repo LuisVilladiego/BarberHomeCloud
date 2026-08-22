@@ -1,6 +1,13 @@
 /**
- * Bienvenida guiada tras activar la suscripción. Se muestra una sola vez sobre
- * el panel y guarda las respuestas para personalizar la cuenta.
+ * Bienvenida guiada tras activar acceso (trial de 7 días o membresía pagada).
+ *
+ * Orden post-registro / post-pago:
+ * 1. Login/registro (landing «Empieza gratis» o «Elegir plan»)
+ * 2. Trial automático o pago Wompi en suscripcion.html
+ * 3. Wizard (este archivo): intro → preguntas → WhatsApp → cita de prueba
+ * 4. Tour calendario (6 coachmarks)
+ * 5. Outro: «¡Listo!» → Ir al panel
+ * 6. Dashboard Inicio con formularios vacíos → Autoagenda
  */
 (function () {
   const STORAGE_KEY = "barbercloud.welcome";
@@ -50,7 +57,25 @@
         },
       ],
     },
+    {
+      id: "testBooking",
+      kind: "phone",
+      question: "¿Listo para crear tu primera cita de prueba?",
+      fieldLabel: "¿Cuál es tu WhatsApp?",
+      placeholder: "Número de WhatsApp",
+      hint: "Te enviaremos un mensaje de prueba a este número.",
+      cta: "Crear cita y enviar",
+    },
     { id: "done", kind: "outro" },
+  ];
+
+  const COUNTRY_CODES = [
+    { code: "+57", flag: "🇨🇴" },
+    { code: "+1", flag: "🇺🇸" },
+    { code: "+52", flag: "🇲🇽" },
+    { code: "+54", flag: "🇦🇷" },
+    { code: "+51", flag: "🇵🇪" },
+    { code: "+56", flag: "🇨🇱" },
   ];
 
   function load() {
@@ -85,18 +110,21 @@
   function pending() {
     if (load().seen) return false;
     if (!hasAuthSession()) return false;
-    return !!window.Tenant?.hasActiveSubscription?.();
+    if (window.Tenant?.hasActiveSubscription?.()) return true;
+    return !!window.Billing?.isActive?.(window.Billing.cached?.());
+  }
+
+  function currentPage() {
+    return (location.pathname.split("/").pop() || "index.html").toLowerCase();
   }
 
   function isPanelPage() {
-    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    const page = currentPage();
     return page === "" || page === "index.html";
   }
 
-  function shouldShow() {
-    if (document.getElementById("welcome-overlay")) return false;
-    if (!isPanelPage()) return false;
-    return pending();
+  function isCalendarPage() {
+    return currentPage() === "calendario.html";
   }
 
   function escapeHtml(value) {
@@ -204,30 +232,142 @@
       }`;
   }
 
-  function outroHtml() {
-    const link = publicLink();
-    return `
-      <div class="welcome-icons" aria-hidden="true">
-        <span class="welcome-check">
-          <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
-            <path d="m5 12.6 4.4 4.4L19 7.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </span>
-      </div>
-      <h2 id="welcome-title">¡Todo listo!</h2>
-      <p class="welcome-lead">
-        Tu plan está activo. Ya puedes gestionar tus citas y enviar confirmaciones por WhatsApp.
-      </p>
-      ${
-        link
-          ? `<p class="welcome-note welcome-note--center">Tu enlace de reservas: <strong>${escapeHtml(link)}</strong></p>`
-          : ""
-      }`;
+  function savedPhone() {
+    try {
+      const settings = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+      const raw = String(settings.waPhone || "").trim();
+      const match = raw.match(/^(\+\d{1,3})\s*(.*)$/);
+      if (match) return { cc: match[1], number: match[2].trim() };
+      return { cc: "+57", number: raw };
+    } catch {
+      return { cc: "+57", number: "" };
+    }
   }
 
-  function open() {
-    const answers = { ...(load().answers || {}) };
-    let index = 0;
+  /** Mismo destino que usa el onboarding para el WhatsApp del negocio. */
+  function saveWhatsAppSetting(display) {
+    try {
+      const prev = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+      localStorage.setItem(
+        "barbercloud_settings",
+        JSON.stringify({ ...prev, waPhone: display, waConnected: true })
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function phoneHtml(step) {
+    const saved = savedPhone();
+    const options = COUNTRY_CODES.map(
+      (c) =>
+        `<option value="${c.code}"${c.code === saved.cc ? " selected" : ""}>${c.flag} ${c.code}</option>`
+    ).join("");
+
+    return `
+      <h2 id="welcome-title" class="welcome-question">${escapeHtml(step.question)}</h2>
+      <label class="field welcome-field">
+        <span class="field__label">${escapeHtml(step.fieldLabel)}</span>
+        <div class="phone-input">
+          <select class="phone-input__select" id="welcome-cc" aria-label="Código de país">${options}</select>
+          <input
+            id="welcome-phone"
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            maxlength="20"
+            placeholder="${escapeHtml(step.placeholder)}"
+            value="${escapeHtml(saved.number)}"
+          />
+        </div>
+        <span class="welcome-hint">${escapeHtml(step.hint)}</span>
+      </label>
+      <p class="auth-error welcome-error" hidden></p>`;
+  }
+
+  function businessName() {
+    return window.Tenant?.cached?.()?.name || "tu negocio";
+  }
+
+  function formatWhen(date, time) {
+    const d = new Date(`${date}T${String(time).length === 5 ? time : `${time}:00`}`);
+    if (Number.isNaN(d.getTime())) return `${date} ${time}`;
+    const day = d.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
+    return `${day} a las ${time}`;
+  }
+
+  /** Primer hueco libre de mañana para no chocar con la agenda real. */
+  function nextFreeSlot() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const date = [
+      tomorrow.getFullYear(),
+      String(tomorrow.getMonth() + 1).padStart(2, "0"),
+      String(tomorrow.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    for (let hour = 9; hour <= 19; hour += 1) {
+      const time = `${String(hour).padStart(2, "0")}:00`;
+      if (window.BookingStore?.isSlotFree?.(date, time, 30) !== false) {
+        return { date, time };
+      }
+    }
+    return { date, time: "09:00" };
+  }
+
+  function outroStarsHtml() {
+    return `
+      <div class="welcome-outro-stars" aria-hidden="true">
+        <span class="welcome-outro-star welcome-outro-star--left">
+          <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true">
+            <path fill="#22c55e" d="M28 6l6.2 12.6L48 20.4 35.8 30.8l3.6 13.6L28 38.4l-11.4 6 3.6-13.6L8 20.4l13.8-1.8L28 6z"/>
+            <circle cx="22" cy="26" r="2" fill="#14532d"/>
+            <circle cx="34" cy="26" r="2" fill="#14532d"/>
+            <path d="M22 32.5c2.2 2.2 9.8 2.2 12 0" stroke="#14532d" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+        </span>
+        <span class="welcome-outro-star welcome-outro-star--center">
+          <svg viewBox="0 0 72 72" width="72" height="72" aria-hidden="true">
+            <defs>
+              <linearGradient id="welcome-outro-star-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f472b6"/>
+                <stop offset="100%" stop-color="#fb923c"/>
+              </linearGradient>
+            </defs>
+            <path fill="url(#welcome-outro-star-grad)" d="M36 4l8.8 17.8L64 24.8l-14.4 10.6L53.6 58 36 48.6 18.4 58l3.6-22.6L8 24.8l19.2-3L36 4z"/>
+            <path d="m26 36.5 6.2 6.2L46 28.9" stroke="#0f172a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <span class="welcome-outro-star welcome-outro-star--right">
+          <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true">
+            <path fill="#3b82f6" d="M28 6l6.2 12.6L48 20.4 35.8 30.8l3.6 13.6L28 38.4l-11.4 6 3.6-13.6L8 20.4l13.8-1.8L28 6z"/>
+            <circle cx="22" cy="25" r="2" fill="#1e3a8a"/>
+            <circle cx="34" cy="25" r="2" fill="#1e3a8a"/>
+            <path d="M22 31.5c2.2 3 9.8 3 12 0" stroke="#1e3a8a" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          </svg>
+        </span>
+      </div>`;
+  }
+
+  function outroHtml() {
+    const link = publicLink();
+    const linkBlock = link
+      ? `<p class="welcome-outro__link">Tu enlace de reservas: <strong>${escapeHtml(link)}</strong></p>`
+      : `<p class="welcome-outro__link">En Autoagenda podrás personalizar el enlace que compartirás con tus clientes.</p>`;
+    return `
+      ${outroStarsHtml()}
+      <h2 id="welcome-title" class="welcome-outro__title">¡Listo! Ya tienes todo para empezar</h2>
+      <p class="welcome-outro__lead">Tu membresía está activa. BarberCloud se encargará de confirmar tus citas por WhatsApp.</p>
+      ${linkBlock}`;
+  }
+
+  function open(options = {}) {
+    const state = load();
+    const answers = { ...(state.answers || {}) };
+    let index = Math.max(
+      0,
+      STEPS.findIndex((step) => step.id === options.startAt)
+    );
 
     const overlay = document.createElement("div");
     overlay.className = "welcome-overlay";
@@ -246,27 +386,160 @@
     const backBtn = overlay.querySelector(".welcome-back");
     const nextBtn = overlay.querySelector(".welcome-next");
 
+    let testBooking = state.testBooking || null;
+    let waFallbackUrl = state.waUrl || "";
+
     function close() {
-      save({ seen: true, answers, completedAt: new Date().toISOString() });
+      save({
+        seen: true,
+        stage: "done",
+        pendingAutoagenda: true,
+        answers,
+        completedAt: new Date().toISOString(),
+      });
       document.body.classList.remove("welcome-open");
       overlay.remove();
+      location.assign("index.html");
+    }
+
+    function phoneFields() {
+      return {
+        cc: body.querySelector("#welcome-cc"),
+        number: body.querySelector("#welcome-phone"),
+      };
+    }
+
+    function typedPhone() {
+      const { cc, number } = phoneFields();
+      if (!cc || !number) return { display: "", digits: "" };
+      const display = `${cc.value} ${number.value.trim()}`.trim();
+      const digits =
+        window.Security?.sanitizeWhatsAppPhone?.(display) ||
+        (() => {
+          const only = display.replace(/\D/g, "");
+          return only.length >= 7 && only.length <= 15 ? only : "";
+        })();
+      return { display, digits };
+    }
+
+    function showError(message) {
+      const box = body.querySelector(".welcome-error");
+      if (!box) return;
+      box.textContent = message || "";
+      box.hidden = !message;
     }
 
     function render() {
       const step = STEPS[index];
       const answer = answers[step.id];
 
-      card.classList.toggle("welcome-card--center", step.kind !== "choice");
+      const isOutro = step.kind === "outro";
+      card.classList.toggle("welcome-card--center", step.kind === "intro" || isOutro);
+      card.classList.toggle("welcome-outro--dark", isOutro);
+      overlay.classList.toggle("welcome-overlay--outro", isOutro);
 
       if (step.kind === "intro") body.innerHTML = introHtml();
-      else if (step.kind === "outro") body.innerHTML = outroHtml();
+      else if (isOutro) body.innerHTML = outroHtml();
+      else if (step.kind === "phone") body.innerHTML = phoneHtml(step);
       else body.innerHTML = choiceHtml(step, answer);
 
-      backBtn.hidden = index === 0;
+      backBtn.hidden = index === 0 || isOutro;
       const isLast = index === STEPS.length - 1;
-      nextBtn.textContent = isLast ? "Ir al panel" : "Siguiente";
-      nextBtn.disabled = step.kind === "choice" && !answer;
-      nextBtn.focus();
+      nextBtn.textContent = isLast ? "Ir al panel" : step.cta || "Siguiente";
+      nextBtn.classList.toggle("welcome-outro__btn", isOutro);
+
+      if (step.kind === "choice") nextBtn.disabled = !answer;
+      else if (step.kind === "phone") nextBtn.disabled = !typedPhone().digits;
+      else nextBtn.disabled = false;
+
+      if (step.kind === "phone") phoneFields().number?.focus();
+      else nextBtn.focus();
+    }
+
+    /** Crea la cita de prueba y abre WhatsApp con el mensaje ya escrito. */
+    async function sendTestBooking() {
+      const { display, digits } = typedPhone();
+      if (!digits) {
+        showError("Escribe un número de WhatsApp válido.");
+        return false;
+      }
+
+      showError("");
+      answers.testBooking = display;
+      saveWhatsAppSetting(display);
+
+      const slot = nextFreeSlot();
+      const label = nextBtn.textContent;
+      nextBtn.disabled = true;
+      nextBtn.textContent = "Creando…";
+
+      let result = null;
+      try {
+        result = await window.BookingStore?.bookAtomically?.({
+          name: "Cita de prueba",
+          phone: display,
+          date: slot.date,
+          time: slot.time,
+          duration: 30,
+          serviceName: "Cita de prueba",
+          status: "pending_confirmation",
+          source: "admin",
+          notes: "Creada desde la bienvenida de BarberCloud.",
+        });
+      } catch (err) {
+        console.warn("[welcome] cita de prueba", err);
+      }
+
+      if (result && result.ok === false) {
+        showError(result.message || "No se pudo crear la cita de prueba.");
+        nextBtn.disabled = false;
+        nextBtn.textContent = label;
+        return false;
+      }
+
+      const created = result?.booking;
+      testBooking = created
+        ? { id: created.id, date: created.date, time: created.time }
+        : null;
+
+      const message = `Hola, soy ${businessName()}. Esta es una cita de prueba para el ${formatWhen(
+        slot.date,
+        slot.time
+      )}. Responde CONFIRMAR para probar la confirmación automática por WhatsApp.`;
+      const url =
+        window.Security?.buildWhatsAppUrl?.(digits, message) ||
+        `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+
+      const opened = window.open(url, "_blank", "noopener");
+      waFallbackUrl = opened ? "" : url;
+
+      save({ answers, testBooking, waUrl: waFallbackUrl });
+      return true;
+    }
+
+    async function goNext() {
+      const step = STEPS[index];
+      if (step.kind === "phone") {
+        if (!(await sendTestBooking())) return;
+        // La cita creada se enseña con globos sobre el calendario.
+        if (testBooking?.id) {
+          save({ stage: "coachmark" });
+          if (!isCalendarPage()) {
+            location.assign("calendario.html");
+            return;
+          }
+          overlay.remove();
+          document.body.classList.remove("welcome-open");
+          runCoachmark("coachmark");
+          return;
+        }
+      }
+      if (index >= STEPS.length - 1) {
+        close();
+        return;
+      }
+      index += 1;
+      render();
     }
 
     body.addEventListener("click", (event) => {
@@ -283,13 +556,20 @@
       nextBtn.disabled = false;
     });
 
+    body.addEventListener("input", (event) => {
+      if (!event.target.closest("#welcome-phone, #welcome-cc")) return;
+      showError("");
+      nextBtn.disabled = !typedPhone().digits;
+    });
+
+    body.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || !event.target.closest("#welcome-phone")) return;
+      event.preventDefault();
+      if (!nextBtn.disabled) goNext();
+    });
+
     nextBtn.addEventListener("click", () => {
-      if (index >= STEPS.length - 1) {
-        close();
-        return;
-      }
-      index += 1;
-      render();
+      goNext();
     });
 
     backBtn.addEventListener("click", () => {
@@ -303,12 +583,319 @@
     render();
   }
 
+  function selectorFor(id) {
+    const value = window.CSS?.escape ? CSS.escape(id) : String(id).replace(/["\\]/g, "\\$&");
+    return `.gcal__event[data-booking-id="${value}"]`;
+  }
+
+  /** El calendario se pinta de forma asíncrona, así que esperamos a la cita. */
+  function waitForEvent(id, timeoutMs = 6000) {
+    return new Promise((resolve) => {
+      const deadline = Date.now() + timeoutMs;
+      const tick = () => {
+        const el = document.querySelector(selectorFor(id));
+        if (el) return resolve(el);
+        if (Date.now() >= deadline) return resolve(null);
+        setTimeout(tick, 150);
+      };
+      tick();
+    });
+  }
+
+  const COACHMARK_STAGES = [
+    "coachmark",
+    "coachmark-wa",
+    "coachmark-pending",
+    "coachmark-confirmed",
+    "coachmark-cancelled",
+    "coachmark-try",
+  ];
+
+  function coachmarkStatusForStage(stage) {
+    const statusByStage = {
+      "coachmark-confirmed": "confirmed",
+      "coachmark-cancelled": "cancelled",
+      "coachmark-pending": "pending_confirmation",
+      "coachmark-try": "pending_confirmation",
+    };
+    return statusByStage[stage] || "pending_confirmation";
+  }
+
+  function userWhatsAppDisplay() {
+    const state = load();
+    if (state.answers?.testBooking) return state.answers.testBooking;
+    const saved = savedPhone();
+    return `${saved.cc} ${saved.number}`.trim();
+  }
+
+  function nextCoachmarkStage(stage) {
+    const index = COACHMARK_STAGES.indexOf(stage);
+    return index >= 0 && index < COACHMARK_STAGES.length - 1
+      ? COACHMARK_STAGES[index + 1]
+      : null;
+  }
+
+  function prevCoachmarkStage(stage) {
+    const index = COACHMARK_STAGES.indexOf(stage);
+    return index > 0 ? COACHMARK_STAGES[index - 1] : null;
+  }
+
+  function coachmarkPopHtml(stage) {
+    if (stage === "coachmark-wa") {
+      return `
+        <span class="welcome-coach__arrow" aria-hidden="true"></span>
+        <div class="welcome-coach__head">
+          <span class="welcome-coach__wa-icon" aria-hidden="true">${whatsappGlyph(28, 1)}</span>
+          <h3 class="welcome-coach__title" id="welcome-coach-text">¡WhatsApp enviado automáticamente!</h3>
+        </div>
+        <p class="welcome-coach__desc">
+          ¡Magia! <span aria-hidden="true">✨</span> Luego de crear la cita, BarberCloud le envió un mensaje a tu cliente para confirmar.
+        </p>
+        <div class="welcome-coach__actions welcome-coach__actions--split">
+          <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
+          <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
+        </div>`;
+    }
+
+    if (stage === "coachmark-pending") {
+      return `
+        <span class="welcome-coach__arrow" aria-hidden="true"></span>
+        <div class="welcome-coach__head">
+          <span class="welcome-coach__pending-icon" aria-hidden="true"></span>
+          <h3 class="welcome-coach__title" id="welcome-coach-text">Amarillo significa &lsquo;Esperando respuesta&rsquo;</h3>
+        </div>
+        <p class="welcome-coach__desc">
+          Al enviarse el mensaje, la cita cambia a amarillo automáticamente. Así sabes de un vistazo que estamos esperando que tu cliente confirme.
+        </p>
+        <div class="welcome-coach__actions welcome-coach__actions--split">
+          <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
+          <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
+        </div>`;
+    }
+
+    if (stage === "coachmark-confirmed") {
+      return `
+        <span class="welcome-coach__arrow" aria-hidden="true"></span>
+        <div class="welcome-coach__head">
+          <span class="welcome-coach__confirmed-icon" aria-hidden="true"></span>
+          <h3 class="welcome-coach__title" id="welcome-coach-text">Verde significa &lsquo;Confirmado&rsquo;</h3>
+        </div>
+        <p class="welcome-coach__desc">
+          Cuando tu cliente responde &ldquo;<strong>Sí</strong>&rdquo; en WhatsApp, BarberCloud detecta la respuesta y marca la cita en verde automáticamente.
+        </p>
+        <div class="welcome-coach__actions welcome-coach__actions--split">
+          <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
+          <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
+        </div>`;
+    }
+
+    if (stage === "coachmark-cancelled") {
+      return `
+        <span class="welcome-coach__arrow" aria-hidden="true"></span>
+        <div class="welcome-coach__head">
+          <span class="welcome-coach__cancelled-icon" aria-hidden="true"></span>
+          <h3 class="welcome-coach__title" id="welcome-coach-text">Rojo significa &lsquo;Cancelado&rsquo;</h3>
+        </div>
+        <p class="welcome-coach__desc">
+          Si tu cliente responde &ldquo;<strong>No</strong>&rdquo;, la cita se pone roja para que sepas que tu cliente canceló.
+        </p>
+        <div class="welcome-coach__actions welcome-coach__actions--split">
+          <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
+          <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
+        </div>`;
+    }
+
+    if (stage === "coachmark-try") {
+      const phone = escapeHtml(userWhatsAppDisplay());
+      return `
+        <span class="welcome-coach__arrow" aria-hidden="true"></span>
+        <div class="welcome-coach__head">
+          <span class="welcome-coach__try-icon" aria-hidden="true">📱</span>
+          <h3 class="welcome-coach__title" id="welcome-coach-text">Haz la prueba ahora</h3>
+        </div>
+        <p class="welcome-coach__desc">
+          Abre tu WhatsApp (<strong>${phone}</strong>) y responde &ldquo;<strong>Sí</strong>&rdquo; para confirmar esta cita de ejemplo y ponerla en verde <span aria-hidden="true">🟢</span>.
+        </p>
+        <div class="welcome-coach__actions welcome-coach__actions--split">
+          <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
+          <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
+        </div>`;
+    }
+
+    return `
+      <span class="welcome-coach__arrow" aria-hidden="true"></span>
+      <p class="welcome-coach__text" id="welcome-coach-text">
+        <span aria-hidden="true">🎉</span> Creamos esta cita para mostrarte la magia de BarberCloud.
+      </p>
+      <div class="welcome-coach__actions">
+        <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
+      </div>`;
+  }
+
+  function openCoachmark(target, initialStage, onComplete) {
+    let stage = COACHMARK_STAGES.includes(initialStage) ? initialStage : "coachmark";
+    const bookingId = load().testBooking?.id;
+    let targetEl = target;
+
+    const layer = document.createElement("div");
+    layer.className = "welcome-coach";
+    layer.id = "welcome-coach";
+    layer.innerHTML = `
+      <div class="welcome-coach__dim"></div>
+      <div class="welcome-coach__pop" role="dialog" aria-modal="true" aria-labelledby="welcome-coach-text"></div>`;
+
+    const pop = layer.querySelector(".welcome-coach__pop");
+    const MARGIN = 12;
+    const GAP = 14;
+
+    function bindTarget(el) {
+      if (!el) return;
+      if (targetEl && targetEl !== el) targetEl.classList.remove("welcome-target");
+      targetEl = el;
+      targetEl.classList.add("welcome-target");
+    }
+
+    async function applyStageVisuals() {
+      if (!bookingId || !window.BookingStore?.patchBooking) return;
+      window.BookingStore.patchBooking(bookingId, {
+        status: coachmarkStatusForStage(stage),
+      });
+      const el = await waitForEvent(bookingId, 2000);
+      if (el) bindTarget(el);
+    }
+
+    function place() {
+      if (!targetEl) return;
+      const rect = targetEl.getBoundingClientRect();
+      const width = pop.offsetWidth;
+      const height = pop.offsetHeight;
+
+      let below = true;
+      let top = rect.bottom + GAP;
+      if (top + height + MARGIN > window.innerHeight) {
+        const above = rect.top - GAP - height;
+        if (above >= MARGIN) {
+          top = above;
+          below = false;
+        } else {
+          top = Math.max(MARGIN, window.innerHeight - height - MARGIN);
+        }
+      }
+
+      const centerX = rect.left + rect.width / 2;
+      const left = Math.min(
+        Math.max(centerX - width / 2, MARGIN),
+        Math.max(window.innerWidth - width - MARGIN, MARGIN)
+      );
+
+      pop.classList.toggle("welcome-coach__pop--below", below);
+      pop.classList.toggle("welcome-coach__pop--wa", stage === "coachmark-wa");
+      pop.classList.toggle("welcome-coach__pop--pending", stage === "coachmark-pending");
+      pop.classList.toggle("welcome-coach__pop--confirmed", stage === "coachmark-confirmed");
+      pop.classList.toggle("welcome-coach__pop--cancelled", stage === "coachmark-cancelled");
+      pop.classList.toggle("welcome-coach__pop--try", stage === "coachmark-try");
+      pop.style.top = `${Math.round(top)}px`;
+      pop.style.left = `${Math.round(left)}px`;
+
+      const arrow = pop.querySelector(".welcome-coach__arrow");
+      if (arrow) {
+        arrow.style.left = `${Math.round(
+          Math.min(Math.max(centerX - left, 22), Math.max(width - 22, 22))
+        )}px`;
+      }
+    }
+
+    async function renderStep() {
+      await applyStageVisuals();
+      pop.innerHTML = coachmarkPopHtml(stage);
+      save({ stage });
+
+      const nextBtn = pop.querySelector(".welcome-coach__next");
+      const backBtn = pop.querySelector(".welcome-coach__back");
+
+      nextBtn?.addEventListener("click", async () => {
+        const next = nextCoachmarkStage(stage);
+        if (next) {
+          stage = next;
+          await renderStep();
+          return;
+        }
+        finish();
+      });
+
+      backBtn?.addEventListener("click", async () => {
+        const prev = prevCoachmarkStage(stage);
+        if (!prev) return;
+        stage = prev;
+        await renderStep();
+      });
+
+      place();
+      requestAnimationFrame(place);
+      (nextBtn || pop.querySelector(".welcome-coach__next"))?.focus();
+    }
+
+    function finish() {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+      targetEl?.classList.remove("welcome-target");
+      layer.remove();
+      document.body.classList.remove("welcome-open");
+      onComplete();
+    }
+
+    bindTarget(target);
+    targetEl.scrollIntoView({ block: "center", inline: "nearest" });
+    document.body.appendChild(layer);
+    document.body.classList.add("welcome-open");
+    renderStep();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+  }
+
+  async function runCoachmark(startStage = "coachmark") {
+    const info = load().testBooking;
+    if (info?.date) {
+      window.BarberCalendar?.goToDate?.(info.date);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    const target = info?.id ? await waitForEvent(info.id) : null;
+    if (!target) {
+      open({ startAt: "done" });
+      return;
+    }
+    openCoachmark(target, startStage, () => {
+      save({ stage: "outro" });
+      open({ startAt: "done" });
+    });
+  }
+
+  /** Retoma el tour en la etapa guardada, sin comprobar si toca mostrarlo. */
+  function resume() {
+    if (document.getElementById("welcome-overlay") || document.getElementById("welcome-coach")) {
+      return;
+    }
+    if (!isPanelPage() && !isCalendarPage()) return;
+    const stage = load().stage;
+    if (COACHMARK_STAGES.includes(stage)) {
+      if (isCalendarPage()) runCoachmark(stage);
+      else location.assign("calendario.html");
+      return;
+    }
+    if (stage === "outro") {
+      open({ startAt: "done" });
+      return;
+    }
+    if (isPanelPage()) open();
+  }
+
   function maybeOpen() {
-    if (shouldShow()) open();
+    if (pending()) resume();
   }
 
   window.WelcomeTour = {
     open,
+    resume,
     pending,
     reset() {
       try {

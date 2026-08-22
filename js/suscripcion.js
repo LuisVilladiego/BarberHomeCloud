@@ -21,14 +21,19 @@
   };
 
   let state = {
-    planId: "100",
-    status: "incomplete",
+    planId: "pro",
+    status: "expired",
     periodStart: null,
     periodEnd: null,
     lastPaymentAt: null,
+    cancelAtPeriodEnd: false,
   };
   let selectedPlanId = null;
   let pagos = [];
+  let checkoutPlanId = "basic";
+  let checkoutPeriod = "monthly";
+
+  const GUARANTEE = "Si no te gusta, te devolvemos tu dinero (30 días)";
 
   const planTitle = document.getElementById("plan-title");
   const planNext = document.getElementById("plan-next-charge");
@@ -52,13 +57,38 @@
   function currentPlan() {
     return (
       window.Plans?.find?.(state.planId) ||
-      plansList()[1] ||
-      { id: "100", limit: 100, price: 72000, label: "100 citas al mes" }
+      plansList().find((p) => p.id === "pro") ||
+      plansList()[0] ||
+      { id: "pro", maxAppointments: 100, price: 72000, label: "Pro" }
     );
   }
 
   function isActive() {
     return !!window.Billing?.isActive?.(state);
+  }
+
+  function isPendingCancellation() {
+    return !!window.Billing?.isPendingCancellation?.(state);
+  }
+
+  function cancelModalMessage() {
+    if (!isActive()) {
+      return "Tu suscripción no está activa, así que no hay nada que cancelar. No se hará ningún cobro automático.";
+    }
+    if (isPendingCancellation()) {
+      return `Ya programaste la cancelación. Tu plan sigue activo hasta el ${formatDate(
+        state.periodEnd
+      )}. Después se desactiva el enlace público y el panel queda solo para consultar tus datos.`;
+    }
+    const normalized = window.BusinessModel?.normalizeStatus?.(state.status) || state.status;
+    if (normalized === "trial") {
+      return `No hay renovación automática: tu prueba termina el ${formatDate(
+        state.periodEnd
+      )}. Si no activas un plan, ese día se desactiva el enlace público y el panel queda solo para consultar tus datos.`;
+    }
+    return `No hay renovación automática: tu plan está pagado hasta el ${formatDate(
+      state.periodEnd
+    )}. Si no pagas otro mes, ese día se desactiva el enlace público y el panel queda solo para consultar tus datos.`;
   }
 
   function toIsoDate(date) {
@@ -129,6 +159,7 @@
           periodStart: state.periodStart,
           periodEnd: state.periodEnd,
           lastPaymentAt: state.lastPaymentAt,
+          cancelAtPeriodEnd: state.cancelAtPeriodEnd,
           payment: { provider: "wompi" },
         })
       );
@@ -141,11 +172,12 @@
     try {
       const raw = JSON.parse(localStorage.getItem(SUB_KEY) || "{}");
       return {
-        planId: raw.planId || "100",
-        status: raw.status || "incomplete",
+        planId: raw.planId || "pro",
+        status: window.BusinessModel?.normalizeStatus?.(raw.status) || raw.status || "expired",
         periodStart: raw.periodStart || null,
         periodEnd: raw.periodEnd || null,
         lastPaymentAt: raw.lastPaymentAt || null,
+        cancelAtPeriodEnd: !!raw.cancelAtPeriodEnd,
       };
     } catch {
       return { ...state };
@@ -154,20 +186,21 @@
 
   function renderUsage() {
     const plan = currentPlan();
+    const limit = plan.maxAppointments || plan.limit || 100;
     const used = bookingsInPeriod().length;
-    const pct = Math.min(100, Math.round((used / plan.limit) * 100));
+    const pct = Math.min(100, Math.round((used / limit) * 100));
     if (usageUsed) usageUsed.textContent = String(used);
-    if (usageLabel) usageLabel.textContent = ` / ${plan.limit} citas usadas este período`;
+    if (usageLabel) usageLabel.textContent = ` / ${limit} citas usadas este período`;
     if (usageBar) usageBar.style.width = `${pct}%`;
     if (usagePct) usagePct.textContent = `${pct}% usado`;
-    if (usageLimit) usageLimit.textContent = `Límite del plan: ${plan.limit}`;
+    if (usageLimit) usageLimit.textContent = `Límite del plan: ${limit}`;
   }
 
   function render() {
     const plan = currentPlan();
     const label = window.Billing?.statusLabel?.(state) || { text: "Sin activar", tone: "paused" };
 
-    if (planTitle) planTitle.textContent = `Tienes el plan de ${plan.limit} citas al mes`;
+    if (planTitle) planTitle.textContent = `Tienes el plan ${plan.label || plan.name}`;
     if (planStatus) {
       planStatus.textContent = label.text;
       planStatus.className = `status status--${label.tone}`;
@@ -175,9 +208,15 @@
     if (planNext) {
       if (isActive()) {
         const days = window.Billing?.daysLeft?.(state) || 0;
-        planNext.textContent = `Pagado hasta ${formatDate(state.periodEnd)} · ${formatMoney(
-          plan.price
-        )} al mes · quedan ${days} día${days === 1 ? "" : "s"}`;
+        if (isPendingCancellation()) {
+          planNext.textContent = `Cancela el ${formatDate(state.periodEnd)} · quedan ${days} día${
+            days === 1 ? "" : "s"
+          } de acceso · no se renovará`;
+        } else {
+          planNext.textContent = `Pagado hasta ${formatDate(state.periodEnd)} · ${formatMoney(
+            plan.price
+          )} al mes · quedan ${days} día${days === 1 ? "" : "s"}`;
+        }
       } else if (state.periodEnd) {
         planNext.textContent = `Venció el ${formatDate(state.periodEnd)} · ${formatMoney(
           plan.price
@@ -199,6 +238,33 @@
 
     renderUsage();
     refreshNeedBanner();
+    renderCancelManageItem();
+    toggleViews();
+  }
+
+  function renderCancelManageItem() {
+    const btn = document.getElementById("btn-cancel");
+    if (!btn) return;
+    const title = btn.querySelector(".manage-item__text strong");
+    const subtitle = btn.querySelector(".manage-item__text small");
+    if (!title || !subtitle) return;
+
+    if (!isActive()) {
+      title.textContent = "Cancelar suscripción";
+      subtitle.textContent = "No hay suscripción activa que cancelar";
+      btn.disabled = true;
+      return;
+    }
+
+    btn.disabled = false;
+    if (isPendingCancellation()) {
+      title.textContent = "Cancelación programada";
+      subtitle.textContent = `Activo hasta ${formatDate(state.periodEnd)} · no se renovará`;
+      return;
+    }
+
+    title.textContent = "Cancelar suscripción";
+    subtitle.textContent = "Cancela tu plan al final del período actual";
   }
 
   function refreshNeedBanner() {
@@ -222,33 +288,141 @@
     paymentError.textContent = message || "";
   }
 
-  function renderPlanOptions() {
-    const box = document.getElementById("plan-options");
+  function features() {
+    const plan = checkoutPlan();
+    return window.Plans?.planFeatures?.(plan) || window.Plans?.FEATURES || [];
+  }
+
+  function priceLabel(plan, period) {
+    if (window.Plans?.priceLabel) return window.Plans.priceLabel(plan, period);
+    const cop = Number(plan?.price) || (Number(plan?.priceUsd) || 0) * 4000;
+    return `${formatMoney(cop)} al mes`;
+  }
+
+  function checkoutPlan() {
+    return (
+      window.Plans?.find?.(checkoutPlanId) ||
+      plansList()[0] ||
+      { id: "basic", maxAppointments: 50, priceUsd: 12, label: "Basic" }
+    );
+  }
+
+  function toggleViews() {
+    const active = isActive();
+    document.getElementById("sub-checkout")?.toggleAttribute("hidden", active);
+    document.getElementById("sub-checkout-bar")?.toggleAttribute("hidden", active);
+    document.getElementById("sub-active")?.toggleAttribute("hidden", !active);
+    document.getElementById("sub-page-header")?.toggleAttribute("hidden", !active);
+    if (!active) renderCheckout();
+  }
+
+  function showCheckoutError(message) {
+    const el = document.getElementById("sub-plan-error");
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message || "";
+  }
+
+  function renderCheckoutToggle() {
+    document.querySelectorAll("#sub-billing-toggle .choose-plan-toggle__btn").forEach((btn) => {
+      const on = btn.getAttribute("data-period") === checkoutPeriod;
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  function renderCheckoutCards() {
+    const box = document.getElementById("sub-plan-cards");
     if (!box) return;
-    const pick = selectedPlanId || state.planId;
+    const list = features();
     box.innerHTML = plansList()
       .map((plan) => {
-        const selected = plan.id === pick;
-        const isCurrent = plan.id === state.planId && isActive();
+        const selected = plan.id === checkoutPlanId;
+        const featureItems = list.map((item) => `<li>${item}</li>`).join("");
         return `
-        <button type="button" class="plan-option ${selected ? "is-selected" : ""}" data-plan="${plan.id}">
-          <span>
-            <strong>${plan.label}</strong>
-            <small>${formatMoney(plan.price)} / mes</small>
-          </span>
-          <span class="plan-option__badge">${isCurrent ? "Actual" : selected ? "Elegido" : "Elegir"}</span>
-        </button>`;
+          <label class="choose-plan-card${selected ? " is-selected" : ""}">
+            <input type="radio" name="sub-plan" value="${plan.id}"${selected ? " checked" : ""} />
+            <span class="choose-plan-card__radio" aria-hidden="true"></span>
+            <div class="choose-plan-card__main">
+              <div class="choose-plan-card__head">
+                <strong>${plan.label || plan.name}</strong>
+                <span class="choose-plan-card__price">${priceLabel(plan, checkoutPeriod)}</span>
+              </div>
+              ${
+                selected
+                  ? `
+              <div class="choose-plan-card__details">
+                <p class="choose-plan-card__includes-title">¿Qué incluye?</p>
+                <ul class="choose-plan-card__includes">${featureItems}</ul>
+                <p class="choose-plan-card__guarantee">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 12.5 9.5 17 19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  ${GUARANTEE}
+                </p>
+              </div>`
+                  : ""
+              }
+            </div>
+          </label>`;
       })
       .join("");
+  }
+
+  function updateCheckoutCta() {
+    const plan = checkoutPlan();
+    const cta = document.getElementById("sub-plan-cta");
+    if (!cta || !plan) return;
+    cta.innerHTML = `
+      Empezar con el plan ${plan.label || plan.name}
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m10 7 6 5-6 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+  }
+
+  function renderCheckout() {
+    renderCheckoutToggle();
+    renderCheckoutCards();
+    updateCheckoutCta();
+    showCheckoutError("");
+  }
+
+  async function startCheckoutFromPage() {
+    const cta = document.getElementById("sub-plan-cta");
+    const plan = checkoutPlan();
+    if (!plan) return;
+
+    showCheckoutError("");
+    if (cta) {
+      cta.disabled = true;
+      cta.textContent = "Preparando pago…";
+    }
+
+    const res = await window.Billing?.startCheckout?.(checkoutPlanId, checkoutPeriod);
+    if (!res?.ok) {
+      showCheckoutError(res?.message || "No se pudo iniciar el pago.");
+      if (cta) {
+        cta.disabled = false;
+        updateCheckoutCta();
+      }
+      return;
+    }
+
+    location.href = res.checkoutUrl;
+  }
+
+  function openPlanPicker(planId) {
+    window.PlanPicker?.open?.({ planId: planId || state.planId || "basic" });
   }
 
   function openPaymentModal(planId) {
     selectedPlanId = planId || state.planId;
     const plan = window.Plans?.find?.(selectedPlanId) || currentPlan();
     if (paymentLead) {
-      paymentLead.textContent = `Vas a pagar ${formatMoney(plan.price)} por un mes del plan de ${
-        plan.limit
-      } citas en la página segura de Wompi. BarberCloud no almacena números de tarjeta ni CVC.`;
+      const amount = window.Plans?.chargeCop?.(plan, "monthly") ?? plan.price;
+      paymentLead.textContent = `Vas a pagar ${formatMoney(amount)} por un mes del plan ${
+        plan.label || plan.name
+      } en la página segura de Wompi. BarberCloud no almacena números de tarjeta ni CVC.`;
     }
     showPaymentError("");
     openModal("payment-modal");
@@ -376,33 +550,51 @@
   }
 
   async function syncFromCloud() {
+    if (window.Tenant?.syncWithAuthenticatedUser) {
+      await window.Tenant.syncWithAuthenticatedUser();
+    }
     if (!window.Billing?.enabled?.()) return;
     const fresh = await window.Billing.refresh();
     if (fresh) {
-      state = { ...state, ...fresh };
+      state = {
+        planId: fresh.planId || state.planId,
+        status: fresh.status || state.status,
+        periodStart: fresh.periodStart || state.periodStart,
+        periodEnd: fresh.periodEnd || state.periodEnd,
+        lastPaymentAt: fresh.lastPaymentAt || state.lastPaymentAt,
+        cancelAtPeriodEnd: !!fresh.cancelAtPeriodEnd,
+      };
       cacheLocal();
     }
     render();
   }
 
   document.getElementById("btn-change-plan")?.addEventListener("click", () => {
-    selectedPlanId = state.planId;
-    renderPlanOptions();
-    openModal("plan-modal");
+    openPlanPicker(state.planId);
   });
 
-  document.getElementById("plan-options")?.addEventListener("click", (e) => {
-    const id = e.target.closest("[data-plan]")?.getAttribute("data-plan");
-    if (!id) return;
-    selectedPlanId = id;
-    renderPlanOptions();
-    closeModal("plan-modal");
-    openPaymentModal(id);
-  });
-
-  document.getElementById("btn-payment")?.addEventListener("click", () => openPaymentModal());
-  document.getElementById("btn-pay-now")?.addEventListener("click", () => openPaymentModal());
+  document.getElementById("btn-payment")?.addEventListener("click", () => openPlanPicker(state.planId));
+  document.getElementById("btn-pay-now")?.addEventListener("click", () => openPlanPicker(state.planId));
   document.getElementById("btn-go-wompi")?.addEventListener("click", goToWompi);
+
+  document.getElementById("sub-plan-cta")?.addEventListener("click", startCheckoutFromPage);
+
+  document.getElementById("sub-billing-toggle")?.addEventListener("click", (event) => {
+    const btn = event.target.closest(".choose-plan-toggle__btn");
+    if (!btn) return;
+    checkoutPeriod = btn.getAttribute("data-period") === "annual" ? "annual" : "monthly";
+    renderCheckout();
+  });
+
+  document.getElementById("sub-plan-cards")?.addEventListener("click", (event) => {
+    const card = event.target.closest(".choose-plan-card");
+    if (!card) return;
+    const input = card.querySelector('input[type="radio"]');
+    if (input?.value) {
+      checkoutPlanId = input.value;
+      renderCheckout();
+    }
+  });
 
   document.getElementById("btn-invoices")?.addEventListener("click", () => {
     openModal("invoices-modal");
@@ -442,21 +634,42 @@
 
   document.getElementById("btn-cancel")?.addEventListener("click", () => {
     const lead = document.getElementById("cancel-lead");
-    if (lead) {
-      lead.textContent = isActive()
-        ? `No hay renovación automática: tu plan está pagado hasta el ${formatDate(
-            state.periodEnd
-          )}. Si no pagas otro mes, ese día se desactiva el enlace público y el panel queda solo para consultar tus datos.`
-        : "Tu suscripción no está activa, así que no hay nada que cancelar. No se hará ningún cobro automático.";
-    }
+    if (lead) lead.textContent = cancelModalMessage();
     const confirmBtn = document.getElementById("btn-confirm-cancel");
-    if (confirmBtn) confirmBtn.hidden = true;
+    if (confirmBtn) {
+      confirmBtn.hidden = !isActive() || isPendingCancellation();
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Cancelar al final del período";
+    }
     openModal("cancel-modal");
   });
 
-  document.querySelectorAll("[data-close-plan]").forEach((el) =>
-    el.addEventListener("click", () => closeModal("plan-modal"))
-  );
+  document.getElementById("btn-confirm-cancel")?.addEventListener("click", async () => {
+    const confirmBtn = document.getElementById("btn-confirm-cancel");
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "Cancelando…";
+    }
+
+    const res = await window.Billing?.cancelSubscription?.();
+    if (!res?.ok) {
+      window.AppShell?.toast?.(res?.message || "No se pudo cancelar la suscripción.");
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "Cancelar al final del período";
+      }
+      return;
+    }
+
+    await syncFromCloud();
+    closeModal("cancel-modal");
+    window.AppShell?.toast?.(
+      res.alreadyCanceled
+        ? "La cancelación ya estaba programada."
+        : `Listo. Tu plan sigue activo hasta el ${formatDate(res.periodEnd || state.periodEnd)}.`
+    );
+  });
+
   document.querySelectorAll("[data-close-payment]").forEach((el) =>
     el.addEventListener("click", () => closeModal("payment-modal"))
   );
@@ -486,6 +699,23 @@
   });
 
   state = { ...state, ...readLocal() };
+  const billingCache = window.Billing?.cached?.();
+  if (billingCache) {
+    state = {
+      ...state,
+      planId: billingCache.planId || state.planId,
+      status: billingCache.status || state.status,
+      periodStart: billingCache.periodStart || state.periodStart,
+      periodEnd: billingCache.periodEnd || state.periodEnd,
+      lastPaymentAt: billingCache.lastPaymentAt || state.lastPaymentAt,
+      cancelAtPeriodEnd: !!billingCache.cancelAtPeriodEnd,
+    };
+  }
+
+  const urlPlan = new URLSearchParams(location.search).get("plan");
+  if (urlPlan && plansList().some((p) => p.id === urlPlan)) {
+    checkoutPlanId = urlPlan;
+  }
   render();
 
   (async () => {

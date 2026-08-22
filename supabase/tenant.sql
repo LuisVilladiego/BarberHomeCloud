@@ -6,7 +6,7 @@ create table if not exists public.negocios (
   slug text not null,
   name text not null default '',
   subscription_status text not null default 'active',
-  plan_id text default '100',
+  plan_id text default 'pro',
   autoagenda jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

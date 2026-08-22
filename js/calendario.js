@@ -753,4 +753,20 @@
   });
 
   setInterval(updateNowIndicator, 30000);
+
+  /** Mueve la semana visible hasta incluir la fecha ISO (p. ej. cita de prueba del tour). */
+  function goToDate(isoDate) {
+    if (!isoDate) return;
+    const match = String(isoDate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return;
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    if (Number.isNaN(d.getTime())) return;
+    weekStart = startOfWeek(d);
+    refreshCalendar();
+  }
+
+  window.BarberCalendar = {
+    goToDate,
+    refresh: refreshCalendar,
+  };
 })();

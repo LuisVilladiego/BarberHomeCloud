@@ -96,6 +96,15 @@ async function updateNegocio(id, patch) {
   return Array.isArray(rows) ? rows[0] || null : null;
 }
 
+async function insertNegocio(row) {
+  const rows = await rest("negocios", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: row,
+  });
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
 async function insertPago(row) {
   const rows = await rest("pagos", {
     method: "POST",
@@ -103,6 +112,26 @@ async function insertPago(row) {
     body: row,
   });
   return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+function normalizeSlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 50);
+}
+
+/** Slug único provisional hasta que el barbero elija uno en Autoagenda. */
+function provisionalSlug(user) {
+  const name = user?.user_metadata?.name || user?.email?.split("@")[0] || "barberia";
+  const base = normalizeSlug(name) || "barberia";
+  const suffix = String(user?.id || "").replace(/-/g, "").slice(0, 8);
+  const slug = `${base}-${suffix}`.replace(/-+/g, "-").replace(/^-|-$/g, "");
+  return slug.length >= 3 ? slug.slice(0, 50) : `barberia-${suffix}`.slice(0, 50);
 }
 
 async function pagoByReference(reference) {
@@ -123,10 +152,13 @@ async function updatePago(reference, patch) {
 }
 
 module.exports = {
+  insertNegocio,
   insertPago,
   negocioById,
   negocioOfOwner,
+  normalizeSlug,
   pagoByReference,
+  provisionalSlug,
   rest,
   updateNegocio,
   updatePago,

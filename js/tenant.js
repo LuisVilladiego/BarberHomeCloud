@@ -120,8 +120,12 @@
   }
 
   function isSubscriptionActive(status) {
+    if (window.BusinessModel?.normalizeStatus) {
+      const normalized = window.BusinessModel.normalizeStatus(status);
+      return window.BusinessModel.ACCESS_STATUSES.has(normalized);
+    }
     const s = String(status || "").toLowerCase();
-    return s === "active" || s === "trialing";
+    return s === "active" || s === "trialing" || s === "trial" || s === "past_due";
   }
 
   /**
@@ -130,6 +134,12 @@
    */
   function isNegocioActive(negocio) {
     if (!negocio) return false;
+    if (window.BusinessModel?.hasSubscriptionAccess) {
+      return window.BusinessModel.hasSubscriptionAccess(
+        negocio.subscription_status,
+        negocio.current_period_end
+      );
+    }
     if (!isSubscriptionActive(negocio.subscription_status)) return false;
     if (!Object.prototype.hasOwnProperty.call(negocio, "current_period_end")) return true;
     const end = negocio.current_period_end;
@@ -139,6 +149,12 @@
   function hasActiveSubscription() {
     const biz = cached();
     if (biz && biz.subscription_status) {
+      if (window.BusinessModel?.hasSubscriptionAccess) {
+        return window.BusinessModel.hasSubscriptionAccess(
+          biz.subscription_status,
+          biz.current_period_end
+        );
+      }
       if (!isSubscriptionActive(biz.subscription_status)) return false;
       // Si el negocio vive en la nube, manda el periodo pagado. La columna solo
       // falta si todavía no se corrió supabase/billing.sql.
@@ -189,15 +205,73 @@
 
   const ONBOARDED_KEY = "barbercloud.onboarded";
 
-  function hasExistingBusiness() {
+  /** Slugs de demo / otro tenant que no deben contarse como negocio del usuario. */
+  const DEMO_SLUGS = new Set([
+    "barberhomeluisvilladiego",
+    "barberhome",
+    "confirmafy",
+    "demo",
+    "negocio",
+  ]);
+
+  function isDemoSlug(raw) {
+    const slug = normalizeSlug(raw);
+    return !slug || DEMO_SLUGS.has(slug);
+  }
+
+  function readAutoagendaCache() {
+    try {
+      return JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  /** Datos de negocio del tenant autenticado (sin relleno demo). */
+  function getBusinessContext() {
+    const auto = readAutoagendaCache();
+    const biz = cached();
+    const slug = auto.slug || biz?.slug || "";
+    const title = String(auto.title || biz?.name || "").trim();
+    return {
+      slug: isDemoSlug(slug) ? "" : slug,
+      title,
+      description: String(auto.description || "").trim(),
+      avatarDataUrl: auto.avatarDataUrl || "",
+    };
+  }
+
+  /**
+   * True solo si el usuario ya configuró SU negocio (onboarding, Supabase o autoagenda propia).
+   * No cuenta slugs demo ni caché huérfano de otro tenant.
+   */
+  function hasConfiguredBusiness() {
     try {
       if (localStorage.getItem(ONBOARDED_KEY) === "1") return true;
-      if (currentId()) return true;
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
-      return !!(auto.slug && validateSlug(auto.slug).ok);
+      const biz = cached();
+      if (currentId() && biz?.id === currentId()) {
+        if (biz.slug && validateSlug(biz.slug).ok && !isDemoSlug(biz.slug)) return true;
+        if (biz.onboarding_completed) return true;
+      }
+      const auto = readAutoagendaCache();
+      const slug = auto.slug || "";
+      const title = String(auto.title || "").trim();
+      if (title && slug && validateSlug(slug).ok && !isDemoSlug(slug)) return true;
+      return false;
     } catch {
       return false;
     }
+  }
+
+  /** Formularios vacíos: sin negocio configurado o sin suscripción activa. */
+  function shouldUseEmptyForms() {
+    if (!hasConfiguredBusiness()) return true;
+    if (!hasActiveSubscription()) return true;
+    return false;
+  }
+
+  function hasExistingBusiness() {
+    return hasConfiguredBusiness();
   }
 
   function markOnboarded() {
@@ -233,12 +307,12 @@
         localStorage.setItem(
           "barbercloud.subscription",
           JSON.stringify({
-            planId: negocio.plan_id || "100",
-            status: negocio.subscription_status || "incomplete",
+            planId: window.BusinessModel?.normalizePlanId?.(negocio.plan_id) || negocio.plan_id || "pro",
+            status: window.BusinessModel?.normalizeStatus?.(negocio.subscription_status) || negocio.subscription_status || "expired",
             periodStart: negocio.current_period_start || null,
             periodEnd: negocio.current_period_end || null,
             lastPaymentAt: negocio.last_payment_at || null,
-            cancelAtPeriodEnd: false,
+            cancelAtPeriodEnd: !!negocio.cancel_at_period_end,
             payment: { provider: "wompi" },
           })
         );
@@ -266,7 +340,7 @@
     const own = await window.SupabaseData.fetchOwnNegocio?.();
 
     if (!own) {
-      if (prevId || cachedBiz || hasExistingBusiness()) clearLocalData();
+      clearLocalData();
       return { ok: true, mode: "needs-onboarding", needsOnboarding: true };
     }
 
@@ -287,8 +361,10 @@
     RESERVED_SLUGS,
     NEGOCIO_ID_KEY,
     ONBOARDED_KEY,
+    DEMO_SLUGS,
     normalizeSlug,
     validateSlug,
+    isDemoSlug,
     publicUrl,
     displayLink,
     slugFromLocation,
@@ -299,6 +375,10 @@
     setCurrent,
     cached,
     isLocalHost,
+    readAutoagendaCache,
+    getBusinessContext,
+    hasConfiguredBusiness,
+    shouldUseEmptyForms,
     hasExistingBusiness,
     markOnboarded,
     clearLocalData,

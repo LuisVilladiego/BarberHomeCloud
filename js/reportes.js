@@ -2,8 +2,6 @@
   const BOOKINGS_KEY = "barbercloud.bookings";
   const SUB_KEY = "barbercloud.subscription";
   const NOTIF_KEY = "barbercloud.notifications";
-  const USD_TO_COP = 4000;
-  const PLAN_PRICES = { 50: 12, 100: 18, 200: 31, 300: 45 };
 
   const dateFrom = document.getElementById("date-from");
   const dateTo = document.getElementById("date-to");
@@ -77,10 +75,10 @@
   function planPriceCop() {
     try {
       const sub = JSON.parse(localStorage.getItem(SUB_KEY) || "{}");
-      const planId = sub.planId || "100";
-      return (PLAN_PRICES[planId] || 18) * USD_TO_COP;
+      const plan = window.BusinessModel?.findPlan?.(sub.planId) || window.Plans?.find?.(sub.planId);
+      return Number(plan?.price) || 72000;
     } catch {
-      return 18 * USD_TO_COP;
+      return 72000;
     }
   }
 
