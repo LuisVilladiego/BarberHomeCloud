@@ -208,6 +208,11 @@
       return;
     }
 
+    if (next === "admin") {
+      location.href = "admin.html";
+      return;
+    }
+
     if (sync?.needsOnboarding) {
       const trial = await window.Billing?.startTrial?.();
       if (trial?.ok) {

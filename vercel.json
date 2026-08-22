@@ -9,6 +9,7 @@
     { "source": "/onboarding", "destination": "/onboarding.html" },
     { "source": "/registro", "destination": "/login.html" },
     { "source": "/app", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/admin.html" },
     {
       "source": "/:slug((?!api/)(?!.*\\.).*)",
       "destination": "/booking.html"

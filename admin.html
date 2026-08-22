@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Admin plataforma · BarberCloud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body>
+    <div id="admin-gate" class="admin-gate" hidden>
+      <div class="admin-gate__card">
+        <h1>Panel de plataforma</h1>
+        <p id="admin-gate-msg">Verificando acceso…</p>
+        <a class="btn btn--primary" id="admin-gate-login" href="login.html?next=admin" hidden>Entrar</a>
+        <a class="btn btn--secondary" href="landing.html">Volver al sitio</a>
+      </div>
+    </div>
+
+    <div id="admin-app" class="admin-app" hidden>
+      <header class="admin-topbar">
+        <div class="admin-topbar__brand">
+          <img src="assets/logo.png" alt="" width="28" height="28" />
+          <div>
+            BarberCloud
+            <small>Administración SaaS</small>
+          </div>
+        </div>
+        <div class="admin-topbar__actions">
+          <span class="admin-topbar__user" id="admin-user-email"></span>
+          <a class="btn btn--ghost btn--sm" href="landing.html" style="color:#fff">Sitio público</a>
+          <button class="btn btn--secondary btn--sm" type="button" id="admin-logout">Salir</button>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <p class="admin-error" id="admin-error" hidden></p>
+
+        <section class="admin-kpis" id="admin-kpis" aria-label="Resumen"></section>
+
+        <div class="admin-tabs" role="tablist">
+          <button class="admin-tabs__btn is-active" type="button" data-tab="negocios">Negocios</button>
+          <button class="admin-tabs__btn" type="button" data-tab="pagos">Pagos</button>
+        </div>
+
+        <section class="admin-panel" id="tab-negocios">
+          <div class="admin-toolbar">
+            <input type="search" id="filter-q" placeholder="Buscar nombre, slug o id…" />
+            <select id="filter-status">
+              <option value="">Todos los estados</option>
+              <option value="active">Activo</option>
+              <option value="trial">Prueba</option>
+              <option value="past_due">Pago pendiente</option>
+              <option value="canceled">Cancelado</option>
+              <option value="expired">Vencido</option>
+              <option value="suspended">Suspendido</option>
+            </select>
+            <select id="filter-plan">
+              <option value="">Todos los planes</option>
+              <option value="free">Free</option>
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="business">Business</option>
+            </select>
+            <button class="btn btn--secondary btn--sm" type="button" id="btn-refresh">Actualizar</button>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Negocio</th>
+                  <th>Dueño</th>
+                  <th>Plan</th>
+                  <th>Estado</th>
+                  <th>Período</th>
+                  <th>Acceso</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="negocios-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-panel" id="tab-pagos" hidden>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Negocio</th>
+                  <th>Plan</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Referencia</th>
+                </tr>
+              </thead>
+              <tbody id="pagos-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="admin-modal" id="edit-modal" hidden>
+      <div class="admin-modal__backdrop" data-close-edit></div>
+      <div class="admin-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <h3 id="edit-title">Editar suscripción</h3>
+        <p id="edit-subtitle" class="admin-table__slug"></p>
+        <form class="admin-form-grid" id="edit-form">
+          <input type="hidden" name="id" id="edit-id" />
+          <label>
+            Plan
+            <select name="plan_id" id="edit-plan">
+              <option value="free">Free</option>
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="business">Business</option>
+            </select>
+          </label>
+          <label>
+            Estado
+            <select name="subscription_status" id="edit-status">
+              <option value="trial">Prueba (trial)</option>
+              <option value="active">Activo</option>
+              <option value="past_due">Pago pendiente</option>
+              <option value="canceled">Cancelado</option>
+              <option value="expired">Vencido</option>
+              <option value="suspended">Suspendido</option>
+            </select>
+          </label>
+          <label>
+            Inicio del período
+            <input type="datetime-local" name="current_period_start" id="edit-start" />
+          </label>
+          <label>
+            Fin del período
+            <input type="datetime-local" name="current_period_end" id="edit-end" />
+          </label>
+          <label>
+            Último pago
+            <input type="datetime-local" name="last_payment_at" id="edit-last-payment" />
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="cancel_at_period_end" id="edit-cancel" />
+            Cancelación programada al final del período
+          </label>
+          <div class="admin-modal__actions">
+            <button class="btn btn--secondary" type="button" data-close-edit>Cancelar</button>
+            <button class="btn btn--primary" type="submit" id="edit-save">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="js/security.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+  </body>
+</html>

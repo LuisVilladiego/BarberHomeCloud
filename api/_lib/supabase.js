@@ -152,6 +152,7 @@ async function updatePago(reference, patch) {
 }
 
 module.exports = {
+  config,
   insertNegocio,
   insertPago,
   negocioById,
