@@ -660,21 +660,16 @@
   function maybePromptAutoagendaSetup() {
     const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
     if (page !== "index.html" && page !== "") return;
-    let welcome = {};
-    try {
-      welcome = JSON.parse(localStorage.getItem("barbercloud.welcome") || "{}");
-    } catch {
-      return;
+    let welcome = window.WelcomeTour?.load?.() || {};
+    if (!welcome.seen && !welcome.pendingAutoagenda) {
+      try {
+        welcome = JSON.parse(localStorage.getItem("barbercloud.welcome") || "{}");
+      } catch {
+        return;
+      }
     }
     if (!welcome.pendingAutoagenda) return;
-    try {
-      localStorage.setItem(
-        "barbercloud.welcome",
-        JSON.stringify({ ...welcome, pendingAutoagenda: false })
-      );
-    } catch {
-      /* ignore */
-    }
+    window.WelcomeTour?.save?.({ pendingAutoagenda: false });
     window.AppShell?.toast?.("Siguiente paso: configura tu enlace público en Autoagenda.");
     document.querySelector('a.nav__item[href="autoagenda.html"]')?.classList.add("nav__item--next");
     window.setTimeout(() => {

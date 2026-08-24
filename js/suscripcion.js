@@ -522,7 +522,7 @@
     if (status === "APPROVED") {
       await syncFromCloud();
       closeModal("pending-modal");
-      goToPanel = !!window.WelcomeTour?.pending?.();
+      goToPanel = window.WelcomeTour?.pending ? await window.WelcomeTour.pending() : false;
       window.AppShell?.toast?.(
         goToPanel
           ? "¡Pago aprobado! Te llevamos al panel."

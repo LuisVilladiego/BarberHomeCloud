@@ -13,6 +13,72 @@
   const STORAGE_KEY = "barbercloud.welcome";
   const AUTH_KEY = "barbercloud.auth";
 
+  function userFromAuthStorage() {
+    try {
+      const data = JSON.parse(localStorage.getItem(AUTH_KEY) || "{}");
+      return data?.user || data?.currentSession?.user || data?.session?.user || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function currentUserId() {
+    return String(userFromAuthStorage()?.id || "").trim();
+  }
+
+  function storageKey() {
+    const id = currentUserId();
+    return id ? `${STORAGE_KEY}.${id}` : STORAGE_KEY;
+  }
+
+  function metadataCompleted(user) {
+    const meta = user?.user_metadata || {};
+    return meta.welcome_tour_completed === true || !!meta.welcome_tour_completed_at;
+  }
+
+  function load() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(storageKey()) || "null");
+      if (raw && typeof raw === "object") return raw;
+    } catch {
+      /* ignore */
+    }
+    try {
+      const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      return legacy && typeof legacy === "object" ? legacy : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function save(patch) {
+    try {
+      const next = { ...load(), ...patch };
+      localStorage.setItem(storageKey(), JSON.stringify(next));
+      const id = currentUserId();
+      if (id && next.seen) localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function persistCompleted() {
+    const completedAt = new Date().toISOString();
+    save({ seen: true, stage: "done", completedAt });
+    try {
+      const client = window.SupabaseClient?.getClient?.();
+      if (!client) return;
+      await client.auth.updateUser({
+        data: {
+          welcome_tour_completed: true,
+          welcome_tour_completed_at: completedAt,
+        },
+      });
+    } catch (err) {
+      console.warn("[welcome] no se pudo guardar el recorrido en la cuenta", err);
+    }
+  }
+
   const STEPS = [
     { id: "intro", kind: "intro" },
     {
@@ -78,23 +144,6 @@
     { code: "+56", flag: "🇨🇱" },
   ];
 
-  function load() {
-    try {
-      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      return raw && typeof raw === "object" ? raw : {};
-    } catch {
-      return {};
-    }
-  }
-
-  function save(patch) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...load(), ...patch }));
-    } catch {
-      /* ignore */
-    }
-  }
-
   function hasAuthSession() {
     try {
       const raw = localStorage.getItem(AUTH_KEY);
@@ -106,10 +155,31 @@
     }
   }
 
-  /** Queda pendiente mientras el barbero con plan activo no la haya completado. */
-  function pending() {
-    if (load().seen) return false;
+  /** Solo la primera vez de esa cuenta: local por usuario + user_metadata en Supabase. */
+  async function pending() {
     if (!hasAuthSession()) return false;
+    if (load().seen) return false;
+
+    const stored = userFromAuthStorage();
+    if (metadataCompleted(stored)) {
+      save({ seen: true, completedAt: stored.user_metadata?.welcome_tour_completed_at });
+      return false;
+    }
+
+    try {
+      const client = window.SupabaseClient?.getClient?.();
+      const { data } = client ? await client.auth.getUser() : { data: null };
+      if (metadataCompleted(data?.user)) {
+        save({
+          seen: true,
+          completedAt: data.user.user_metadata?.welcome_tour_completed_at,
+        });
+        return false;
+      }
+    } catch {
+      /* si falla la red, usa solo el storage local */
+    }
+
     if (window.Tenant?.hasActiveSubscription?.()) return true;
     return !!window.Billing?.isActive?.(window.Billing.cached?.());
   }
@@ -389,14 +459,9 @@
     let testBooking = state.testBooking || null;
     let waFallbackUrl = state.waUrl || "";
 
-    function close() {
-      save({
-        seen: true,
-        stage: "done",
-        pendingAutoagenda: true,
-        answers,
-        completedAt: new Date().toISOString(),
-      });
+    async function close() {
+      await persistCompleted();
+      save({ pendingAutoagenda: true, answers });
       document.body.classList.remove("welcome-open");
       overlay.remove();
       location.assign("index.html");
@@ -865,7 +930,8 @@
       return;
     }
     openCoachmark(target, startStage, () => {
-      save({ stage: "outro" });
+      persistCompleted();
+      save({ stage: "outro", pendingAutoagenda: true });
       open({ startAt: "done" });
     });
   }
@@ -889,16 +955,23 @@
     if (isPanelPage()) open();
   }
 
-  function maybeOpen() {
-    if (pending()) resume();
+  async function maybeOpen() {
+    try {
+      if (await pending()) resume();
+    } catch (err) {
+      console.warn("[welcome]", err);
+    }
   }
 
   window.WelcomeTour = {
     open,
     resume,
     pending,
+    load,
+    save,
     reset() {
       try {
+        localStorage.removeItem(storageKey());
         localStorage.removeItem(STORAGE_KEY);
       } catch {
         /* ignore */

@@ -291,6 +291,7 @@
         if (!key.startsWith("barbercloud")) return;
         if (key === "barbercloud.device_id") return;
         if (key === "barbercloud.auth") return;
+        if (key === "barbercloud.welcome" || key.startsWith("barbercloud.welcome.")) return;
         if (key.startsWith("barbercloud.login_throttle:")) return;
         localStorage.removeItem(key);
       });
