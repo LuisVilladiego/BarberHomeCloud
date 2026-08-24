@@ -14,8 +14,10 @@ function projectOrigin(raw) {
   return new URL(withScheme).origin;
 }
 
+const DEFAULT_SUPABASE_URL = "https://tyxcqogdrwlzglgntluc.supabase.co";
+
 function config() {
-  const rawUrl = process.env.SUPABASE_URL;
+  const rawUrl = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!rawUrl || !serviceKey) {
     throw new Error("Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY");

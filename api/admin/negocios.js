@@ -32,7 +32,7 @@ function parseIso(value) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return res.status(500).json({ error: "Supabase no configurado en el servidor" });
   }
 
