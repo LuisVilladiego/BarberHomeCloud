@@ -722,18 +722,23 @@
     });
   }
 
-  fillServices();
-  fillSourceSelect();
-  renderAndLoad();
+  function startCalendar() {
+    fillServices();
+    fillSourceSelect();
+    renderAndLoad();
 
-  (async function bootCalendarSync() {
-    try {
-      await window.SupabaseData?.fetchOwnNegocio?.();
-    } catch {
-      /* ignore */
-    }
-    startLiveBookingsSync();
-  })();
+    (async function bootCalendarSync() {
+      try {
+        await window.SupabaseData?.fetchOwnNegocio?.();
+      } catch {
+        /* ignore */
+      }
+      startLiveBookingsSync();
+    })();
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendar);
+  else window.addEventListener("barbercloud:panel-ready", startCalendar, { once: true });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) return;

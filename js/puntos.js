@@ -549,8 +549,13 @@
     window.AppShell?.toast(`Entregado: ${before?.productName || "producto"}`);
   });
 
-  renderProductRedeems();
-  renderClients();
-  renderHistory();
-  bindDocNumberInputs();
+  function start() {
+    renderProductRedeems();
+    renderClients();
+    renderHistory();
+    bindDocNumberInputs();
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(start);
+  else window.addEventListener("barbercloud:panel-ready", start, { once: true });
 })();

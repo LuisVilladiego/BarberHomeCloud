@@ -433,10 +433,15 @@
     diagnosticModal.hidden = false;
   }
 
-  applyBasic();
-  renderSchedules();
-  renderTypes();
-  renderPreview();
+  function startAutoagenda() {
+    applyBasic();
+    renderSchedules();
+    renderTypes();
+    renderPreview();
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(startAutoagenda);
+  else window.addEventListener("barbercloud:panel-ready", startAutoagenda, { once: true });
 
   const urlPrefix = document.getElementById("url-prefix");
   if (urlPrefix) {

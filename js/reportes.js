@@ -572,5 +572,6 @@
     if (select && !select.value) select.value = "all";
   }
 
-  render();
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(render);
+  else window.addEventListener("barbercloud:panel-ready", render, { once: true });
 })();

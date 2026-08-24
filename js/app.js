@@ -518,6 +518,14 @@
     checkAdminReminders,
     processClientReminderSends,
     runNotificationJobs,
+    whenReady(fn) {
+      if (typeof fn !== "function") return;
+      if (window.AppShell.panelReady) {
+        fn();
+        return;
+      }
+      window.addEventListener("barbercloud:panel-ready", fn, { once: true });
+    },
   };
 
   syncUserFromSettings();
@@ -706,6 +714,17 @@
     else document.body.insertBefore(banner, document.body.firstChild);
   }
 
+  function requiredFeatureForPage(page) {
+    if (page === "puntos.html") return "loyalty";
+    if (page === "marketplace.html") return "marketplace";
+    if (page === "reportes.html") return "analytics";
+    return null;
+  }
+
+  function revealAccess() {
+    document.documentElement.classList.remove("access-pending");
+  }
+
   async function initTenantGate() {
     const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
     const isPanel = !!document.querySelector(".sidebar");
@@ -739,25 +758,28 @@
         location.replace("suscripcion.html?need=1");
         return false;
       }
-      showTrialBanner();
+      const feature = requiredFeatureForPage(page);
+      const planId = window.Billing?.cached?.()?.planId;
+      if (feature && !window.BusinessModel?.canUseFeature?.(feature, planId)) {
+        location.replace(`suscripcion.html?need=1&feature=${encodeURIComponent(feature)}`);
+        return false;
+      }
       return true;
     }
 
     const billing = await window.Billing.refresh();
     if (window.Billing.isActive(billing)) {
-      showTrialBanner();
-      showCancellationBanner();
+      const feature = requiredFeatureForPage(page);
+      if (feature && !window.BusinessModel?.canUseFeature?.(feature, billing?.planId)) {
+        location.replace(`suscripcion.html?need=1&feature=${encodeURIComponent(feature)}`);
+        return false;
+      }
+      revealAccess();
       return true;
     }
 
-    // Nunca pagó: no hay nada que consultar, va directo a activar.
-    if (!billing?.periodEnd) {
-      location.replace("suscripcion.html?need=1");
-      return false;
-    }
-
-    showBillingBanner();
-    return true;
+    location.replace("suscripcion.html?need=1");
+    return false;
   }
 
   function loadPlansModal() {
@@ -773,6 +795,7 @@
 
   initTenantGate().then((ok) => {
     if (!ok) return;
+    revealAccess();
 
     window.AppShell.panelReady = true;
     window.dispatchEvent(new CustomEvent("barbercloud:panel-ready"));

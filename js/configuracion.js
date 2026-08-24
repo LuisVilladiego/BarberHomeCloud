@@ -273,8 +273,6 @@
     }
   });
 
-  fillForm();
-
   async function refreshAuthCard() {
     const label = document.getElementById("auth-session-label");
     const loginBtn = document.getElementById("btn-auth-login");
@@ -295,7 +293,15 @@
       if (logoutBtn) logoutBtn.hidden = true;
     }
   }
-  refreshAuthCard();
+
+  function startSettings() {
+    fillForm();
+    refreshAuthCard();
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(startSettings);
+  else window.addEventListener("barbercloud:panel-ready", startSettings, { once: true });
+
   document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
     if (window.AppShell?.logout) {
       await window.AppShell.logout();

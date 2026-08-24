@@ -49,6 +49,16 @@ a {
   min-height: 100vh;
 }
 
+/* No mostrar datos del negocio hasta confirmar suscripción activa. */
+html.access-pending,
+html.access-pending body {
+  background: var(--bg);
+}
+html.access-pending body {
+  visibility: hidden;
+  overflow: hidden;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;

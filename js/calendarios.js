@@ -270,7 +270,11 @@
     connectGoogleCalendar();
   });
 
-  syncCalendarRows();
-  window.addEventListener("barbercloud:panel-ready", syncCalendarRows);
-  refreshGoogleRow();
+  function startCalendars() {
+    syncCalendarRows();
+    refreshGoogleRow();
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendars);
+  else window.addEventListener("barbercloud:panel-ready", startCalendars, { once: true });
 })();

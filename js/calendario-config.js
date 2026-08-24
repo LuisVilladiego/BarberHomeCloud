@@ -542,8 +542,14 @@ ${link}`,
     titleEl.textContent = `Configuración para ${calendarName}`;
   }
   document.title = `Configuración · ${calendarName} · BarberCloud`;
-  fillForm(getConfig());
-  syncTimeFormatToPublic(fields.timeFormat?.value || getConfig().timeFormat || "12");
+
+  function startCalendarConfig() {
+    fillForm(getConfig());
+    syncTimeFormatToPublic(fields.timeFormat?.value || getConfig().timeFormat || "12");
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendarConfig);
+  else window.addEventListener("barbercloud:panel-ready", startCalendarConfig, { once: true });
 
   fields.msgTitle?.addEventListener("input", () => {
     updateCounters();

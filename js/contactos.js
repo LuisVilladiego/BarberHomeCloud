@@ -709,5 +709,6 @@
   });
   window.addEventListener("barbercloud:bookings-changed", refresh);
 
-  refresh();
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(refresh);
+  else window.addEventListener("barbercloud:panel-ready", refresh, { once: true });
 })();

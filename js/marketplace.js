@@ -879,13 +879,17 @@
   });
 
   (async function boot() {
-    try {
-      await window.SupabaseData?.fetchOwnNegocio?.();
-      await resyncCatalogToCloud();
-    } catch (err) {
-      console.warn("[marketplace] sync inicial", err);
-    }
-    setActiveTab("sale");
-    renderAllCatalogs();
+    const start = async () => {
+      try {
+        await window.SupabaseData?.fetchOwnNegocio?.();
+        await resyncCatalogToCloud();
+      } catch (err) {
+        console.warn("[marketplace] sync inicial", err);
+      }
+      setActiveTab("sale");
+      renderAllCatalogs();
+    };
+    if (window.AppShell?.whenReady) window.AppShell.whenReady(start);
+    else window.addEventListener("barbercloud:panel-ready", start, { once: true });
   })();
 })();

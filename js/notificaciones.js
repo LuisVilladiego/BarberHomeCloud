@@ -294,11 +294,17 @@
     }
   });
 
-  render();
-  window.AppShell?.syncNotificationBadge?.();
-  window.AppShell?.runNotificationJobs?.();
   window.addEventListener("barbercloud:notifications", () => {
     render();
     window.AppShell?.syncNotificationBadge?.();
   });
+
+  function start() {
+    render();
+    window.AppShell?.syncNotificationBadge?.();
+    window.AppShell?.runNotificationJobs?.();
+  }
+
+  if (window.AppShell?.whenReady) window.AppShell.whenReady(start);
+  else window.addEventListener("barbercloud:panel-ready", start, { once: true });
 })();
