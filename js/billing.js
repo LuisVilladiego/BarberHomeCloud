@@ -50,6 +50,14 @@
     return isActive(s);
   }
 
+  /** Membresía de pago vigente. El trial no cuenta: ahí solo hay datos de demostración. */
+  function hasPaidMembership(state) {
+    const s = state || cached();
+    if (!s || !isActive(s) || isTrialing(s)) return false;
+    const normalized = window.BusinessModel?.normalizeStatus?.(s.status) || String(s.status || "").toLowerCase();
+    return normalized === "active" || normalized === "past_due" || normalized === "canceled";
+  }
+
   function isPendingCancellation(state) {
     const s = state || cached();
     if (!s || !isActive(s)) return false;
@@ -353,6 +361,7 @@
     isActive,
     isPendingCancellation,
     isTrialing,
+    hasPaidMembership,
     pagoByReference,
     refresh,
     startCheckout,

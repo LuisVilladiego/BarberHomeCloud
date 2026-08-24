@@ -1,11 +1,11 @@
 (function () {
   const KEY = "barbercloud_settings";
   const defaults = {
-    email: "barberhomeluisvilladiego20@gmail.com",
-    name: "luis villadiego",
+    email: "",
+    name: "",
     lang: "es",
-    waPhone: "+57 300 000 0000",
-    waConnected: true,
+    waPhone: "",
+    waConnected: false,
     waFrom: "08:00",
     waTo: "20:00",
     notifFail: true,
@@ -25,7 +25,10 @@
 
   function load() {
     try {
-      return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || "{}") };
+      const merged = { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || "{}") };
+      if (String(merged.name).trim().toLowerCase() === "luis villadiego") merged.name = "";
+      if (/barberhomeluisvilladiego/i.test(String(merged.email || ""))) merged.email = "";
+      return merged;
     } catch {
       return { ...defaults };
     }
@@ -37,8 +40,19 @@
 
   let state = load();
   if (!state.referCode) {
-    state.referCode = "luis" + Math.random().toString(36).slice(2, 7);
+    state.referCode = "ref" + Math.random().toString(36).slice(2, 7);
     save(state);
+  }
+
+  function accountNameFromAuth() {
+    try {
+      const data = JSON.parse(localStorage.getItem("barbercloud.auth") || "{}");
+      const user = data?.user || data?.currentSession?.user || data?.session?.user;
+      const meta = user?.user_metadata || {};
+      return String(meta.name || meta.full_name || user?.email || "").trim();
+    } catch {
+      return "";
+    }
   }
 
   function toast(msg) {
@@ -46,7 +60,7 @@
   }
 
   function syncUserChrome() {
-    const name = state.name || defaults.name;
+    const name = state.name || accountNameFromAuth() || "Tu cuenta";
     document.querySelectorAll(".user__name").forEach((el) => {
       el.textContent = name;
     });
@@ -68,8 +82,16 @@
   function fillForm() {
     const emailEl = document.getElementById("account-email");
     const nameEl = document.getElementById("account-name");
-    if (emailEl) emailEl.textContent = state.email;
-    if (nameEl) nameEl.value = state.name;
+    if (emailEl) {
+      try {
+        const data = JSON.parse(localStorage.getItem("barbercloud.auth") || "{}");
+        const user = data?.user || data?.currentSession?.user || data?.session?.user;
+        emailEl.textContent = user?.email || state.email || "—";
+      } catch {
+        emailEl.textContent = state.email || "—";
+      }
+    }
+    if (nameEl) nameEl.value = state.name || String(accountNameFromAuth().split("@")[0] || "");
 
     document.querySelectorAll('input[name="lang"]').forEach((radio) => {
       radio.checked = radio.value === state.lang;

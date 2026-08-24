@@ -424,6 +424,19 @@ html.access-pending body {
   color: #111827;
 }
 
+.calendar-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-text);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
 .calendar-icon {
   width: 28px;
   height: 28px;
@@ -4976,6 +4989,74 @@ body.choose-plan-open {
 
 .billing-banner .btn {
   flex: 0 0 auto;
+}
+
+body.is-readonly .btn--primary:not(.billing-banner .btn):not(.trial-banner .btn),
+body.is-readonly .btn--secondary:not(.billing-banner .btn),
+body.is-readonly button[type="submit"]:not(.billing-banner button),
+body.is-readonly .row-menu__item:not([data-action="configurar"]) {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+body.is-readonly input:not([readonly]),
+body.is-readonly textarea:not([readonly]),
+body.is-readonly select:not([disabled]) {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.onboarding-checklist {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.onboarding-checklist__head h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.onboarding-checklist__head p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.onboarding-checklist__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-checklist__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+
+.onboarding-checklist__item.is-done {
+  color: #059669;
+}
+
+.onboarding-checklist__item a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.onboarding-checklist__item:not(.is-done) a {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.nav__item--locked {
+  opacity: 0.55;
 }
 
 .trial-banner {

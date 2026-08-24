@@ -34,6 +34,12 @@
     return !!loadCalendarConfigs()[calendarId];
   }
 
+  function isPreviewMode() {
+    if (window.Billing?.hasPaidMembership) return !window.Billing.hasPaidMembership();
+    if (window.Billing?.isTrialing?.()) return true;
+    return !window.Billing?.isActive?.();
+  }
+
   function syncEmptyState() {
     const rows = [...document.querySelectorAll(".table__row[data-calendar-id]")];
     const visible = rows.some((row) => !row.hidden);
@@ -43,6 +49,21 @@
 
   /** Muestra u oculta filas según calendarios configurados por el usuario. */
   function syncCalendarRows() {
+    const demoRow = document.getElementById("calendar-demo-row");
+    const preview = isPreviewMode();
+
+    if (demoRow) demoRow.hidden = !preview;
+
+    if (preview) {
+      document.querySelectorAll(".table__row[data-calendar-id]").forEach((row) => {
+        if (row.id === "calendar-demo-row") return;
+        row.hidden = true;
+      });
+      const emptyEl = document.getElementById("calendars-empty");
+      if (emptyEl) emptyEl.hidden = true;
+      return;
+    }
+
     const configs = loadCalendarConfigs();
     const ctx = window.Tenant?.getBusinessContext?.() || {};
     const bizName = ctx.title || "";
@@ -215,13 +236,26 @@
       }
 
       if (action === "configurar") {
+        if (isPreviewMode() || row?.dataset.calendarId === "demo") {
+          location.href = "suscripcion.html?need=1";
+          return;
+        }
         const id = row.dataset.calendarId || "";
         const params = new URLSearchParams({ id, name });
         location.href = `calendario-config.html?${params.toString()}`;
         return;
       }
 
+      if (action === "crear-cita") {
+        location.href = "calendario.html";
+        return;
+      }
+
       if (action === "eliminar") {
+        if (isPreviewMode() || row?.dataset.calendarId === "demo") {
+          window.AppShell?.toast("Este calendario de ejemplo se quita al activar tu plan.");
+          return;
+        }
         const id = row?.dataset.calendarId || "";
         if (id === "gmail" && window.GoogleCalendar?.isConnected()) {
           if (!confirm("¿Desconectar Google Calendar?")) return;
@@ -243,8 +277,19 @@
       }
 
       if (action === "conectar-google") {
+        if (isPreviewMode()) {
+          location.href = "suscripcion.html?need=1";
+          return;
+        }
         connectGoogleCalendar();
         return;
+      }
+
+      if (action === "mensajes") {
+        if (isPreviewMode() || row?.dataset.calendarId === "demo") {
+          window.AppShell?.toast("En el plan activo aquí verás los mensajes reales de tus clientes.");
+          return;
+        }
       }
 
       const labels = {
@@ -262,12 +307,20 @@
     if (e.key === "Escape") closeAllMenus();
   });
 
-  document.getElementById("btn-add-calendar")?.addEventListener("click", () => {
+  function addCalendarOrUpgrade() {
+    if (isPreviewMode()) {
+      location.href = "suscripcion.html?need=1";
+      return;
+    }
     connectGoogleCalendar();
+  }
+
+  document.getElementById("btn-add-calendar")?.addEventListener("click", () => {
+    addCalendarOrUpgrade();
   });
 
   document.getElementById("btn-empty-add-calendar")?.addEventListener("click", () => {
-    connectGoogleCalendar();
+    addCalendarOrUpgrade();
   });
 
   function startCalendars() {

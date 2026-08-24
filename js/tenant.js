@@ -348,7 +348,7 @@
     }
 
     const ownerMismatch = cachedBiz?.owner_id && cachedBiz.owner_id !== user.id;
-    const idMismatch = prevId && prevId !== own.id;
+    const idMismatch = !prevId || prevId !== own.id;
     if (ownerMismatch || idMismatch || cachedBiz?.id !== own.id) {
       clearLocalData();
       setCurrent(own);
@@ -356,8 +356,29 @@
 
     hydrateNegocioCaches(own);
     await window.SupabaseData.pullToLocalCache?.({ replace: true });
+    await refreshRole();
 
     return { ok: true, mode: "ready", negocio: own, needsOnboarding: false };
+  }
+
+  let cachedRole = null;
+
+  async function refreshRole() {
+    cachedRole = null;
+    return currentRole(true);
+  }
+
+  async function currentRole(forceRefresh = false) {
+    if (!forceRefresh && cachedRole) return cachedRole;
+    if (window.SupabaseData?.fetchMembershipRole) {
+      const remote = await window.SupabaseData.fetchMembershipRole(currentId());
+      if (remote) {
+        cachedRole = window.BusinessModel?.normalizeRole?.(remote) || remote;
+        return cachedRole;
+      }
+    }
+    cachedRole = "owner";
+    return cachedRole;
   }
 
   window.Tenant = {
@@ -387,5 +408,7 @@
     clearLocalData,
     hydrateNegocioCaches,
     syncWithAuthenticatedUser,
+    currentRole,
+    refreshRole,
   };
 })();

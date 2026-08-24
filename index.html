@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <script src="js/access-gate.js?v=20260824g"></script>
+    <script src="js/access-gate.js?v=20260824h"></script>
     <title>Calendarios · BarberCloud</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260824g" />
+    <link rel="stylesheet" href="styles.css?v=20260824h" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <script>
@@ -123,8 +123,8 @@
         </nav>
 
         <button class="user" type="button">
-          <span class="user__avatar" aria-hidden="true">I</span>
-          <span class="user__name">luis villadiego</span>
+          <span class="user__avatar" aria-hidden="true">?</span>
+          <span class="user__name">Tu cuenta</span>
         </button>
       </aside>
 
@@ -323,6 +323,48 @@
               </div>
             </div>
 
+            <div class="table__row table__row--demo" role="row" data-calendar-id="demo" data-paused="false" id="calendar-demo-row" hidden>
+              <div class="calendar-cell" role="cell">
+                <span class="calendar-icon calendar-icon--brand" aria-hidden="true">
+                  <img src="assets/logo.png" alt="" width="22" height="22" />
+                </span>
+                <span>Calendario de prueba</span>
+                <span class="calendar-demo-badge">Ejemplo</span>
+              </div>
+              <div role="cell">
+                <span class="status status--ok">Enviando mensajes</span>
+              </div>
+              <div role="cell" class="confirmations">
+                <strong>3</strong> este mes
+              </div>
+              <div role="cell" class="row-actions">
+                <div class="row-menu">
+                  <button
+                    class="icon-btn row-menu__trigger"
+                    type="button"
+                    aria-label="Opciones del calendario de prueba"
+                    aria-expanded="false"
+                    aria-haspopup="menu"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 17.5V20h2.5L17.2 9.3l-2.5-2.5L4 17.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                      <path d="m13.8 5.8 2.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                  <div class="row-menu__panel" role="menu" hidden>
+                    <button class="row-menu__item" type="button" role="menuitem" data-action="crear-cita">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 8.5v7M8.5 12h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                      Ver citas de ejemplo
+                    </button>
+                    <button class="row-menu__item" type="button" role="menuitem" data-action="configurar">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 10h17M8 3.5V7M16 3.5V7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                      Activar plan para configurar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="calendars-empty" id="calendars-empty" hidden>
               <strong>Aún no tienes calendarios</strong>
               <p>Agrega tu primer calendario para empezar a enviar confirmaciones por WhatsApp.</p>
@@ -359,17 +401,18 @@
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>
     <script src="js/supabase-client.js?v=20260816s"></script>
-    <script src="js/tenant.js?v=20260824w"></script>
+    <script src="js/tenant.js?v=20260824h"></script>
     <script src="js/supabase-data.js?v=20260818m"></script>
     <script src="js/business-model.js?v=20260822"></script>
+    <script src="js/plan-limits.js?v=20260824"></script>
     <script src="js/barber-service.js?v=20260822"></script>
     <script src="js/plans.js?v=20260818m"></script>
-    <script src="js/billing.js?v=20260818q"></script>
+    <script src="js/billing.js?v=20260824h"></script>
 <script src="js/security.js?v=20260816"></script>
     <script src="js/auth.js?v=20260818m"></script>
     <script src="js/booking-store.js?v=20260818m"></script>
-    <script src="js/app.js?v=20260824g"></script>
+    <script src="js/app.js?v=20260824h"></script>
     <script src="js/welcome.js?v=20260824w"></script>
-    <script src="js/calendarios.js?v=20260824g"></script>
+    <script src="js/calendarios.js?v=20260824h"></script>
   </body>
 </html>

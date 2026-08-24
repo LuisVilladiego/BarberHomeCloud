@@ -67,12 +67,23 @@
     return;
   }
 
-  if (hasBillingCache() && !cachedAccess()) {
+  const isPreviewPage =
+    page === "index.html" || page === "calendario.html" || page === "";
+
+  if (hasBillingCache() && !cachedAccess() && !isPreviewPage) {
     location.replace("suscripcion.html?need=1");
+    return;
   }
 
   window.AccessGate = {
     cachedAccess,
+    isReadOnly() {
+      try {
+        return sessionStorage.getItem("barbercloud.readonly") === "1";
+      } catch {
+        return false;
+      }
+    },
     reveal() {
       document.documentElement.classList.remove("access-pending");
     },

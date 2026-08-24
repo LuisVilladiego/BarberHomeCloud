@@ -18,20 +18,49 @@
     /* ignore */
   }
 
-  function syncUserFromSettings() {
+  function authUserFromStorage() {
+    try {
+      const data = JSON.parse(localStorage.getItem("barbercloud.auth") || "{}");
+      return data?.user || data?.currentSession?.user || data?.session?.user || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function displayAccountName() {
+    const user = authUserFromStorage();
+    const meta = user?.user_metadata || {};
+    const fromAuth = String(meta.name || meta.full_name || meta.fullName || "").trim();
+    if (fromAuth) return fromAuth;
+    const email = String(user?.email || "").trim();
+    if (email) return email.split("@")[0];
     try {
       const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
-      if (s.name) {
-        document.querySelectorAll(".user__name").forEach((el) => {
-          el.textContent = s.name;
-        });
-        document.querySelectorAll(".user__avatar").forEach((el) => {
-          el.textContent = (String(s.name).trim()[0] || "I").toUpperCase();
-        });
+      const settingsName = String(s.name || "").trim();
+      const settingsEmail = String(s.email || "").trim().toLowerCase();
+      const authEmail = email.toLowerCase();
+      if (
+        settingsName &&
+        settingsEmail &&
+        authEmail &&
+        settingsEmail === authEmail
+      ) {
+        return settingsName;
       }
     } catch {
       /* ignore */
     }
+    return "Tu cuenta";
+  }
+
+  function syncUserFromSettings() {
+    const name = displayAccountName();
+    document.querySelectorAll(".user__name").forEach((el) => {
+      el.textContent = name;
+    });
+    document.querySelectorAll(".user__avatar").forEach((el) => {
+      el.textContent = (name.trim()[0] || "?").toUpperCase();
+    });
     applySaasBranding();
   }
 
@@ -62,6 +91,8 @@
       negocio = "";
     }
     if (!negocio) negocio = window.Tenant?.cached?.()?.name || "";
+    const slug = window.Tenant?.cached?.()?.slug || "";
+    if (window.Tenant?.isDemoSlug?.(slug)) negocio = "";
     document.querySelectorAll(".user").forEach((box) => {
       const nameEl = box.querySelector(".user__name");
       if (nameEl && !nameEl.parentElement.classList.contains("user__text")) {
@@ -714,6 +745,10 @@
     else document.body.insertBefore(banner, document.body.firstChild);
   }
 
+  function isPreviewPage(page) {
+    return page === "index.html" || page === "calendario.html" || page === "";
+  }
+
   function requiredFeatureForPage(page) {
     if (page === "puntos.html") return "loyalty";
     if (page === "marketplace.html") return "marketplace";
@@ -723,6 +758,85 @@
 
   function revealAccess() {
     document.documentElement.classList.remove("access-pending");
+  }
+
+  function isReadOnlyMode() {
+    if (window.AccessGate?.isReadOnly?.()) return true;
+    if (window.Billing?.blocksWrites?.()) return true;
+    return false;
+  }
+
+  const NAV_RULES = [
+    { href: "puntos.html", feature: "loyalty", permission: "clients" },
+    { href: "marketplace.html", feature: "marketplace", permission: "clients" },
+    { href: "reportes.html", feature: "analytics", permission: "analytics" },
+    { href: "configuracion.html", permission: "settings" },
+    { href: "suscripcion.html", permission: "billing" },
+  ];
+
+  async function applyNavPermissions() {
+    const sidebar = document.querySelector(".sidebar");
+    if (!sidebar) return;
+
+    const role = (await window.Tenant?.currentRole?.()) || "owner";
+    const planId = window.Billing?.cached?.()?.planId || window.Tenant?.cached?.()?.plan_id;
+
+    NAV_RULES.forEach(({ href, feature, permission }) => {
+      const link = sidebar.querySelector(`a.nav__item[href="${href}"]`);
+      if (!link) return;
+      let visible = true;
+      if (permission && window.BusinessModel?.roleCan && !window.BusinessModel.roleCan(role, permission)) {
+        visible = false;
+      }
+      if (visible && feature && window.BusinessModel?.canUseFeature && !window.BusinessModel.canUseFeature(feature, planId)) {
+        link.classList.add("nav__item--locked");
+        link.setAttribute("title", "Disponible en un plan superior");
+        return;
+      }
+      link.classList.remove("nav__item--locked");
+      link.hidden = !visible;
+    });
+  }
+
+  function renderOnboardingChecklist() {
+    if (!window.BusinessModel?.onboardingChecklist) return;
+    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    if (page !== "index.html" && page !== "" && page !== "autoagenda.html") return;
+    if (window.BusinessModel.onboardingComplete?.()) return;
+
+    const checklist = window.BusinessModel.onboardingChecklist();
+    const items = [
+      { key: "profile", label: "Perfil", href: "autoagenda.html" },
+      { key: "schedule", label: "Horarios", href: "calendario-config.html" },
+      { key: "barber", label: "Barbero", href: "autoagenda.html" },
+      { key: "page", label: "Página", href: "autoagenda.html" },
+      { key: "bookings", label: "Reservas", href: "calendario.html" },
+    ];
+
+    const done = items.filter((i) => checklist[i.key]).length;
+    const panel = document.createElement("section");
+    panel.className = "panel onboarding-checklist";
+    panel.setAttribute("aria-label", "Progreso de configuración");
+    panel.innerHTML = `
+      <header class="onboarding-checklist__head">
+        <h2>Configura tu barbería</h2>
+        <p>${done}/${items.length} pasos completados — termina para empezar a recibir reservas.</p>
+      </header>
+      <ul class="onboarding-checklist__list">
+        ${items
+          .map(
+            (i) => `<li class="onboarding-checklist__item${checklist[i.key] ? " is-done" : ""}">
+              <span>${checklist[i.key] ? "✓" : "○"}</span>
+              <a href="${i.href}">${i.label}</a>
+            </li>`
+          )
+          .join("")}
+      </ul>`;
+
+    const main = document.querySelector(".main");
+    const header = main?.querySelector(".page-header");
+    if (main && header) main.insertBefore(panel, header.nextSibling);
+    else main?.insertBefore(panel, main.firstChild);
   }
 
   async function initTenantGate() {
@@ -754,7 +868,7 @@
 
     // Sin Supabase (desarrollo local) se sigue con el estado guardado.
     if (!window.Billing?.enabled?.()) {
-      if (!hasActiveSub()) {
+      if (!hasActiveSub() && !isPreviewPage(page)) {
         location.replace("suscripcion.html?need=1");
         return false;
       }
@@ -778,6 +892,11 @@
       return true;
     }
 
+    if (isPreviewPage(page)) {
+      revealAccess();
+      return true;
+    }
+
     location.replace("suscripcion.html?need=1");
     return false;
   }
@@ -793,15 +912,24 @@
     document.body.appendChild(script);
   }
 
-  initTenantGate().then((ok) => {
+  initTenantGate().then(async (ok) => {
     if (!ok) return;
     revealAccess();
+    syncUserFromSettings();
 
     window.AppShell.panelReady = true;
     window.dispatchEvent(new CustomEvent("barbercloud:panel-ready"));
     loadPlansModal();
-    showTrialBanner();
-    showCancellationBanner();
+
+    if (isReadOnlyMode()) {
+      showBillingBanner();
+    } else {
+      showTrialBanner();
+      showCancellationBanner();
+    }
+
+    await applyNavPermissions();
+    renderOnboardingChecklist();
     maybePromptAutoagendaSetup();
 
     runNotificationJobs();

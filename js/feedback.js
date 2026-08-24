@@ -8,11 +8,13 @@
     (() => {
       try {
         const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
-        if (s.name) return s.name.trim().split(/\s+/)[0];
+        if (s.name && String(s.name).trim().toLowerCase() !== "luis villadiego") {
+          return s.name.trim().split(/\s+/)[0];
+        }
       } catch {
         /* ignore */
       }
-      return document.querySelector(".user__name")?.textContent?.trim().split(/\s+/)[0] || "Luis";
+      return document.querySelector(".user__name")?.textContent?.trim().split(/\s+/)[0] || "tú";
     })();
   if (nameEl) {
     nameEl.textContent = userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
@@ -20,7 +22,7 @@
 
   try {
     const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
-    if (s.name) {
+    if (s.name && String(s.name).trim().toLowerCase() !== "luis villadiego") {
       document.querySelectorAll(".user__name").forEach((el) => {
         el.textContent = s.name;
       });

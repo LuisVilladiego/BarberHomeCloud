@@ -38,6 +38,12 @@
   let googleWeekEvents = [];
   let loadSeq = 0;
 
+  function isPreviewMode() {
+    if (window.Billing?.hasPaidMembership) return !window.Billing.hasPaidMembership();
+    if (window.Billing?.isTrialing?.()) return true;
+    return !window.Billing?.isActive?.();
+  }
+
   function loadServices() {
     try {
       const cfg = JSON.parse(localStorage.getItem(AUTOAGENDA_KEY) || "{}");
@@ -149,6 +155,9 @@
   }
 
   function availableCalendars() {
+    if (isPreviewMode()) {
+      return [{ id: "demo", label: "Calendario de prueba", type: "demo" }];
+    }
     const list = [{ id: "negocio", label: businessName(), type: "local" }];
     const g = window.GoogleCalendar?.getConnection?.();
     list.push({
@@ -166,7 +175,9 @@
   function fillSourceSelect() {
     if (!sourceSelect) return;
     const calendars = availableCalendars();
-    if (!calendars.some((c) => c.id === activeCalendarId)) {
+    if (isPreviewMode()) {
+      activeCalendarId = "demo";
+    } else if (!calendars.some((c) => c.id === activeCalendarId)) {
       activeCalendarId = calendars[0]?.id || "negocio";
       localStorage.setItem(ACTIVE_CAL_KEY, activeCalendarId);
     }
@@ -278,8 +289,50 @@
     }
   }
 
+  function demoBookingsForWeek() {
+    const days = weekDays();
+    const todayIso = toISODate(new Date());
+    const today = days.find((d) => toISODate(d) === todayIso) || days[2];
+    const date = toISODate(today);
+    return [
+      {
+        id: "demo-1",
+        date,
+        time: "10:00",
+        duration: 60,
+        name: "Cliente de ejemplo",
+        serviceName: "Corte clásico",
+        status: "confirmed",
+        demo: true,
+      },
+      {
+        id: "demo-2",
+        date,
+        time: "11:30",
+        duration: 45,
+        name: "Reserva de prueba",
+        serviceName: "Corte + barba",
+        status: "pending_confirmation",
+        demo: true,
+      },
+      {
+        id: "demo-3",
+        date,
+        time: "16:00",
+        duration: 30,
+        name: "Walk-in de ejemplo",
+        serviceName: "Perfilado",
+        status: "confirmed",
+        demo: true,
+      },
+    ];
+  }
+
   function bookingsForWeek() {
     const days = new Set(weekDays().map(toISODate));
+    if (isPreviewMode()) {
+      return demoBookingsForWeek().filter((b) => days.has(b.date));
+    }
     if (isGoogleSource()) {
       return googleWeekEvents.filter((b) => days.has(b.date));
     }
@@ -302,6 +355,7 @@
 
   async function renderAndLoad() {
     render();
+    if (isPreviewMode()) return;
     if (isGoogleSource()) {
       await refreshGoogleWeek();
       render();
@@ -518,6 +572,10 @@
     }
     const slot = e.target.closest(".gcal__slot");
     if (!slot) return;
+    if (isPreviewMode()) {
+      window.AppShell?.toast("Estas citas son de ejemplo. Activa tu plan para agendar las tuyas.");
+      return;
+    }
     if (isGoogleSource()) {
       window.AppShell?.toast(`Cambia al calendario de ${businessName()} para crear citas aquí`);
       return;
@@ -726,6 +784,8 @@
     fillServices();
     fillSourceSelect();
     renderAndLoad();
+
+    if (isPreviewMode()) return;
 
     (async function bootCalendarSync() {
       try {
