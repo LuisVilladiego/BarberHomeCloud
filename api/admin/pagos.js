@@ -18,14 +18,20 @@ module.exports = async function handler(req, res) {
 
   try {
     const limit = Math.min(100, Math.max(1, Number(req.query?.limit) || 50));
-    const rows = await rest("pagos", {
-      query: {
-        select:
-          "id,negocio_id,reference,plan_id,amount_in_cents,currency,status,payment_method,period_start,period_end,wompi_transaction_id,created_at",
-        order: "created_at.desc",
-        limit,
-      },
-    });
+    let rows = [];
+    try {
+      rows = await rest("pagos", {
+        query: {
+          select:
+            "id,negocio_id,reference,plan_id,amount_in_cents,currency,status,payment_method,period_start,period_end,wompi_transaction_id,created_at",
+          order: "created_at.desc",
+          limit,
+        },
+      });
+    } catch (err) {
+      console.error("[admin/pagos list]", err);
+      return res.status(200).json({ ok: true, pagos: [], warning: err?.message || "Sin acceso a pagos" });
+    }
 
     const pagos = Array.isArray(rows) ? rows : [];
     const negocioIds = [...new Set(pagos.map((p) => p.negocio_id).filter(Boolean))];

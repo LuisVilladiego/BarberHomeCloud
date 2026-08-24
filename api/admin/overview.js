@@ -1,4 +1,4 @@
-const { rest, config } = require("../_lib/supabase");
+const { rest, config, listNegocios } = require("../_lib/supabase");
 const { requirePlatformAdmin } = require("../_lib/platform-admin");
 const { findPlan, hasSubscriptionAccess, normalizeStatus } = require("../_lib/business-model");
 
@@ -33,15 +33,12 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const negocios = await rest("negocios", {
-      query: {
-        select:
-          "id,slug,name,plan_id,subscription_status,cancel_at_period_end,current_period_start,current_period_end,last_payment_at,owner_id,created_at,updated_at",
-        order: "updated_at.desc",
-      },
-    });
-
-    const list = Array.isArray(negocios) ? negocios : [];
+    let list = [];
+    try {
+      list = await listNegocios();
+    } catch (err) {
+      console.error("[admin/overview negocios]", err);
+    }
     const counts = {
       total: list.length,
       active: 0,
@@ -70,15 +67,19 @@ module.exports = async function handler(req, res) {
       }
     });
 
-    const pagos = await rest("pagos", {
-      query: {
-        select: "id,status,amount_in_cents,currency,created_at",
-        order: "created_at.desc",
-        limit: 200,
-      },
-    });
-
-    const payments = Array.isArray(pagos) ? pagos : [];
+    let payments = [];
+    try {
+      const pagos = await rest("pagos", {
+        query: {
+          select: "id,status,amount_in_cents,currency,created_at",
+          order: "created_at.desc",
+          limit: 200,
+        },
+      });
+      payments = Array.isArray(pagos) ? pagos : [];
+    } catch (err) {
+      console.error("[admin/overview pagos]", err);
+    }
     const approved = payments.filter((p) => String(p.status).toUpperCase() === "APPROVED");
     const revenue30d = approved
       .filter((p) => {

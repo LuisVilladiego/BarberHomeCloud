@@ -51,12 +51,39 @@ async function rest(path, { method = "GET", body, headers = {}, query } = {}) {
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error(`Supabase respondió de forma inesperada (${res.status})`);
+  }
   if (!res.ok) {
-    const message = data?.message || data?.error || `Supabase ${res.status}`;
+    const message = data?.message || data?.error || data?.hint || `Supabase ${res.status}`;
     throw new Error(message);
   }
   return data;
+}
+
+/** Listado admin: prueba columnas opcionales y cae a un select mínimo si hace falta. */
+async function listNegocios() {
+  const attempts = [
+    "id,slug,name,plan_id,subscription_status,cancel_at_period_end,current_period_start,current_period_end,last_payment_at,owner_id,onboarding_completed,created_at,updated_at",
+    "id,slug,name,plan_id,subscription_status,current_period_start,current_period_end,last_payment_at,owner_id,onboarding_completed,created_at,updated_at",
+    "id,slug,name,plan_id,subscription_status,owner_id,created_at,updated_at",
+    "*",
+  ];
+  let lastErr;
+  for (const select of attempts) {
+    try {
+      const rows = await rest("negocios", {
+        query: { select, order: "updated_at.desc" },
+      });
+      return Array.isArray(rows) ? rows : [];
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error("No se pudo leer negocios");
 }
 
 /** Valida el access token del barbero y devuelve su usuario. */
@@ -157,6 +184,7 @@ module.exports = {
   config,
   insertNegocio,
   insertPago,
+  listNegocios,
   negocioById,
   negocioOfOwner,
   normalizeSlug,

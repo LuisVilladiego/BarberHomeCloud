@@ -1,4 +1,4 @@
-const { config, negocioById, rest, updateNegocio } = require("../_lib/supabase");
+const { config, listNegocios, negocioById, updateNegocio } = require("../_lib/supabase");
 const { requirePlatformAdmin } = require("../_lib/platform-admin");
 const {
   SUBSCRIPTION_STATUS,
@@ -47,15 +47,7 @@ module.exports = async function handler(req, res) {
       const statusFilter = String(req.query?.status || "").trim().toLowerCase();
       const planFilter = String(req.query?.plan || "").trim().toLowerCase();
 
-      const rows = await rest("negocios", {
-        query: {
-          select:
-            "id,slug,name,plan_id,subscription_status,cancel_at_period_end,current_period_start,current_period_end,last_payment_at,owner_id,onboarding_completed,created_at,updated_at",
-          order: "updated_at.desc",
-        },
-      });
-
-      let list = Array.isArray(rows) ? rows : [];
+      let list = await listNegocios();
 
       if (q) {
         list = list.filter(
@@ -86,6 +78,7 @@ module.exports = async function handler(req, res) {
           ...n,
           plan_id: normalizePlanId(n.plan_id),
           subscription_status: normalizeStatus(n.subscription_status),
+          cancel_at_period_end: !!n.cancel_at_period_end,
           owner_email: ownerEmails[n.owner_id] || null,
           access_active: hasSubscriptionAccess(n.subscription_status, n.current_period_end),
           plan_label: findPlan(n.plan_id)?.label || n.plan_id,

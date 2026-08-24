@@ -106,7 +106,8 @@
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const err = new Error(data?.error || `Error ${res.status}`);
+        const message = [data?.error, data?.detail].filter(Boolean).join(": ") || `Error ${res.status}`;
+        const err = new Error(message);
         err.status = res.status;
         throw err;
       }
@@ -248,7 +249,13 @@
 
   async function refreshAll() {
     showError("");
-    await Promise.all([loadOverview(), loadNegocios(), loadPagos()]);
+    const results = await Promise.allSettled([loadOverview(), loadNegocios(), loadPagos()]);
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length) {
+      showError(
+        failed.map((r) => r.reason?.message).filter(Boolean).join(" · ") || "No se pudo cargar el panel."
+      );
+    }
   }
 
   function openEdit(id) {

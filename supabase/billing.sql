@@ -100,6 +100,7 @@ alter table public.pagos enable row level security;
 
 revoke all on public.pagos from anon, authenticated;
 grant select on public.pagos to authenticated;
+grant all on public.pagos to service_role;
 
 drop policy if exists "staff_read_pagos" on public.pagos;
 create policy "staff_read_pagos" on public.pagos
