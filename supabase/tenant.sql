@@ -18,7 +18,7 @@ create unique index if not exists negocios_slug_unique on public.negocios (lower
 alter table public.negocios enable row level security;
 drop policy if exists "anon_all_negocios" on public.negocios;
 create policy "anon_all_negocios" on public.negocios for all using (true) with check (true);
-grant all on public.negocios to anon, authenticated;
+grant all on public.negocios to anon, authenticated, service_role;
 
 alter table public.citas add column if not exists negocio_id uuid references public.negocios (id) on delete cascade;
 alter table public.clientes add column if not exists negocio_id uuid references public.negocios (id) on delete cascade;

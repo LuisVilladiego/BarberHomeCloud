@@ -133,10 +133,10 @@ create policy "anon_all_inventario" on public.inventario for all using (true) wi
 create policy "anon_all_puntos" on public.puntos for all using (true) with check (true);
 create policy "anon_all_canjes" on public.canjes for all using (true) with check (true);
 
-grant usage on schema public to anon, authenticated;
-grant all on all tables in schema public to anon, authenticated;
-grant all on all sequences in schema public to anon, authenticated;
-grant all on all functions in schema public to anon, authenticated;
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant all on all functions in schema public to anon, authenticated, service_role;
 
 -- —— Storage buckets ——
 insert into storage.buckets (id, name, public)
