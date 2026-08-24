@@ -26,7 +26,7 @@ fi
 payload=$(cat <<EOF
 {
   "site_url": "${SITE_URL}",
-  "uri_allow_list": "${REDIRECT_URL},http://localhost:5500/login.html,http://127.0.0.1:5500/login.html",
+  "uri_allow_list": "${REDIRECT_URL},https://barber-home-cloud.vercel.app/admin-login.html,http://localhost:5500/login.html,http://127.0.0.1:5500/login.html",
   "external_google_enabled": true,
   "external_google_client_id": "${GOOGLE_CLIENT_ID}",
   "external_google_secret": "${GOOGLE_CLIENT_SECRET}",
