@@ -39,8 +39,7 @@
   let loadSeq = 0;
 
   function isPreviewMode() {
-    if (window.Billing?.hasPaidMembership) return !window.Billing.hasPaidMembership();
-    if (window.Billing?.isTrialing?.()) return true;
+    if (window.Billing?.isRestricted) return window.Billing.isRestricted();
     return !window.Billing?.isActive?.();
   }
 

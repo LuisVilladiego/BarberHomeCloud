@@ -50,12 +50,29 @@
     return isActive(s);
   }
 
-  /** Membresía de pago vigente. El trial no cuenta: ahí solo hay datos de demostración. */
-  function hasPaidMembership(state) {
+  function experience(state) {
     const s = state || cached();
-    if (!s || !isActive(s) || isTrialing(s)) return false;
-    const normalized = window.BusinessModel?.normalizeStatus?.(s.status) || String(s.status || "").toLowerCase();
-    return normalized === "active" || normalized === "past_due" || normalized === "canceled";
+    const BM = window.BusinessModel;
+    if (!BM?.membershipExperience) {
+      return isActive(s) ? (isTrialing(s) ? "trial" : "active") : "expired";
+    }
+    return BM.membershipExperience(s?.status, s?.periodEnd, {
+      cancelAtPeriodEnd: !!s?.cancelAtPeriodEnd,
+    });
+  }
+
+  function isRestricted(state) {
+    const exp = experience(state);
+    if (window.BusinessModel?.isRestrictedExperience) {
+      return window.BusinessModel.isRestrictedExperience(exp);
+    }
+    return !isActive(state);
+  }
+
+  /** Membresía de pago vigente (no incluye la prueba). */
+  function hasPaidMembership(state) {
+    const exp = experience(state);
+    return exp === "active" || exp === "past_due" || exp === "canceled";
   }
 
   function isPendingCancellation(state) {
@@ -361,7 +378,9 @@
     isActive,
     isPendingCancellation,
     isTrialing,
+    experience,
     hasPaidMembership,
+    isRestricted,
     pagoByReference,
     refresh,
     startCheckout,

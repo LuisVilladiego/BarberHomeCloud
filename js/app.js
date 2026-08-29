@@ -622,77 +622,110 @@
     }
   }
 
-  /** Banner cuando la cancelación ya está programada pero aún hay acceso. */
-  function showCancellationBanner() {
-    if (document.querySelector(".cancel-banner")) return;
+  function membershipState() {
     const billing = window.Billing?.cached?.();
-    if (!window.Billing?.isPendingCancellation?.(billing)) return;
-    const days = window.Billing?.daysLeft?.(billing) || 0;
-    if (days <= 0) return;
-
-    const end = billing?.periodEnd
+    const exp =
+      window.Billing?.experience?.(billing) ||
+      window.BusinessModel?.membershipExperience?.(billing?.status, billing?.periodEnd, {
+        cancelAtPeriodEnd: !!billing?.cancelAtPeriodEnd,
+      }) ||
+      "none";
+    const endLabel = billing?.periodEnd
       ? new Date(billing.periodEnd).toLocaleDateString("es-CO", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
+          day: "numeric",
+          month: "short",
         })
-      : "—";
-
-    const banner = document.createElement("div");
-    banner.className = "billing-banner cancel-banner";
-    banner.setAttribute("role", "status");
-
-    const text = document.createElement("div");
-    text.className = "billing-banner__text";
-    const title = document.createElement("strong");
-    title.textContent = "Cancelación programada.";
-    const detail = document.createElement("span");
-    detail.textContent = `Tu plan sigue activo hasta el ${end}. Después el enlace público se desactiva y el panel queda solo para consultar.`;
-    text.append(title, detail);
-
-    const cta = document.createElement("a");
-    cta.className = "btn btn--primary";
-    cta.href = "suscripcion.html";
-    cta.textContent = "Reactivar plan";
-
-    banner.append(text, cta);
-    const main = document.querySelector(".main");
-    if (main) main.insertBefore(banner, main.firstChild);
-    else document.body.insertBefore(banner, document.body.firstChild);
+      : "el final del período";
+    const plan = window.BusinessModel?.findPlan?.(billing?.planId);
+    const copy = window.BusinessModel?.membershipCopy?.(exp, {
+      daysLeft: window.Billing?.daysLeft?.(billing) || 0,
+      endLabel,
+      planLabel: plan?.label || plan?.name || "Plan",
+    }) || {
+      title: "Activa tu plan",
+      detail: "",
+      cta: "Ver planes",
+      href: "suscripcion.html?need=1",
+      chip: "Sin plan",
+      tone: "neutral",
+      kicker: "",
+    };
+    return { exp, copy, billing, restricted: window.BusinessModel?.isRestrictedExperience?.(exp) };
   }
 
-  /** Banner morado de prueba: solo usuarios en `trialing`, no membresía pagada. */
-  function showTrialBanner() {
-    if (document.querySelector(".trial-banner")) return;
-    const billing = window.Billing?.cached?.();
-    const trialing =
-      window.Billing?.isTrialing?.(billing) ||
-      (() => {
-        try {
-          const sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
-          const s = String(sub?.status || "").toLowerCase();
-          return s === "trialing" || s === "trial";
-        } catch {
-          return false;
-        }
-      })();
-    if (!trialing) return;
-    const days = window.Billing?.daysLeft?.(billing) || 0;
-    if (days <= 0) return;
+  function applyMembershipChrome() {
+    const page = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+    const { exp, copy, restricted } = membershipState();
 
-    const banner = document.createElement("div");
-    banner.className = "trial-banner";
-    banner.setAttribute("role", "status");
-    banner.innerHTML = `
-      <p class="trial-banner__text">
-        <strong>Te quedan ${days} día${days === 1 ? "" : "s"} de prueba.</strong>
-        <span>Activa tu plan para seguir recibiendo reservas sin interrupciones.</span>
-      </p>
-      <a class="btn btn--light trial-banner__cta" href="suscripcion.html?need=1">Escoger plan</a>`;
+    document.body.classList.remove(
+      "is-readonly",
+      "membership-trial",
+      "membership-active",
+      "membership-past_due",
+      "membership-canceled",
+      "membership-expired",
+      "membership-suspended",
+      "membership-none"
+    );
+    document.body.classList.add(`membership-${exp}`);
+    if (restricted) document.body.classList.add("is-readonly");
+
+    document.querySelectorAll(".member-banner, .member-hero, .trial-banner, .billing-banner").forEach((el) => {
+      el.remove();
+    });
+
+    renderPlanChip(copy, exp);
 
     const main = document.querySelector(".main");
-    if (main) main.insertBefore(banner, main.firstChild);
-    else document.body.insertBefore(banner, document.body.firstChild);
+    if (!main) return;
+
+    const skipBanner = restricted && (page === "index.html" || page === "");
+    if (exp !== "active" && !skipBanner) {
+      const banner = document.createElement("div");
+      banner.className = `member-banner member-banner--${copy.tone}`;
+      banner.setAttribute("role", "status");
+      banner.innerHTML = `
+        <div class="member-banner__text">
+          <strong>${copy.title}</strong>
+          <span>${copy.detail}</span>
+        </div>
+        <a class="btn member-banner__cta" href="${copy.href}">${copy.cta}</a>`;
+      main.insertBefore(banner, main.firstChild);
+    }
+
+    if (restricted && (page === "index.html" || page === "")) {
+      const hero = document.createElement("section");
+      hero.className = `member-hero member-hero--${copy.tone}`;
+      hero.setAttribute("aria-label", copy.kicker || "Estado de suscripción");
+      hero.innerHTML = `
+        <p class="member-hero__kicker">${copy.kicker}</p>
+        <h2>${copy.title}</h2>
+        <p>${copy.detail}</p>
+        <div class="member-hero__actions">
+          <a class="btn btn--primary" href="${copy.href}">${copy.cta}</a>
+          <a class="btn btn--secondary" href="calendario.html">Ver calendario de ejemplo</a>
+        </div>`;
+      const header = main.querySelector(".page-header");
+      if (header) header.insertAdjacentElement("afterend", hero);
+      else main.insertBefore(hero, main.firstChild);
+    }
+  }
+
+  function renderPlanChip(copy, exp) {
+    const sidebar = document.querySelector(".sidebar");
+    if (!sidebar) return;
+    let chip = document.getElementById("plan-chip");
+    if (!chip) {
+      chip = document.createElement("a");
+      chip.id = "plan-chip";
+      chip.href = "suscripcion.html";
+      const user = sidebar.querySelector(".user");
+      if (user) sidebar.insertBefore(chip, user);
+      else sidebar.appendChild(chip);
+    }
+    chip.className = `plan-chip plan-chip--${copy.tone || exp}`;
+    chip.textContent = copy.chip || "Plan";
+    chip.setAttribute("title", copy.title || "Suscripción");
   }
 
   /** Tras el outro del tour, guía al paso Autoagenda desde Inicio. */
@@ -716,35 +749,6 @@
     }, 1400);
   }
 
-  /** Aviso fijo + panel solo de consulta cuando el pago está vencido. */
-  function showBillingBanner() {
-    if (document.querySelector(".billing-banner")) return;
-    document.body.classList.add("is-readonly");
-
-    const banner = document.createElement("div");
-    banner.className = "billing-banner";
-    banner.setAttribute("role", "status");
-
-    const text = document.createElement("div");
-    text.className = "billing-banner__text";
-    const title = document.createElement("strong");
-    title.textContent = "Suscripción vencida por falta de pago.";
-    const detail = document.createElement("span");
-    detail.textContent =
-      "Tu link público de reservas está desactivado y el panel quedó solo para consultar tus datos.";
-    text.append(title, detail);
-
-    const cta = document.createElement("a");
-    cta.className = "btn btn--primary";
-    cta.href = "suscripcion.html?need=1";
-    cta.textContent = "Renovar ahora";
-
-    banner.append(text, cta);
-    const main = document.querySelector(".main");
-    if (main) main.insertBefore(banner, main.firstChild);
-    else document.body.insertBefore(banner, document.body.firstChild);
-  }
-
   function isPreviewPage(page) {
     return page === "index.html" || page === "calendario.html" || page === "";
   }
@@ -758,12 +762,6 @@
 
   function revealAccess() {
     document.documentElement.classList.remove("access-pending");
-  }
-
-  function isReadOnlyMode() {
-    if (window.AccessGate?.isReadOnly?.()) return true;
-    if (window.Billing?.blocksWrites?.()) return true;
-    return false;
   }
 
   const NAV_RULES = [
@@ -781,12 +779,20 @@
     const role = (await window.Tenant?.currentRole?.()) || "owner";
     const planId = window.Billing?.cached?.()?.planId || window.Tenant?.cached?.()?.plan_id;
 
+    const restricted = membershipState().restricted;
+
     NAV_RULES.forEach(({ href, feature, permission }) => {
       const link = sidebar.querySelector(`a.nav__item[href="${href}"]`);
       if (!link) return;
       let visible = true;
       if (permission && window.BusinessModel?.roleCan && !window.BusinessModel.roleCan(role, permission)) {
         visible = false;
+      }
+      if (restricted && href !== "suscripcion.html") {
+        link.classList.add("nav__item--locked");
+        link.setAttribute("title", "Renueva tu plan para usar esta función");
+        link.hidden = !visible;
+        return;
       }
       if (visible && feature && window.BusinessModel?.canUseFeature && !window.BusinessModel.canUseFeature(feature, planId)) {
         link.classList.add("nav__item--locked");
@@ -795,6 +801,13 @@
       }
       link.classList.remove("nav__item--locked");
       link.hidden = !visible;
+    });
+
+    ["contactos.html", "puntos.html", "autoagenda.html", "marketplace.html", "reportes.html"].forEach((href) => {
+      const link = sidebar.querySelector(`a.nav__item[href="${href}"]`);
+      if (!link || !restricted) return;
+      link.classList.add("nav__item--locked");
+      link.setAttribute("title", "Renueva tu plan para usar esta función");
     });
   }
 
@@ -921,16 +934,13 @@
     window.dispatchEvent(new CustomEvent("barbercloud:panel-ready"));
     loadPlansModal();
 
-    if (isReadOnlyMode()) {
-      showBillingBanner();
-    } else {
-      showTrialBanner();
-      showCancellationBanner();
-    }
+    applyMembershipChrome();
 
     await applyNavPermissions();
-    renderOnboardingChecklist();
-    maybePromptAutoagendaSetup();
+    if (!membershipState().restricted) {
+      renderOnboardingChecklist();
+      maybePromptAutoagendaSetup();
+    }
 
     runNotificationJobs();
     setInterval(runNotificationJobs, 20000);

@@ -161,6 +161,102 @@
     return false;
   }
 
+  /**
+   * Experiencia de UI según Confirmafy:
+   * trial/active/past_due/canceled → producto real
+   * expired/suspended/none → maqueta restringida (sin datos del negocio)
+   */
+  function membershipExperience(status, periodEnd, options = {}) {
+    const normalized = normalizeStatus(status);
+    const access = hasSubscriptionAccess(status, periodEnd);
+    const cancelAtPeriodEnd = !!options.cancelAtPeriodEnd;
+    if (access && normalized === SUBSCRIPTION_STATUS.TRIAL) return "trial";
+    if (access && normalized === SUBSCRIPTION_STATUS.PAST_DUE) return "past_due";
+    if (access && (normalized === SUBSCRIPTION_STATUS.CANCELED || cancelAtPeriodEnd)) {
+      return "canceled";
+    }
+    if (access) return "active";
+    if (normalized === SUBSCRIPTION_STATUS.SUSPENDED) return "suspended";
+    if (periodEnd) return "expired";
+    return "none";
+  }
+
+  function isRestrictedExperience(experience) {
+    return experience === "expired" || experience === "suspended" || experience === "none";
+  }
+
+  function membershipCopy(experience, extras = {}) {
+    const days = Number(extras.daysLeft) || 0;
+    const endLabel = extras.endLabel || "el final del período";
+    const dayWord = days === 1 ? "día" : "días";
+    const map = {
+      trial: {
+        kicker: "Prueba gratis",
+        title: days > 0 ? `Te quedan ${days} ${dayWord} de prueba` : "Tu prueba está por terminar",
+        detail: "Usa el panel de verdad: configura tu barbería y recibe reservas. Activa un plan para no pausar el enlace público.",
+        cta: "Elegir plan",
+        href: "suscripcion.html?need=1",
+        chip: days > 0 ? `Prueba · ${days}d` : "Prueba",
+        tone: "trial",
+      },
+      active: {
+        kicker: "Plan activo",
+        title: "Tu barbería está en marcha",
+        detail: "El enlace público recibe reservas y el panel está desbloqueado según tu plan.",
+        cta: "Ver plan",
+        href: "suscripcion.html",
+        chip: extras.planLabel || "Activo",
+        tone: "ok",
+      },
+      past_due: {
+        kicker: "Periodo de gracia",
+        title: "Pago pendiente",
+        detail: "Sigues operando por ahora. Si el pago no se regulariza, se pausa el enlace público. Tus datos no se borran.",
+        cta: "Pagar ahora",
+        href: "suscripcion.html?need=1",
+        chip: "Pago pendiente",
+        tone: "warn",
+      },
+      canceled: {
+        kicker: "Cancelación programada",
+        title: `Acceso hasta ${endLabel}`,
+        detail: `Tu plan sigue activo hasta ${endLabel}. Después se pausan las reservas públicas y se conservan tus datos.`,
+        cta: "Reactivar plan",
+        href: "suscripcion.html",
+        chip: "Cancela pronto",
+        tone: "info",
+      },
+      expired: {
+        kicker: "Suscripción vencida",
+        title: "Tu barbería está en pausa",
+        detail: "El enlace público está desactivado. Esto es una vista de ejemplo: no mostramos tus calendarios ni clientes. Renueva para recuperar el negocio.",
+        cta: "Renovar ahora",
+        href: "suscripcion.html?need=1",
+        chip: "Vencido",
+        tone: "danger",
+      },
+      suspended: {
+        kicker: "Cuenta suspendida",
+        title: "El panel quedó en modo demostración",
+        detail: "No se muestran datos reales del negocio. Renueva o escribe a soporte para reactivar la cuenta. Nada se borra de inmediato.",
+        cta: "Reactivar",
+        href: "suscripcion.html?need=1",
+        chip: "Suspendido",
+        tone: "danger",
+      },
+      none: {
+        kicker: "Sin plan",
+        title: "Así se ve BarberCloud",
+        detail: "Esta es una maqueta de ejemplo. Elige un plan para publicar tu URL, recibir reservas y usar tus propios calendarios.",
+        cta: "Elegir plan",
+        href: "suscripcion.html?need=1",
+        chip: "Sin plan",
+        tone: "neutral",
+      },
+    };
+    return map[experience] || map.none;
+  }
+
   function readSubscriptionCache() {
     try {
       const billing = JSON.parse(localStorage.getItem("barbercloud.billing") || "null");
@@ -279,7 +375,10 @@
     findPlan,
     hasSubscriptionAccess,
     isPeriodActive,
+    isRestrictedExperience,
     isWithinLimit,
+    membershipCopy,
+    membershipExperience,
     normalizePlanId,
     normalizeRole,
     normalizeStatus,

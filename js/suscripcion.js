@@ -200,7 +200,13 @@
     const plan = currentPlan();
     const label = window.Billing?.statusLabel?.(state) || { text: "Sin activar", tone: "paused" };
 
-    if (planTitle) planTitle.textContent = `Tienes el plan ${plan.label || plan.name}`;
+    if (planTitle) {
+      const exp = currentExperience();
+      if (exp === "trial") planTitle.textContent = `Prueba del plan ${plan.label || plan.name}`;
+      else if (exp === "past_due") planTitle.textContent = `${plan.label || plan.name} · pago pendiente`;
+      else if (exp === "canceled") planTitle.textContent = `${plan.label || plan.name} · cancelación programada`;
+      else planTitle.textContent = `Tienes el plan ${plan.label || plan.name}`;
+    }
     if (planStatus) {
       planStatus.textContent = label.text;
       planStatus.className = `status status--${label.tone}`;
@@ -267,10 +273,40 @@
     subtitle.textContent = "Cancela tu plan al final del período actual";
   }
 
+  function currentExperience() {
+    return (
+      window.Billing?.experience?.(state) ||
+      window.BusinessModel?.membershipExperience?.(state.status, state.periodEnd, {
+        cancelAtPeriodEnd: !!state.cancelAtPeriodEnd,
+      }) ||
+      "none"
+    );
+  }
+
+  function experienceCopy() {
+    const exp = currentExperience();
+    const days = window.Billing?.daysLeft?.(state) || 0;
+    const endLabel = state.periodEnd ? formatDate(state.periodEnd, "long") : "el final del período";
+    const plan = currentPlan();
+    return (
+      window.BusinessModel?.membershipCopy?.(exp, {
+        daysLeft: days,
+        endLabel,
+        planLabel: plan.label || plan.name,
+      }) || { title: "", detail: "", cta: "Elegir plan" }
+    );
+  }
+
   function refreshNeedBanner() {
     const needEl = document.getElementById("sub-need");
     if (!needEl) return;
-    needEl.hidden = isActive();
+    const exp = currentExperience();
+    const restricted = window.BusinessModel?.isRestrictedExperience?.(exp);
+    const copy = experienceCopy();
+    needEl.hidden = !restricted && exp !== "past_due";
+    if (!needEl.hidden) {
+      needEl.innerHTML = `<strong>${copy.title}</strong> ${copy.detail}`;
+    }
   }
 
   function openModal(id) {
@@ -381,6 +417,9 @@
   }
 
   function renderCheckout() {
+    const copy = experienceCopy();
+    const title = document.getElementById("sub-checkout-title");
+    if (title) title.textContent = copy.title || "Suscríbete y accede a BarberCloud";
     renderCheckoutToggle();
     renderCheckoutCards();
     updateCheckoutCta();
