@@ -1,8 +1,13 @@
 /**
  * WhatsApp vía Twilio (servidor).
  * Variables: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM
- * (TWILIO_FROM_NUMBER también sirve como alias del remitente).
+ * Plantilla: TWILIO_WHATSAPP_CONTENT_SID (HX...) — obligatoria fuera del sandbox.
+ * Modo auth OTP: TWILIO_WHATSAPP_CONTENT_MODE=auth (solo variable {{1}} = código).
  */
+
+const SANDBOX_WHATSAPP_FROM = "whatsapp:+14155238886";
+/** Plantilla preaprobada del sandbox (recordatorio de cita). Solo para pruebas. */
+const SANDBOX_DEFAULT_CONTENT_SID = "HXb5b62575e6e4ff6129ad7c8efe1f983e";
 
 function whatsappAddress(value) {
   const raw = String(value || "").trim();
@@ -23,21 +28,43 @@ function twilioConfig() {
   return { accountSid, authToken, from };
 }
 
-async function sendWhatsApp({ to, body }) {
+function resolveContentSid(fromAddress) {
+  const configured = String(process.env.TWILIO_WHATSAPP_CONTENT_SID || "").trim();
+  if (configured) return configured;
+  if (fromAddress === SANDBOX_WHATSAPP_FROM) return SANDBOX_DEFAULT_CONTENT_SID;
+  return "";
+}
+
+function buildContentVariables({ code, businessName, contentSid }) {
+  const mode = String(process.env.TWILIO_WHATSAPP_CONTENT_MODE || "").trim().toLowerCase();
+  const brand = String(businessName || "BarberCloud").trim();
+
+  if (mode === "auth") {
+    return JSON.stringify({ 1: String(code || "") });
+  }
+
+  const custom = String(process.env.TWILIO_WHATSAPP_CONTENT_VARIABLES || "").trim();
+  if (custom) {
+    return custom
+      .replace(/\{\{code\}\}/g, String(code || ""))
+      .replace(/\{\{brand\}\}/g, brand);
+  }
+
+  if (contentSid === SANDBOX_DEFAULT_CONTENT_SID) {
+    return JSON.stringify({
+      1: String(code || ""),
+      2: `${brand} · consulta de reservas`,
+    });
+  }
+
+  return JSON.stringify({ 1: String(code || ""), 2: brand });
+}
+
+async function twilioSendMessage(params) {
   const cfg = twilioConfig();
   if (!cfg) {
     return { ok: false, demo: true, message: "WhatsApp no configurado en el servidor." };
   }
-
-  const toAddress = whatsappAddress(to);
-  if (!/^whatsapp:\+[1-9]\d{7,14}$/.test(toAddress)) {
-    throw new Error("Número de WhatsApp inválido.");
-  }
-
-  const params = new URLSearchParams();
-  params.set("To", toAddress);
-  params.set("From", cfg.from);
-  params.set("Body", String(body || "").slice(0, 1024));
 
   const auth = Buffer.from(`${cfg.accountSid}:${cfg.authToken}`).toString("base64");
   const res = await fetch(
@@ -54,12 +81,57 @@ async function sendWhatsApp({ to, body }) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.message || `Twilio respondió ${res.status}`);
+    const err = new Error(data?.message || `Twilio respondió ${res.status}`);
+    err.code = data?.code;
+    err.twilio = data;
+    throw err;
   }
   return { ok: true, demo: false, message: "WhatsApp enviado.", sid: data?.sid || "" };
 }
 
+async function sendWhatsApp({ to, body, contentSid, contentVariables }) {
+  const cfg = twilioConfig();
+  if (!cfg) {
+    return { ok: false, demo: true, message: "WhatsApp no configurado en el servidor." };
+  }
+
+  const toAddress = whatsappAddress(to);
+  if (!/^whatsapp:\+[1-9]\d{7,14}$/.test(toAddress)) {
+    throw new Error("Número de WhatsApp inválido.");
+  }
+
+  const params = new URLSearchParams();
+  params.set("To", toAddress);
+  params.set("From", cfg.from);
+
+  const sid = contentSid || resolveContentSid(cfg.from);
+  if (sid) {
+    params.set("ContentSid", sid);
+    if (contentVariables) params.set("ContentVariables", contentVariables);
+  } else if (body) {
+    params.set("Body", String(body || "").slice(0, 1024));
+  } else {
+    throw new Error(
+      "Falta TWILIO_WHATSAPP_CONTENT_SID. WhatsApp exige plantilla aprobada (ContentSid)."
+    );
+  }
+
+  return twilioSendMessage(params);
+}
+
 async function sendLookupCode({ toE164, code, businessName }) {
+  const cfg = twilioConfig();
+  const contentSid = resolveContentSid(cfg?.from || "");
+  const contentVariables = buildContentVariables({
+    code,
+    businessName,
+    contentSid,
+  });
+
+  if (contentSid) {
+    return sendWhatsApp({ to: toE164, contentSid, contentVariables });
+  }
+
   const brand = String(businessName || "BarberCloud").trim();
   const body = `${brand}: tu código para consultar reservas es ${code}. Válido 10 min. No lo compartas.`;
   return sendWhatsApp({ to: toE164, body });
