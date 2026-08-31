@@ -39,10 +39,11 @@
   }
 
   async function sendViaServer({ toEmail, toName, type, productLabel, code }) {
-    const res = await fetch("/api/auth/send-code", {
+    const res = await fetch("/api/auth/otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        action: "send",
         email: toEmail,
         name: toName,
         type: type || "verify",

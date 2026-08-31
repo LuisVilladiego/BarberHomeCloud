@@ -26,7 +26,7 @@ window.EmailConfig = {
   appsScriptUrl:
     "https://script.google.com/macros/s/AKfycbySOcHmfyYq7Z30E9tiMgKs76FkdBkBxKKNc6S-oaur7QJ8HWCq3sfN_MJFw-mXQ8h7/exec",
   /** Debe coincidir con SECRET en gmail-apps-script.gs.
-   *  En producción el envío va por /api/auth/send-code (variables APPS_SCRIPT_* en Vercel).
+   *  En producción el envío va por /api/auth/otp (variables APPS_SCRIPT_* en Vercel).
    *  Este fallback en frontend solo se usa si la API no responde. */
   appsScriptSecret: "barberhome-otp-2026",
 

@@ -172,7 +172,8 @@
 
     setBusy(true);
     try {
-      const data = await postJson("/api/booking/lookup-send-code", {
+      const data = await postJson("/api/booking/lookup", {
+        action: "send-code",
         ...tenantPayload(),
         countryCode,
         phone,
@@ -233,7 +234,8 @@
 
     setBusy(true);
     try {
-      const data = await postJson("/api/booking/lookup-verify", {
+      const data = await postJson("/api/booking/lookup", {
+        action: "verify",
         ...tenantPayload(),
         countryCode: pending.countryCode,
         phone: pending.phone,

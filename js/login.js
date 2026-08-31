@@ -324,10 +324,11 @@
 
   async function verifyStaffCode(email, code, type) {
     if (pending?.otpToken) {
-      const res = await fetch("/api/auth/verify-code", {
+      const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          action: "verify",
           email,
           code,
           otpToken: pending.otpToken,
