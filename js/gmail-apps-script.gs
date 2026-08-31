@@ -147,12 +147,12 @@ function sendRecoverCode_(data) {
     return json_({ ok: false, message: "Código inválido" });
   }
 
-  var subject = "Recupera tu contraseña Puntos BarberHome: " + code;
+  var subject = "Recupera tu contraseña BarberCloud: " + code;
   var body =
     "Hola " +
     name +
     ",\n\n" +
-    "Recibimos una solicitud para recuperar tu contraseña de Puntos BarberHome.\n" +
+    "Recibimos una solicitud para recuperar tu contraseña de BarberCloud.\n" +
     "Tu código es: " +
     code +
     "\n\n" +
@@ -166,7 +166,7 @@ function sendRecoverCode_(data) {
     "<p>Hola <strong>" +
     escapeHtml_(name) +
     "</strong>,</p>" +
-    "<p>Usa este código para <strong>recuperar tu contraseña</strong> de Puntos BarberHome:</p>" +
+    "<p>Usa este código para <strong>recuperar tu contraseña</strong> de BarberCloud:</p>" +
     '<p style="font-size:32px;letter-spacing:6px;font-weight:700;margin:24px 0;color:#5b21b6">' +
     escapeHtml_(code) +
     "</p>" +

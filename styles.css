@@ -4577,6 +4577,48 @@ body.choose-plan-open {
   line-height: 1.45;
 }
 
+.lookup-panel__lead {
+  margin: 0 0 16px;
+}
+
+.lookup-panel .field {
+  margin-bottom: 12px;
+}
+
+.lookup-demo {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.88rem;
+}
+
+.lookup-demo[hidden] {
+  display: none !important;
+}
+
+.lookup-resend {
+  margin-top: 10px;
+}
+
+.lookup-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.lookup-result-card {
+  margin: 0;
+}
+
+.lookup-empty {
+  margin: 0 0 16px;
+  text-align: center;
+}
+
 .booking-loading {
   display: flex;
   align-items: center;
@@ -5004,6 +5046,88 @@ body.is-readonly textarea:not([readonly]),
 body.is-readonly select:not([disabled]) {
   pointer-events: none;
   opacity: 0.85;
+}
+
+.today-ops {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.today-ops__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.today-ops__head h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.today-ops__head p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.today-ops__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.today-ops__list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.today-ops__item {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border-left: 3px solid #22c55e;
+}
+
+.today-ops__item--pending_confirmation {
+  border-left-color: #eab308;
+}
+
+.today-ops__item--cancelled,
+.today-ops__item--no_show {
+  border-left-color: #ef4444;
+}
+
+.today-ops__time {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.today-ops__who {
+  font-weight: 600;
+}
+
+.today-ops__meta {
+  grid-column: 2;
+  color: #6b7280;
+  font-size: 0.86rem;
+}
+
+.today-ops__empty {
+  margin: 12px 0 0;
+  color: #6b7280;
+  font-size: 0.92rem;
 }
 
 .onboarding-checklist {

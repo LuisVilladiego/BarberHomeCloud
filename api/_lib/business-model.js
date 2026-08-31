@@ -154,6 +154,52 @@ function amountInCents(plan, billingPeriod = "monthly") {
   return Math.round(amountForPlan(plan, billingPeriod) * 100);
 }
 
+function isWithinLimit(metric, count, planOrId) {
+  const plan = typeof planOrId === "object" ? planOrId : findPlan(planOrId);
+  if (!plan) return true;
+  const limits = {
+    barbers: plan.maxBarbers,
+    clients: plan.maxClients,
+    appointments: plan.maxAppointments,
+  };
+  const max = limits[metric];
+  if (max == null) return true;
+  return Number(count) < max;
+}
+
+function canUseFeature(feature, planOrId) {
+  const plan = typeof planOrId === "object" ? planOrId : findPlan(planOrId);
+  if (!plan) return false;
+  const map = {
+    whatsapp: plan.whatsappEnabled,
+    customSlug: plan.customSlug,
+    analytics: plan.analyticsEnabled,
+    loyalty: plan.loyaltyEnabled,
+    marketplace: plan.marketplaceEnabled,
+    advancedSettings: plan.advancedSettings,
+  };
+  return !!map[feature];
+}
+
+function membershipExperience(status, periodEnd, options = {}) {
+  const normalized = normalizeStatus(status);
+  const access = hasSubscriptionAccess(status, periodEnd);
+  const cancelAtPeriodEnd = !!options.cancelAtPeriodEnd;
+  if (access && normalized === SUBSCRIPTION_STATUS.TRIAL) return "trial";
+  if (access && normalized === SUBSCRIPTION_STATUS.PAST_DUE) return "past_due";
+  if (access && (normalized === SUBSCRIPTION_STATUS.CANCELED || cancelAtPeriodEnd)) {
+    return "canceled";
+  }
+  if (access) return "active";
+  if (normalized === SUBSCRIPTION_STATUS.SUSPENDED) return "suspended";
+  if (periodEnd) return "expired";
+  return "none";
+}
+
+function isRestrictedExperience(experience) {
+  return experience === "expired" || experience === "suspended" || experience === "none";
+}
+
 module.exports = {
   ACCESS_STATUSES,
   ANNUAL_DISCOUNT,
@@ -166,9 +212,13 @@ module.exports = {
   USD_TO_COP,
   amountForPlan,
   amountInCents,
+  canUseFeature,
   findPlan,
   hasSubscriptionAccess,
   isPeriodActive,
+  isRestrictedExperience,
+  isWithinLimit,
+  membershipExperience,
   normalizePlanId,
   normalizeRole,
   normalizeStatus,

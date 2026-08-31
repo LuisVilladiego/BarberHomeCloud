@@ -335,12 +335,15 @@
     const barbers = window.BarberService?.list?.() || auto.barbers || [];
     const days = auto.schedules?.[0]?.days || {};
     const hasSchedule = Object.values(days).some((d) => d?.enabled);
+    const realBookings = (window.BookingStore?.loadBookings?.() || []).filter(
+      (b) => b && !b.demo && !b.occupancyOnly && !String(b.id || "").startsWith("demo-")
+    );
     return {
       profile: !!(ctx.title && ctx.slug),
       schedule: hasSchedule,
       barber: barbers.some((b) => b?.active !== false),
       page: !!(ctx.slug && (auto.appointmentTypes?.length || auto.services?.length)),
-      bookings: false,
+      bookings: realBookings.length > 0,
     };
   }
 

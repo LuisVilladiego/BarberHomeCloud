@@ -45,9 +45,54 @@
     return aStart < bEnd && bStart < aEnd;
   }
 
+  function lifecycleStatus(booking) {
+    const explicit = String(booking?.lifecycleStatus || "").toLowerCase();
+    if (explicit === "completed" || explicit === "cancelled" || explicit === "no_show" || explicit === "scheduled") {
+      return explicit;
+    }
+    const s = String(booking?.status || "").toLowerCase();
+    if (s === "completed") return "completed";
+    if (s.includes("cancel") || s === "rejected") return "cancelled";
+    if (s === "no_show") return "no_show";
+    return "scheduled";
+  }
+
+  function confirmationStatus(booking) {
+    const explicit = String(booking?.confirmationStatus || "").toLowerCase();
+    if (explicit === "pending" || explicit === "confirmed" || explicit === "declined" || explicit === "expired" || explicit === "failed") {
+      return explicit;
+    }
+    const s = String(booking?.status || "").toLowerCase();
+    if (s === "pending_confirmation" || s.includes("pending") || s.includes("waiting")) return "pending";
+    if (s.includes("cancel") || s === "rejected") return "declined";
+    if (s.includes("fail")) return "failed";
+    return "confirmed";
+  }
+
+  /** Clase/color de agenda: confirmación, sin pisar el ciclo de vida. */
+  function displayStatus(booking) {
+    const life = lifecycleStatus(booking);
+    if (life === "cancelled") return "cancelled";
+    if (life === "completed") return "completed";
+    if (life === "no_show") return "no_show";
+    const confirm = confirmationStatus(booking);
+    if (confirm === "pending") return "pending_confirmation";
+    if (confirm === "declined" || confirm === "expired") return "cancelled";
+    if (confirm === "failed") return "pending_confirmation";
+    return "confirmed";
+  }
+
+  function compatStatus(lifecycle, confirmation) {
+    if (lifecycle === "completed") return "completed";
+    if (lifecycle === "cancelled") return "cancelled";
+    if (lifecycle === "no_show") return "no_show";
+    if (confirmation === "pending") return "pending_confirmation";
+    if (confirmation === "declined") return "cancelled";
+    return "confirmed";
+  }
+
   function isActive(booking) {
-    const status = String(booking?.status || "").toLowerCase();
-    return status !== "cancelled" && status !== "canceled" && status !== "rejected";
+    return lifecycleStatus(booking) !== "cancelled";
   }
 
   function loadBookings() {
@@ -184,6 +229,14 @@
         message: "Suscripción vencida: renueva el pago para volver a agendar.",
       };
     }
+    const negocioId = bookingInput.negocioId || window.Tenant?.currentId?.() || "";
+    const negocio = window.Tenant?.cached?.();
+    if (window.PlanLimits?.canAddAppointment) {
+      const limit = await window.PlanLimits.canAddAppointment({ negocioId, negocio });
+      if (!limit.ok) {
+        return { ok: false, reason: "plan_limit", message: limit.message };
+      }
+    }
     return runSlotExclusive(date, time, () => bookAtomicallyCore(bookingInput));
   }
 
@@ -262,10 +315,17 @@
       };
     }
 
+    const lifecycle = bookingInput.lifecycleStatus || "scheduled";
+    const confirmation =
+      bookingInput.confirmationStatus ||
+      (bookingInput.source === "public" || bookingInput.status === "pending_confirmation"
+        ? "pending"
+        : "confirmed");
     const booking = {
       id: bookingInput.id || crypto.randomUUID(),
       name: bookingInput.name || "Cliente",
       phone: bookingInput.phone || "",
+      countryCode: bookingInput.countryCode || "",
       date,
       time,
       duration,
@@ -273,7 +333,9 @@
       serviceId: bookingInput.serviceId || "",
       price: bookingInput.price || 0,
       notes: bookingInput.notes || "",
-      status: bookingInput.status || "confirmed",
+      lifecycleStatus: lifecycle,
+      confirmationStatus: confirmation,
+      status: compatStatus(lifecycle, confirmation),
       source: bookingInput.source || "admin",
       business: bookingInput.business || window.Tenant?.cached?.()?.name || "Mi barbería",
       calendarId: bookingInput.calendarId || "negocio",
@@ -318,7 +380,7 @@
       const list = Array.isArray(notifs) ? notifs : [];
       list.unshift({
         id: `booking-${booking.id}`,
-        title: `${booking.name || "Cliente"} - Agendar cita en BarberHome -`,
+        title: `${booking.name || "Cliente"} · ${booking.business || "Nueva cita"}`,
         appointmentAt:
           booking.date && booking.time
             ? `${booking.date}T${String(booking.time).length === 5 ? booking.time + ":00" : booking.time}`
@@ -341,14 +403,27 @@
     const list = loadBookings();
     const idx = list.findIndex((b) => b.id === id);
     if (idx < 0) return null;
-    list[idx] = { ...list[idx], ...patch, updatedAt: new Date().toISOString() };
+    const next = { ...list[idx], ...patch, updatedAt: new Date().toISOString() };
+    if (patch.status && !patch.lifecycleStatus && !patch.confirmationStatus) {
+      next.lifecycleStatus = lifecycleStatus({ ...next, lifecycleStatus: "", status: patch.status });
+      next.confirmationStatus = confirmationStatus({ ...next, confirmationStatus: "", status: patch.status });
+    }
+    if (!patch.status && (patch.lifecycleStatus || patch.confirmationStatus)) {
+      next.status = compatStatus(lifecycleStatus(next), confirmationStatus(next));
+    }
+    list[idx] = next;
     saveBookings(list);
     window.SupabaseData?.upsertCita?.(list[idx]);
     return list[idx];
   }
 
   function cancelBooking(id) {
-    return patchBooking(id, { status: "cancelled", cancelledAt: new Date().toISOString() });
+    return patchBooking(id, {
+      lifecycleStatus: "cancelled",
+      confirmationStatus: "declined",
+      status: "cancelled",
+      cancelledAt: new Date().toISOString(),
+    });
   }
 
   function subscribe(fn) {
@@ -371,6 +446,10 @@
     notifyExternalUpdate,
     toMinutes,
     isActive,
+    lifecycleStatus,
+    confirmationStatus,
+    displayStatus,
+    compatStatus,
   };
 
   const isDashboard = !!document.querySelector(".sidebar");

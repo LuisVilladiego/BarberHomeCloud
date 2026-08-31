@@ -54,6 +54,8 @@
       meta: {
         countryCode: b.countryCode || "",
         createdAt: b.createdAt || null,
+        lifecycleStatus: b.lifecycleStatus || "",
+        confirmationStatus: b.confirmationStatus || "",
       },
       updated_at: new Date().toISOString(),
     };
@@ -82,6 +84,8 @@
       googleEventId: r.google_event_id,
       countryCode: r.meta?.countryCode || "",
       createdAt: r.meta?.createdAt || r.created_at,
+      lifecycleStatus: r.meta?.lifecycleStatus || "",
+      confirmationStatus: r.meta?.confirmationStatus || "",
     };
   }
 
@@ -678,6 +682,116 @@
     return (data || []).map(rowToProduct);
   }
 
+  async function countCitasMes(negocioId) {
+    const client = db();
+    const nid = negocioId || currentNegocioId();
+    if (!client || !nid) return null;
+    const { data, error } = await client.rpc("negocio_citas_mes", { p_negocio: nid });
+    if (error) {
+      console.warn("[Supabase] count citas mes", error.message);
+      return null;
+    }
+    return typeof data === "number" ? data : Number(data) || 0;
+  }
+
+  async function countClientes(negocioId) {
+    const client = db();
+    const nid = negocioId || currentNegocioId();
+    if (!client || !nid) return null;
+    const { data, error } = await client.rpc("negocio_clientes_total", { p_negocio: nid });
+    if (error) {
+      const { count, error: countErr } = await client
+        .from("clientes")
+        .select("id", { count: "exact", head: true })
+        .eq("negocio_id", nid);
+      if (countErr) {
+        console.warn("[Supabase] count clientes", countErr.message);
+        return null;
+      }
+      return count ?? 0;
+    }
+    return typeof data === "number" ? data : Number(data) || 0;
+  }
+
+  function barberToRow(b) {
+    return {
+      id: ensureUuid(b.id),
+      negocio_id: b.negocioId || currentNegocioId() || null,
+      name: b.name || "",
+      photo: b.photo || "",
+      phone: b.phone || "",
+      bio: b.bio || "",
+      active: b.active !== false,
+      schedule: b.schedule || {},
+      meta: { scheduleId: b.scheduleId || "sch-default" },
+      updated_at: new Date().toISOString(),
+    };
+  }
+
+  function rowToBarber(r) {
+    return {
+      id: r.id,
+      negocioId: r.negocio_id,
+      name: r.name,
+      photo: r.photo || "",
+      phone: r.phone || "",
+      bio: r.bio || "",
+      active: r.active !== false,
+      schedule: r.schedule || {},
+      scheduleId: r.meta?.scheduleId || "sch-default",
+    };
+  }
+
+  async function fetchBarberos(options = {}) {
+    const client = db();
+    if (!client) return [];
+    const nid = options.negocioId || currentNegocioId();
+    if (!nid) return [];
+    let q = client.from("barberos").select("*").eq("negocio_id", nid).order("created_at");
+    if (options.activeOnly) q = q.eq("active", true);
+    const { data, error } = await q;
+    if (error) {
+      console.warn("[Supabase] fetch barberos", error.message);
+      if (options.strict) throw new Error(error.message);
+      return [];
+    }
+    return (data || []).map(rowToBarber);
+  }
+
+  async function upsertBarbero(barber) {
+    const client = db();
+    if (!client || !barber?.name) return { ok: false, skipped: true };
+    const row = barberToRow(barber);
+    const { error } = await client.from("barberos").upsert(row, { onConflict: "id" });
+    if (error) {
+      console.warn("[Supabase] upsert barbero", error.message);
+      return { ok: false, message: error.message };
+    }
+    return { ok: true, id: row.id };
+  }
+
+  async function fetchMembershipRole(negocioId) {
+    const client = db();
+    if (!client) return null;
+    const { data: sessionData } = await client.auth.getUser();
+    const uid = sessionData?.user?.id;
+    if (!uid) return null;
+    const nid = negocioId || currentNegocioId();
+    if (!nid) return null;
+    const { data, error } = await client
+      .from("negocio_miembros")
+      .select("role")
+      .eq("negocio_id", nid)
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (!error && data?.role) {
+      return window.BusinessModel?.normalizeRole?.(data.role) || data.role;
+    }
+    const negocio = await fetchOwnNegocio();
+    if (negocio?.owner_id === uid) return "owner";
+    return null;
+  }
+
   window.SupabaseData = {
     enabled,
     upsertCita,
@@ -701,5 +815,10 @@
     upsertNegocio,
     fetchOcupacion,
     fetchProductosPorSlug,
+    countCitasMes,
+    countClientes,
+    fetchBarberos,
+    upsertBarbero,
+    fetchMembershipRole,
   };
 })();

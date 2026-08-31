@@ -848,8 +848,75 @@
 
     const main = document.querySelector(".main");
     const header = main?.querySelector(".page-header");
-    if (main && header) main.insertBefore(panel, header.nextSibling);
+    const todayOps = document.getElementById("today-ops");
+    if (main && todayOps) main.insertBefore(panel, todayOps);
+    else if (main && header) main.insertBefore(panel, header.nextSibling);
     else main?.insertBefore(panel, main.firstChild);
+  }
+
+  function escapeText(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function todayIsoDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function renderTodayOps() {
+    const host = document.getElementById("today-ops");
+    if (!host) return;
+    if (membershipState().restricted) {
+      host.hidden = true;
+      host.innerHTML = "";
+      return;
+    }
+    const store = window.BookingStore;
+    const list = (store?.loadBookings?.() || []).filter(
+      (b) => b && !b.demo && !b.occupancyOnly && !String(b.id || "").startsWith("demo-")
+    );
+    const today = todayIsoDate();
+    const todays = list
+      .filter((b) => String(b.date || "").slice(0, 10) === today && store?.lifecycleStatus?.(b) !== "cancelled")
+      .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
+    const pending = list.filter(
+      (b) => store?.confirmationStatus?.(b) === "pending" && store?.lifecycleStatus?.(b) === "scheduled"
+    );
+    const pendingToday = pending.filter((b) => String(b.date || "").slice(0, 10) === today).length;
+    host.hidden = false;
+    host.innerHTML = `
+      <header class="today-ops__head">
+        <div>
+          <h2>Hoy</h2>
+          <p>${todays.length} cita${todays.length === 1 ? "" : "s"} · ${pendingToday} por confirmar</p>
+        </div>
+        <div class="today-ops__actions">
+          <a class="btn btn--primary btn--sm" href="calendario.html">Crear cita</a>
+          <a class="btn btn--secondary btn--sm" href="calendario.html">${pending.length ? `${pending.length} pendientes` : "Ver agenda"}</a>
+        </div>
+      </header>
+      ${
+        todays.length
+          ? `<ul class="today-ops__list">${todays
+              .slice(0, 6)
+              .map((b) => {
+                const confirm = store?.confirmationStatus?.(b) || "confirmed";
+                const shown = store?.displayStatus?.(b) || b.status || "confirmed";
+                return `<li class="today-ops__item today-ops__item--${escapeText(shown)}">
+                  <span class="today-ops__time">${escapeText(b.time || "--:--")}</span>
+                  <span class="today-ops__who">${escapeText(b.name || "Cliente")}</span>
+                  <span class="today-ops__meta">${escapeText(b.serviceName || "Cita")}${
+                    confirm === "pending" ? " · esperando" : confirm === "confirmed" ? " · confirmada" : ""
+                  }</span>
+                </li>`;
+              })
+              .join("")}</ul>`
+          : `<p class="today-ops__empty">No hay citas para hoy. Publica tu enlace o crea la primera desde el calendario.</p>`
+      }`;
   }
 
   async function initTenantGate() {
@@ -935,6 +1002,9 @@
     loadPlansModal();
 
     applyMembershipChrome();
+    renderTodayOps();
+    window.BookingStore?.subscribe?.(renderTodayOps);
+    window.addEventListener("barbercloud:bookings-changed", renderTodayOps);
 
     await applyNavPermissions();
     if (!membershipState().restricted) {

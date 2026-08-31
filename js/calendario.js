@@ -450,8 +450,9 @@
         const top = ((start - dayStart) / SLOT_MIN) * ROW_PX;
         const height = Math.max((duration / SLOT_MIN) * ROW_PX - 2, ROW_PX - 2);
         const googleClass = b.source === "google" ? " gcal__event--google" : "";
-        const statusClass = b.source === "google" ? "" : ` gcal__event--${b.status || "confirmed"}`;
-        cols += `<button type="button" class="gcal__event${googleClass}${statusClass}" data-booking-id="${escapeHtml(b.id)}" style="top:${top}px;height:${height}px" title="${escapeHtml(b.name)} · ${escapeHtml(statusLabel(b.status || "confirmed"))}">
+        const shown = b.source === "google" ? "confirmed" : store.displayStatus?.(b) || b.status || "confirmed";
+        const statusClass = b.source === "google" ? "" : ` gcal__event--${shown}`;
+        cols += `<button type="button" class="gcal__event${googleClass}${statusClass}" data-booking-id="${escapeHtml(b.id)}" style="top:${top}px;height:${height}px" title="${escapeHtml(b.name)} · ${escapeHtml(statusLabel(shown))}">
           <strong>${escapeHtml(b.allDay ? "Todo el día" : b.time)} · ${escapeHtml(b.serviceName || "Cita")}</strong>
           <span>${escapeHtml(b.name || "")}</span>
         </button>`;
@@ -509,7 +510,7 @@
     selectedBookingId = booking.source === "google" ? null : id;
     selectedEvent = booking;
     const isGoogle = booking.source === "google";
-    const status = booking.status || "confirmed";
+    const status = store.displayStatus?.(booking) || booking.status || "confirmed";
     const statusOptions = APPT_STATUSES.map(
       (s) =>
         `<option value="${s.id}" ${s.id === status ? "selected" : ""}>${s.label}</option>`
@@ -720,6 +721,20 @@
     const prev = store.loadBookings().find((b) => b.id === id);
     if (!prev) return;
     const patch = { status };
+    if (status === "pending_confirmation") {
+      patch.lifecycleStatus = "scheduled";
+      patch.confirmationStatus = "pending";
+    } else if (status === "confirmed" || status === "in_service") {
+      patch.lifecycleStatus = "scheduled";
+      patch.confirmationStatus = "confirmed";
+    } else if (status === "completed") {
+      patch.lifecycleStatus = "completed";
+    } else if (status === "cancelled") {
+      patch.lifecycleStatus = "cancelled";
+      patch.confirmationStatus = "declined";
+    } else if (status === "no_show") {
+      patch.lifecycleStatus = "no_show";
+    }
     if (status === "completed") {
       const award = window.LoyaltyEngine?.awardForCompletedBooking?.(prev);
       if (award?.ok) {

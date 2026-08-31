@@ -1,2 +1,5 @@
 .tmp-h2d/
 .DS_Store
+.env
+.env.local
+.env.*.local

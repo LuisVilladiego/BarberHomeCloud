@@ -33,7 +33,32 @@
   }
 
   function isMailSent(data) {
-    return data?.ok === true && /enviado/i.test(String(data.message || ""));
+    if (!data || data.ok !== true) return false;
+    const message = String(data.message || "");
+    return /enviad/i.test(message) || /sent/i.test(message);
+  }
+
+  async function sendViaServer({ toEmail, toName, type, productLabel, code }) {
+    const res = await fetch("/api/auth/send-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: toEmail,
+        name: toName,
+        type: type || "verify",
+        productLabel,
+        code: code ? String(code).replace(/\D/g, "") : "",
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return {
+      ok: !!data.ok,
+      demo: !!data.demo,
+      message:
+        data.message || (data.ok ? "Código enviado al correo." : "No se pudo enviar el correo."),
+      otpToken: data.otpToken || "",
+      code: data.code || "",
+    };
   }
 
   function mailBody(payload) {
@@ -126,18 +151,32 @@
   }
 
   async function sendVerificationCode({ toEmail, toName, code, productLabel }) {
+    try {
+      const server = await sendViaServer({
+        toEmail,
+        toName,
+        type: "verify",
+        productLabel: productLabel || "BarberCloud",
+        code,
+      });
+      if (server.otpToken || server.ok || server.demo) return server;
+    } catch (err) {
+      console.warn("[EmailService] server verify fallback", err);
+    }
+
     const c = cfg();
     if (!isConfigured()) {
       return {
         ok: false,
         demo: true,
         message: "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
+        code,
       };
     }
 
     try {
       if (c.provider === "appscript") {
-        return await sendViaAppsScript({
+        const sent = await sendViaAppsScript({
           toEmail,
           toName,
           code,
@@ -145,43 +184,104 @@
           productLabel: productLabel || "BarberCloud",
           fromName: "BarberCloud",
         });
+        return { ...sent, code };
       }
-      return await sendViaEmailJs({ toEmail, toName, code });
+      const sent = await sendViaEmailJs({ toEmail, toName, code });
+      return { ...sent, code };
     } catch (err) {
       console.error("Email send error", err);
       return {
         ok: false,
         demo: true,
         message: err?.message || "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
+        code,
         error: err,
       };
     }
   }
 
   async function sendRecoveryCode({ toEmail, toName, code }) {
+    try {
+      const server = await sendViaServer({ toEmail, toName, type: "recover", code });
+      if (server.otpToken || server.ok || server.demo) return server;
+    } catch (err) {
+      console.warn("[EmailService] server recover fallback", err);
+    }
+
     const c = cfg();
     if (!isConfigured()) {
       return {
         ok: false,
         demo: true,
         message: "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
+        code,
       };
     }
 
     try {
       if (c.provider === "appscript") {
-        return await sendViaAppsScript({ toEmail, toName, code, type: "recover" });
+        const sent = await sendViaAppsScript({
+          toEmail,
+          toName,
+          code,
+          type: "recover",
+          fromName: "BarberCloud",
+        });
+        return { ...sent, code };
       }
-      return await sendViaEmailJs({ toEmail, toName, code });
+      const sent = await sendViaEmailJs({ toEmail, toName, code });
+      return { ...sent, code };
     } catch (err) {
       console.error("Recovery email send error", err);
       return {
         ok: false,
         demo: true,
         message: err?.message || "No se pudo enviar el correo. Usa el código que aparece en pantalla.",
+        code,
         error: err,
       };
     }
+  }
+
+  async function resolveNotifyEmail(context = {}) {
+    const explicit = String(context.ownerEmail || context.adminEmail || "").trim();
+    if (explicit) return explicit;
+
+    const biz = window.Tenant?.cached?.();
+    if (biz?.owner_email) return String(biz.owner_email).trim();
+
+    try {
+      const user = await window.BarberAuth?.currentUser?.();
+      if (user?.email) return String(user.email).trim();
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      const settings = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+      if (settings.email) return String(settings.email).trim();
+    } catch {
+      /* ignore */
+    }
+
+    const c = cfg();
+    return String(c.adminEmail || c.fromEmail || "").trim();
+  }
+
+  async function notifyOwnerViaServer(kind, payload) {
+    const biz = window.Tenant?.cached?.();
+    const res = await fetch("/api/booking/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind,
+        slug: payload?.slug || biz?.slug || "",
+        negocioId: payload?.negocioId || biz?.id || window.Tenant?.currentId?.() || "",
+        booking: kind === "booking" ? payload : undefined,
+        redeem: kind === "redeem" ? payload : undefined,
+      }),
+    });
+    return res.json().catch(() => ({}));
   }
 
   async function sendBookingAdminAlert(booking) {
@@ -189,15 +289,27 @@
     if (!c.enabled || !c.notifyAdminOnBooking) {
       return { ok: false, skipped: true, message: "Aviso admin desactivado" };
     }
+    if (!booking) {
+      return { ok: false, message: "No hay datos de reserva para avisar" };
+    }
+
+    try {
+      const server = await notifyOwnerViaServer("booking", booking);
+      if (server?.ok) {
+        return { ok: true, message: "Aviso enviado al correo de la membresía", to: server.to };
+      }
+      if (server?.skipped) return server;
+    } catch (err) {
+      console.warn("[EmailService] notify server booking", err);
+    }
+
     if (!isConfigured()) {
       return { ok: false, message: "Correo no configurado" };
     }
-    const admin = String(c.adminEmail || c.fromEmail || "").trim();
+
+    const admin = await resolveNotifyEmail(booking);
     if (!admin) {
-      return { ok: false, message: "Falta EmailConfig.adminEmail" };
-    }
-    if (!booking) {
-      return { ok: false, message: "No hay datos de reserva para avisar" };
+      return { ok: false, message: "No hay correo del dueño de la membresía." };
     }
 
     try {
@@ -216,18 +328,17 @@
         notes: booking?.notes || "",
         status: booking?.status || "pending_confirmation",
         source: booking?.source || "public",
-        business: booking?.business || c.fromName || "BarberHome",
+        business: booking?.business || c.fromName || "BarberCloud",
         clientFingerprint:
           booking?.clientFingerprint ||
           (typeof window !== "undefined" && window.Security?.getDeviceId?.()) ||
           "",
       };
-      console.info("[EmailService] Enviando aviso admin a", admin, payloadBooking);
+      console.info("[EmailService] Aviso reserva →", admin, payloadBooking);
       await postAppsScript({
         type: "booking",
         to_email: admin,
         admin_email: admin,
-        // Campos planos por compatibilidad + objeto booking
         client_name: payloadBooking.name,
         client_phone: payloadBooking.phone,
         client_fingerprint: payloadBooking.clientFingerprint,
@@ -239,12 +350,12 @@
         notes: payloadBooking.notes,
         booking: payloadBooking,
       });
-      return { ok: true, message: "Aviso enviado al administrador" };
+      return { ok: true, message: "Aviso enviado al correo de la membresía", to: admin };
     } catch (err) {
       console.error("Admin booking email error", err);
       return {
         ok: false,
-        message: err?.message || "No se pudo avisar al administrador",
+        message: err?.message || "No se pudo avisar al dueño del negocio",
         error: err,
       };
     }
@@ -255,15 +366,27 @@
     if (!c.enabled || c.notifyAdminOnRedeem === false) {
       return { ok: false, skipped: true, message: "Aviso de canje desactivado" };
     }
+    if (!redeem) {
+      return { ok: false, message: "No hay datos de canje para avisar" };
+    }
+
+    try {
+      const server = await notifyOwnerViaServer("redeem", redeem);
+      if (server?.ok) {
+        return { ok: true, message: "Aviso de canje enviado al correo de la membresía", to: server.to };
+      }
+      if (server?.skipped) return server;
+    } catch (err) {
+      console.warn("[EmailService] notify server redeem", err);
+    }
+
     if (!isConfigured()) {
       return { ok: false, message: "Correo no configurado" };
     }
-    const admin = String(c.adminEmail || c.fromEmail || "").trim();
+
+    const admin = await resolveNotifyEmail(redeem);
     if (!admin) {
-      return { ok: false, message: "Falta EmailConfig.adminEmail" };
-    }
-    if (!redeem) {
-      return { ok: false, message: "No hay datos de canje para avisar" };
+      return { ok: false, message: "No hay correo del dueño de la membresía." };
     }
 
     try {
@@ -299,7 +422,7 @@
         client_doc: `${payload.customer.docType} ${payload.customer.docNumber}`.trim(),
         redeem: payload,
       });
-      return { ok: true, message: "Aviso de canje enviado al administrador" };
+      return { ok: true, message: "Aviso de canje enviado al correo de la membresía", to: admin };
     } catch (err) {
       console.error("Admin redeem email error", err);
       return {

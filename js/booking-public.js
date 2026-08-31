@@ -280,6 +280,8 @@
     calendarStep.hidden = true;
     puntosStep.hidden = true;
     if (shopStep) shopStep.hidden = true;
+    const lookupStep = document.getElementById("lookup-step");
+    if (lookupStep) lookupStep.hidden = true;
     form.hidden = true;
     ok.hidden = true;
     const nf = document.getElementById("public-not-found");
@@ -304,6 +306,8 @@
     selectedType = null;
     closeTimesOverlay();
   }
+
+  window.addEventListener("booking:show-services", showServices);
 
   async function showCalendar() {
     hideAll();
@@ -2180,6 +2184,8 @@
             valueCop: (Number(line.product.price) || 0) * line.qty,
             createdAt: now,
             customer,
+            slug: config.slug || slug,
+            negocioId: window.Tenant?.currentId?.() || "",
           }).catch((err) => {
             console.warn("[loyalty] No se pudo avisar al admin del canje", err);
           });
@@ -2969,14 +2975,18 @@
 
   /** Respaldo si EmailService aún no tiene sendBookingAdminAlert (caché vieja) */
   async function notifyAdminBookingFallback(booking) {
+    if (window.EmailService?.sendBookingAdminAlert) {
+      return window.EmailService.sendBookingAdminAlert(booking);
+    }
     const c = window.EmailConfig || {};
     if (!c.enabled || c.notifyAdminOnBooking === false) {
       return { ok: false, skipped: true };
     }
-    const admin = String(c.adminEmail || c.fromEmail || "").trim();
+    const biz = window.Tenant?.cached?.();
+    const admin = String(biz?.owner_email || c.adminEmail || c.fromEmail || "").trim();
     const url = String(c.appsScriptUrl || "").trim();
     if (!admin || !url || !c.appsScriptSecret) {
-      return { ok: false, message: "Correo admin no configurado" };
+      return { ok: false, message: "Correo del dueño de la membresía no configurado" };
     }
     const payloadBooking = {
       id: booking?.id || "",
@@ -3142,6 +3152,15 @@
     setBookingLoading(true);
 
     try {
+    const planLimit = await window.PlanLimits?.canAddAppointment?.({
+      negocioId: window.Tenant?.currentId?.() || "",
+      negocio: window.Tenant?.cached?.(),
+    });
+    if (planLimit && !planLimit.ok) {
+      showBookingError(planLimit.message);
+      return;
+    }
+
     if (window.BookingStore && date && time) {
       const useGoogle = usesGoogleBusy();
       let result = await window.BookingStore.bookAtomically({
@@ -3181,16 +3200,16 @@
           clientFingerprint,
         });
         if (alert?.ok) {
-          window.AppShell?.toast?.("Aviso de reserva enviado a tu correo");
+          window.AppShell?.toast?.("Aviso de reserva enviado al barbero");
         } else if (alert && !alert.skipped) {
-          console.warn("[booking] Aviso admin:", alert.message);
+          console.warn("[booking] Aviso membresía:", alert.message);
           window.AppShell?.toast?.(
-            alert.message || "No se pudo enviar el aviso al correo admin"
+            alert.message || "No se pudo enviar el aviso al correo del barbero"
           );
         }
       } catch (err) {
-        console.warn("[booking] No se pudo avisar al admin por correo", err);
-        window.AppShell?.toast?.("No se pudo enviar el aviso al correo admin");
+        console.warn("[booking] No se pudo avisar al barbero por correo", err);
+        window.AppShell?.toast?.("No se pudo enviar el aviso al correo del barbero");
       }
 
       // Crear evento en Google en segundo plano (no bloquea el correo)
@@ -3230,6 +3249,7 @@
         duration,
         price: selectedType?.price || 0,
         slug: config.slug || slug,
+        negocioId: window.Tenant?.currentId?.() || "",
         business: config.title || "BarberHome",
         status: "pending_confirmation",
         source: "public",

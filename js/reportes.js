@@ -55,6 +55,7 @@
   }
 
   function loadBookings() {
+    if (window.BookingStore?.loadBookings) return window.BookingStore.loadBookings();
     try {
       const list = JSON.parse(localStorage.getItem(BOOKINGS_KEY) || "[]");
       return Array.isArray(list) ? list : [];
@@ -105,6 +106,12 @@
   }
 
   function classifyBookingStatus(b) {
+    const life = window.BookingStore?.lifecycleStatus?.(b);
+    const confirm = window.BookingStore?.confirmationStatus?.(b);
+    if (life === "cancelled" || life === "no_show") return "cancelled";
+    if (confirm === "failed") return "failed";
+    if (confirm === "pending" || confirm === "expired") return "waiting";
+    if (confirm === "declined") return "cancelled";
     const status = String(b.status || "").toLowerCase();
     if (status.includes("cancel")) return "cancelled";
     if (status.includes("fail") || status.includes("undeliver")) return "failed";
@@ -118,7 +125,6 @@
     if (status.includes("confirm") || status === "google" || status === "scheduled") {
       return "confirmed";
     }
-    // Por defecto una cita activa cuenta como confirmada/agendada
     return "confirmed";
   }
 
@@ -249,7 +255,7 @@
       if (!byDate[day]) return;
       if (!matchesCalendarFilter(bookingCalendarId(b))) return;
       const bucket = classifyBookingStatus(b);
-      byDate[day][bucket] += 1;
+      if (byDate[day][bucket] != null) byDate[day][bucket] += 1;
     });
 
     return series;
@@ -281,7 +287,7 @@
   function renderKpis(series) {
     const t = totals(series);
     const apptTotal = t.confirmed + t.cancelled + t.waiting + t.failed;
-    const msgs = messageStatsInRange();
+    const msgs = window.Billing?.isRestricted?.() ? { sent: 0, failed: 0 } : messageStatsInRange();
     // Total mostrado: prioriza citas del calendario; si hay mensajes, úsalos como contexto de envío
     const total = apptTotal;
     const answered = t.confirmed + t.cancelled;
@@ -338,6 +344,7 @@
     const map = new Map();
     appointments.forEach((b) => {
       if (!matchesCalendarFilter(bookingCalendarId(b))) return;
+      if (window.BookingStore?.lifecycleStatus?.(b) === "cancelled") return;
       const status = String(b.status || "").toLowerCase();
       if (status.includes("cancel")) return;
 
@@ -499,6 +506,19 @@
   async function render() {
     const seq = ++renderSeq;
     updateDateLabel();
+    if (window.Billing?.isRestricted?.()) {
+      const series = daysInRange(dateFrom.value, dateTo.value).map((date) => ({
+        date,
+        confirmed: 0,
+        cancelled: 0,
+        waiting: 0,
+        failed: 0,
+      }));
+      renderKpis(series);
+      drawChart(series);
+      renderRanking([]);
+      return { series, appointments: [] };
+    }
     const appointments = await collectAppointments();
     if (seq !== renderSeq) return null;
     const series = buildSeries(appointments).map(applyStatusFilter);

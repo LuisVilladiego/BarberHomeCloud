@@ -180,14 +180,50 @@ async function updatePago(reference, patch) {
   return Array.isArray(rows) ? rows[0] || null : null;
 }
 
+async function negocioBySlug(slug) {
+  const normalized = normalizeSlug(slug);
+  if (!normalized) return null;
+  const rows = await rest("negocios", {
+    query: { select: "*", slug: `eq.${normalized}`, limit: 1 },
+  });
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+async function fetchOwnerEmail(ownerId) {
+  if (!ownerId) return null;
+  try {
+    const { url, serviceKey } = config();
+    const res = await fetch(`${url}/auth/v1/admin/users/${ownerId}`, {
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.email || null;
+  } catch {
+    return null;
+  }
+}
+
+async function ownerEmailForNegocio({ slug, negocioId }) {
+  let negocio = null;
+  if (negocioId) negocio = await negocioById(negocioId);
+  else if (slug) negocio = await negocioBySlug(slug);
+  if (!negocio?.owner_id) return { email: null, negocio };
+  const email = await fetchOwnerEmail(negocio.owner_id);
+  return { email, negocio };
+}
+
 module.exports = {
   config,
+  fetchOwnerEmail,
   insertNegocio,
   insertPago,
   listNegocios,
   negocioById,
+  negocioBySlug,
   negocioOfOwner,
   normalizeSlug,
+  ownerEmailForNegocio,
   pagoByReference,
   provisionalSlug,
   rest,

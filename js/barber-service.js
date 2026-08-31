@@ -1,6 +1,6 @@
 /**
  * BarberService — barberos por tenant (negocio_id).
- * Persistencia local en autoagenda.barbers; Supabase vía tabla barberos cuando exista.
+ * Sincroniza con tabla barberos en Supabase cuando está disponible.
  */
 (function () {
   const AUTO_KEY = "barbercloud.autoagenda";
@@ -49,12 +49,40 @@
     auto.barbers = barbers.map((b, i) => normalizeBarber(b, i));
     writeAuto(auto);
     window.dispatchEvent(new CustomEvent("barbercloud:barbers-changed"));
+    syncToCloud(auto.barbers).catch((err) => console.warn("[BarberService] sync", err));
+    return auto.barbers;
+  }
+
+  async function syncToCloud(barbers) {
+    if (!window.SupabaseData?.enabled?.() || !window.SupabaseData.upsertBarbero) return;
+    const nid = negocioId();
+    if (!nid) return;
+    for (const b of barbers) {
+      await window.SupabaseData.upsertBarbero({ ...b, negocioId: nid });
+    }
+  }
+
+  async function pullFromCloud() {
+    if (!window.SupabaseData?.fetchBarberos) return list();
+    const remote = await window.SupabaseData.fetchBarberos();
+    if (!remote.length) return list();
+    const auto = readAuto();
+    auto.barbers = remote.map((b, i) => normalizeBarber(b, i));
+    writeAuto(auto);
+    window.dispatchEvent(new CustomEvent("barbercloud:barbers-changed"));
     return auto.barbers;
   }
 
   function upsert(barber) {
     const current = list();
     const normalized = normalizeBarber(barber, current.length);
+    const isNew = !current.some((b) => b.id === normalized.id);
+    if (isNew && !canAddMore()) {
+      window.AppShell?.toast?.(
+        "Alcanzaste el límite de barberos de tu plan. Mejora el plan para agregar más."
+      );
+      return current;
+    }
     const idx = current.findIndex((b) => b.id === normalized.id);
     if (idx >= 0) current[idx] = { ...current[idx], ...normalized };
     else current.push(normalized);
@@ -83,6 +111,9 @@
 
   function canAddMore() {
     const plan = window.BusinessModel?.currentPlan?.();
+    if (window.BusinessModel?.isWithinLimit) {
+      return window.BusinessModel.isWithinLimit("barbers", countActive(), plan);
+    }
     const max = plan?.maxBarbers;
     if (max == null) return true;
     return countActive() < max;
@@ -94,7 +125,14 @@
     countActive,
     createFirstFromOnboarding,
     list,
+    pullFromCloud,
     saveBarbers,
     upsert,
   };
+
+  if (window.SupabaseData?.enabled?.()) {
+    window.addEventListener("barbercloud:panel-ready", () => {
+      pullFromCloud().catch(() => {});
+    }, { once: true });
+  }
 })();

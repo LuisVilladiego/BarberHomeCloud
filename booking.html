@@ -81,6 +81,127 @@
               />
             </svg>
           </button>
+          <button type="button" class="service-row" id="btn-lookup-reservas">
+            <span class="service-row__body">
+              <span class="service-row__name">Consultar mis reservas</span>
+              <span class="service-row__duration">Verifica con WhatsApp</span>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="m9 6 6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          </div>
+        </section>
+
+        <section id="lookup-step" hidden>
+          <div class="book-nav">
+            <button class="book-nav__back" type="button" id="btn-back-lookup" aria-label="Volver">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M15 6 9 12l6 6"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <div class="book-nav__info">
+              <strong>Consultar mis reservas</strong>
+              <span class="service-row__duration">Solo desde hoy en adelante</span>
+            </div>
+          </div>
+
+          <hr class="public-divider" />
+
+          <div id="lookup-phone-panel" class="lookup-panel">
+            <p class="public-desc lookup-panel__lead">
+              Ingresa el WhatsApp con el que hiciste la reserva. Te enviaremos un código por WhatsApp para verificar que eres tú.
+            </p>
+            <label class="field">
+              <span class="field__label">Tu WhatsApp</span>
+              <div class="phone-input">
+                <select class="phone-input__select" id="lookup-cc" aria-label="Código de país">
+                  <option value="+57" selected>🇨🇴 +57</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+52">🇲🇽 +52</option>
+                  <option value="+34">🇪🇸 +34</option>
+                  <option value="+54">🇦🇷 +54</option>
+                  <option value="+56">🇨🇱 +56</option>
+                  <option value="+51">🇵🇪 +51</option>
+                  <option value="+58">🇻🇪 +58</option>
+                  <option value="+593">🇪🇨 +593</option>
+                  <option value="+507">🇵🇦 +507</option>
+                  <option value="+506">🇨🇷 +506</option>
+                  <option value="+502">🇬🇹 +502</option>
+                  <option value="+504">🇭🇳 +504</option>
+                  <option value="+505">🇳🇮 +505</option>
+                  <option value="+503">🇸🇻 +503</option>
+                  <option value="+591">🇧🇴 +591</option>
+                  <option value="+595">🇵🇾 +595</option>
+                  <option value="+598">🇺🇾 +598</option>
+                  <option value="+55">🇧🇷 +55</option>
+                </select>
+                <input
+                  id="lookup-phone-local"
+                  type="tel"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  minlength="7"
+                  maxlength="15"
+                  placeholder="Número con el que reservaste"
+                  autocomplete="tel-national"
+                />
+              </div>
+            </label>
+            <p class="auth-error" id="lookup-error" hidden></p>
+            <p class="lookup-demo" id="lookup-demo" hidden>
+              Modo demo: código <strong id="lookup-demo-code"></strong>
+            </p>
+            <button class="btn btn--primary btn--block" type="button" id="btn-lookup-send">
+              Enviar código por WhatsApp
+            </button>
+          </div>
+
+          <div id="lookup-verify-panel" class="lookup-panel" hidden>
+            <p class="public-desc lookup-panel__lead" id="lookup-verify-hint">
+              Te enviamos un código de 6 dígitos por WhatsApp. Escríbelo abajo para ver tus reservas.
+            </p>
+            <label class="field">
+              <span class="field__label">Código de WhatsApp</span>
+              <input
+                id="lookup-code"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="6"
+                placeholder="000000"
+                autocomplete="one-time-code"
+              />
+            </label>
+            <p class="auth-error" id="lookup-verify-error" hidden></p>
+            <p class="lookup-demo" id="lookup-verify-demo" hidden>
+              Modo demo: código <strong id="lookup-verify-demo-code"></strong>
+            </p>
+            <button class="btn btn--primary btn--block" type="button" id="btn-lookup-verify">
+              Ver mis reservas
+            </button>
+            <button class="btn btn--secondary btn--block lookup-resend" type="button" id="btn-lookup-resend">
+              Reenviar código
+            </button>
+          </div>
+
+          <div id="lookup-results-panel" class="lookup-panel" hidden>
+            <div id="lookup-results-list" class="lookup-results"></div>
+            <button class="btn btn--secondary btn--block" type="button" id="btn-lookup-again">
+              Consultar otro número
+            </button>
           </div>
         </section>
 
@@ -794,18 +915,19 @@
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>
     <script src="js/supabase-client.js?v=20260816s"></script>
-    <script src="js/supabase-data.js?v=20260818"></script>
+    <script src="js/supabase-data.js?v=20260829n"></script>
 <script src="js/security.js?v=20260818e"></script>
-    <script src="js/email-config.js?v=20260818h"></script>
-    <script src="js/email-service.js?v=20260816b"></script>
+    <script src="js/email-config.js?v=20260829p"></script>
+    <script src="js/email-service.js?v=20260829q"></script>
     <script src="js/google-config.js?v=20260806"></script>
     <script src="js/google-auth.js?v=20260819a"></script>
     <script src="js/google-calendar.js?v=20260819a"></script>
-    <script src="js/tenant.js?v=20260818"></script>
-    <script src="js/business-model.js?v=20260829m"></script>
-    <script src="js/plan-limits.js?v=20260824"></script>
-    <script src="js/booking-store.js?v=20260818c"></script>
+    <script src="js/tenant.js?v=20260829q"></script>
+    <script src="js/business-model.js?v=20260829n"></script>
+    <script src="js/plan-limits.js?v=20260829n"></script>
+    <script src="js/booking-store.js?v=20260829n"></script>
     <script src="js/loyalty-engine.js?v=20260818"></script>
-    <script src="js/booking-public.js?v=20260818e"></script>
+    <script src="js/booking-public.js?v=20260829r"></script>
+    <script src="js/booking-lookup.js?v=20260830a"></script>
   </body>
 </html>

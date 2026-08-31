@@ -16,7 +16,7 @@ window.EmailConfig = {
   fromName: "BarberHome",
   fromEmail: "barberhomeluisvilladiego20@gmail.com",
 
-  /** Correo del administrador que recibe cada nueva reserva / canje */
+  /** Fallback solo si la API no resuelve el dueño de la membresía */
   adminEmail: "barberhomeluisvilladiego20@gmail.com",
   notifyAdminOnBooking: true,
   /** Aviso cuando un cliente canjea puntos por un producto */
@@ -24,10 +24,10 @@ window.EmailConfig = {
 
   /* —— Google Apps Script —— */
   appsScriptUrl:
-    "https://script.google.com/macros/s/AKfycbwpCxFSEjmwMTeIuB9tQVbgigXglhIYYM9Ch-fOAhIUuBHI9yCsLokPGjH0OvuIPBqS/exec",
+    "https://script.google.com/macros/s/AKfycbySOcHmfyYq7Z30E9tiMgKs76FkdBkBxKKNc6S-oaur7QJ8HWCq3sfN_MJFw-mXQ8h7/exec",
   /** Debe coincidir con SECRET en gmail-apps-script.gs.
-   *  Nota de seguridad: cualquier secreto en frontend es visible.
-   *  Rótalo si lo filtraste y vuelve a desplegar el Apps Script. */
+   *  En producción el envío va por /api/auth/send-code (variables APPS_SCRIPT_* en Vercel).
+   *  Este fallback en frontend solo se usa si la API no responde. */
   appsScriptSecret: "barberhome-otp-2026",
 
   /* —— EmailJS (opcional) —— */

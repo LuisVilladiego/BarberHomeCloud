@@ -149,7 +149,7 @@
     }
     if (verifyDemo && verifyDemoCode) {
       verifyDemo.hidden = !failed;
-      verifyDemoCode.textContent = failed ? pending.code : "";
+      verifyDemoCode.textContent = failed ? pending?.code || "" : "";
     }
     if (verifyCode) {
       verifyCode.required = true;
@@ -178,7 +178,7 @@
     const failed = !send || send.ok === false || send.demo;
     if (recoverDemo && recoverDemoCode) {
       recoverDemo.hidden = !failed;
-      recoverDemoCode.textContent = failed ? pending.code : "";
+      recoverDemoCode.textContent = failed ? pending?.code || "" : "";
     }
     showBox(recoverResetError, failed ? send?.message || "" : "");
   }
@@ -295,24 +295,49 @@
     pending = {
       email,
       name: name || pending?.name || "",
-      code,
+      code: "",
+      otpToken: "",
       password: pending?.password || "",
       expires: Date.now() + 10 * 60 * 1000,
       type: type || "verify",
     };
+    let send;
     if (type === "recover") {
-      return window.EmailService.sendRecoveryCode({
+      send = await window.EmailService.sendRecoveryCode({
         toEmail: email,
         toName: name || "barbero",
         code,
       });
+    } else {
+      send = await window.EmailService.sendVerificationCode({
+        toEmail: email,
+        toName: name || "barbero",
+        code,
+        productLabel: "BarberCloud",
+      });
     }
-    return window.EmailService.sendVerificationCode({
-      toEmail: email,
-      toName: name || "barbero",
-      code,
-      productLabel: "BarberCloud",
-    });
+    if (send?.otpToken) pending.otpToken = send.otpToken;
+    if (send?.code) pending.code = send.code;
+    else if (!send?.otpToken && code) pending.code = code;
+    return send;
+  }
+
+  async function verifyStaffCode(email, code, type) {
+    if (pending?.otpToken) {
+      const res = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          code,
+          otpToken: pending.otpToken,
+          type: type || pending.type || "verify",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return !!data.ok;
+    }
+    return String(code || "").replace(/\D/g, "") === String(pending?.code || "").replace(/\D/g, "");
   }
 
   document.querySelectorAll("[data-auth-mode]").forEach((btn) => {
@@ -426,6 +451,25 @@
 
   document.getElementById("recover-back")?.addEventListener("click", () => showEmailPanel("login"));
   document.getElementById("recover-reset-back")?.addEventListener("click", () => showRecoverRequest());
+  document.getElementById("recover-resend")?.addEventListener("click", async () => {
+    if (!pending?.email) return;
+    const btn = document.getElementById("recover-resend");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Enviando…";
+    }
+    let send = { ok: false, demo: true };
+    try {
+      send = await sendStaffCode(pending.email, pending.name, "recover");
+    } catch (err) {
+      console.error("Recover resend", err);
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Reenviar código";
+    }
+    showRecoverReset(send);
+  });
 
   recoverRequestForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -464,7 +508,8 @@
     const code = String(fd.get("code") || "").replace(/\D/g, "");
     const password = String(fd.get("password") || "");
     const confirm = String(fd.get("passwordConfirm") || "");
-    if (code !== pending.code) {
+    const codeOk = await verifyStaffCode(pending.email, code, "recover");
+    if (!codeOk) {
       showBox(recoverResetError, "Ese código no coincide. Revisa el correo.");
       return;
     }
@@ -476,15 +521,36 @@
       showBox(recoverResetError, "Las contraseñas no coinciden.");
       return;
     }
-    const result = await window.BarberAuth.completePasswordReset(pending.email, password);
-    if (result.needsGoogle) {
-      showEmailPanel("login");
-      showError(result.message);
-      return;
-    }
-    if (result.session || (await window.BarberAuth.session())) {
-      afterAuth();
-      return;
+    const resetRes = pending.otpToken
+      ? await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: pending.email,
+            code,
+            password,
+            otpToken: pending.otpToken,
+          }),
+        })
+      : null;
+    const resetData = resetRes ? await resetRes.json().catch(() => ({})) : { ok: false };
+    if (!resetData.ok) {
+      if (!pending.otpToken) {
+        const fallback = await window.BarberAuth.completePasswordReset(pending.email, password);
+        if (fallback.needsGoogle) {
+          showEmailPanel("login");
+          showError(fallback.message);
+          return;
+        }
+        if (fallback.session || (await window.BarberAuth.session())) {
+          afterAuth();
+          return;
+        }
+      }
+      if (!resetData.ok) {
+        showBox(recoverResetError, resetData.message || "No se pudo guardar la contraseña.");
+        return;
+      }
     }
     const login = await window.BarberAuth.signIn(pending.email, password);
     if (!login.ok) {
@@ -523,7 +589,8 @@
       return;
     }
     const code = String(new FormData(verifyForm).get("code") || "").replace(/\D/g, "");
-    if (code !== pending.code) {
+    const codeOk = await verifyStaffCode(pending.email, code, "verify");
+    if (!codeOk) {
       showVerifyError("Ese código no coincide. Revisa el correo.");
       return;
     }

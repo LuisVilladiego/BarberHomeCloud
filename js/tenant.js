@@ -196,6 +196,12 @@
     }
   }
 
+  function withOwnerEmail(negocio, ownerEmail) {
+    if (!negocio) return negocio;
+    const email = String(ownerEmail || negocio.owner_email || "").trim();
+    return email ? { ...negocio, owner_email: email } : negocio;
+  }
+
   function cached() {
     try {
       const raw = localStorage.getItem(NEGOCIO_CACHE_KEY);
@@ -349,16 +355,19 @@
 
     const ownerMismatch = cachedBiz?.owner_id && cachedBiz.owner_id !== user.id;
     const idMismatch = !prevId || prevId !== own.id;
+    const enriched = withOwnerEmail(own, user.email);
     if (ownerMismatch || idMismatch || cachedBiz?.id !== own.id) {
       clearLocalData();
-      setCurrent(own);
+      setCurrent(enriched);
+    } else {
+      setCurrent(enriched);
     }
 
-    hydrateNegocioCaches(own);
+    hydrateNegocioCaches(enriched);
     await window.SupabaseData.pullToLocalCache?.({ replace: true });
     await refreshRole();
 
-    return { ok: true, mode: "ready", negocio: own, needsOnboarding: false };
+    return { ok: true, mode: "ready", negocio: enriched, needsOnboarding: false };
   }
 
   let cachedRole = null;

@@ -487,7 +487,11 @@
     if (!clientsCache.length) {
       list.innerHTML = `
         <p class="intel-empty">
-          Aún no hay clientes. Cuando haya citas o registros en Puntos (con correo), aparecerán aquí.
+          ${
+            window.Billing?.isRestricted?.()
+              ? "Vista de ejemplo. Renueva tu plan para ver tus clientes."
+              : "Aún no hay clientes. Cuando haya citas o registros en Puntos (con correo), aparecerán aquí."
+          }
         </p>`;
       return;
     }
@@ -588,9 +592,11 @@
 
     if (!filtered.length) {
       table.innerHTML = `${head}<p class="empty-hint" style="padding:16px 22px">${
-        query.trim()
-          ? "Ningún contacto coincide con tu búsqueda."
-          : "No hay contactos para mostrar."
+        window.Billing?.isRestricted?.()
+          ? "Renueva tu plan para ver tus contactos."
+          : query.trim()
+            ? "Ningún contacto coincide con tu búsqueda."
+            : "No hay contactos para mostrar."
       }</p>`;
       return;
     }
@@ -628,6 +634,17 @@
   }
 
   function refresh() {
+    if (window.Billing?.isRestricted?.()) {
+      clientsCache = [];
+      try {
+        updateCounts([]);
+        renderIntelList();
+        renderContactsTable();
+      } catch (err) {
+        console.error("[contactos] Error al pintar maqueta", err);
+      }
+      return;
+    }
     try {
       clientsCache = buildClients();
       if (window.RetentionEngine?.attachRetentionSignals) {
