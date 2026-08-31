@@ -35,6 +35,29 @@ function resolveContentSid(fromAddress) {
   return "";
 }
 
+function formatTwilioError(err) {
+  const code = Number(err?.code || err?.twilio?.code || 0);
+  const msg = String(err?.message || err?.twilio?.message || "").trim();
+
+  if (code === 20003 || /compliance profile/i.test(msg)) {
+    return "WhatsApp no está habilitado: completa la verificación KYC en Twilio Trust Hub.";
+  }
+  if (code === 572002 || /verified recipient/i.test(msg)) {
+    return "El número destino debe estar verificado en Twilio o unido al sandbox de WhatsApp.";
+  }
+  if (code === 21655 || /ContentSid is Invalid/i.test(msg)) {
+    return "La plantilla de WhatsApp no es válida. Revisa TWILIO_WHATSAPP_CONTENT_SID.";
+  }
+  if (code === 63007 || /not a valid WhatsApp/i.test(msg)) {
+    return "Este número no tiene WhatsApp o no está unido al sandbox de Twilio.";
+  }
+  if (/join.*sandbox|sandbox.*join/i.test(msg)) {
+    return "Para pruebas, envía el mensaje join al sandbox de WhatsApp desde tu celular.";
+  }
+
+  return msg || "No se pudo enviar el WhatsApp.";
+}
+
 function buildContentVariables({ code, businessName, contentSid }) {
   const mode = String(process.env.TWILIO_WHATSAPP_CONTENT_MODE || "").trim().toLowerCase();
   const brand = String(businessName || "BarberCloud").trim();
@@ -63,7 +86,7 @@ function buildContentVariables({ code, businessName, contentSid }) {
 async function twilioSendMessage(params) {
   const cfg = twilioConfig();
   if (!cfg) {
-    return { ok: false, demo: true, message: "WhatsApp no configurado en el servidor." };
+    throw new Error("WhatsApp no configurado en el servidor.");
   }
 
   const auth = Buffer.from(`${cfg.accountSid}:${cfg.authToken}`).toString("base64");
@@ -81,18 +104,18 @@ async function twilioSendMessage(params) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data?.message || `Twilio respondió ${res.status}`);
+    const err = new Error(formatTwilioError({ code: data?.code, message: data?.message, twilio: data }));
     err.code = data?.code;
     err.twilio = data;
     throw err;
   }
-  return { ok: true, demo: false, message: "WhatsApp enviado.", sid: data?.sid || "" };
+  return { ok: true, message: "WhatsApp enviado.", sid: data?.sid || "" };
 }
 
 async function sendWhatsApp({ to, body, contentSid, contentVariables }) {
   const cfg = twilioConfig();
   if (!cfg) {
-    return { ok: false, demo: true, message: "WhatsApp no configurado en el servidor." };
+    throw new Error("WhatsApp no configurado en el servidor.");
   }
 
   const toAddress = whatsappAddress(to);

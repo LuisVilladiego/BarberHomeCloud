@@ -65,38 +65,35 @@ async function handleSendCode(req, res) {
   });
 
   const businessName = negocio.name || "BarberCloud";
-  let delivery = { ok: false, demo: true };
 
-  if (isConfigured()) {
-    try {
-      delivery = await sendLookupCode({ toE164: phoneE164, code, businessName });
-    } catch (sendErr) {
-      console.error("[booking/lookup send-code]", sendErr);
-      delivery = {
+  if (!isConfigured()) {
+    return res.status(503).json({
+      ok: false,
+      message: "El envío por WhatsApp no está configurado. Contacta al negocio.",
+    });
+  }
+
+  try {
+    const delivery = await sendLookupCode({ toE164: phoneE164, code, businessName });
+    if (!delivery?.ok) {
+      return res.status(502).json({
         ok: false,
-        demo: true,
-        message: sendErr?.message || "No se pudo enviar el WhatsApp.",
-      };
+        message: delivery.message || "No se pudo enviar el WhatsApp.",
+      });
     }
+  } catch (sendErr) {
+    console.error("[booking/lookup send-code]", sendErr);
+    return res.status(502).json({
+      ok: false,
+      message: sendErr?.message || "No se pudo enviar el WhatsApp.",
+    });
   }
-
-  if (!delivery.ok && !delivery.demo) {
-    return res.status(500).json({ ok: false, message: delivery.message || "No se pudo enviar el WhatsApp." });
-  }
-
-  const useDemoFallback = !delivery.ok && delivery.demo;
 
   return res.status(200).json({
     ok: true,
     hasBookings: true,
     otpToken,
-    demo: useDemoFallback || !!delivery.demo,
-    code: useDemoFallback || delivery.demo ? code : undefined,
-    message: useDemoFallback
-      ? `No pudimos enviar el WhatsApp (${delivery.message || "error"}). Usa el código de respaldo en pantalla.`
-      : delivery.demo
-        ? "WhatsApp no configurado. Usa el código de respaldo en pantalla."
-        : "Te enviamos un código por WhatsApp. Revísalo e ingrésalo abajo.",
+    message: "Te enviamos un código por WhatsApp. Revísalo e ingrésalo abajo.",
   });
 }
 

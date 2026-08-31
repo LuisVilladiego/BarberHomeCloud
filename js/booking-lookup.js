@@ -10,13 +10,9 @@
   const lookupCc = document.getElementById("lookup-cc");
   const lookupPhone = document.getElementById("lookup-phone-local");
   const lookupError = document.getElementById("lookup-error");
-  const lookupDemo = document.getElementById("lookup-demo");
-  const lookupDemoCode = document.getElementById("lookup-demo-code");
   const btnSend = document.getElementById("btn-lookup-send");
   const lookupCode = document.getElementById("lookup-code");
   const lookupVerifyError = document.getElementById("lookup-verify-error");
-  const lookupVerifyDemo = document.getElementById("lookup-verify-demo");
-  const lookupVerifyDemoCode = document.getElementById("lookup-verify-demo-code");
   const lookupVerifyHint = document.getElementById("lookup-verify-hint");
   const btnVerify = document.getElementById("btn-lookup-verify");
   const btnResend = document.getElementById("btn-lookup-resend");
@@ -33,7 +29,6 @@
     countryCode: "+57",
     phone: "",
     otpToken: "",
-    demoCode: "",
   };
   let busy = false;
 
@@ -107,14 +102,12 @@
   }
 
   function resetLookupState() {
-    pending = { countryCode: "+57", phone: "", otpToken: "", demoCode: "" };
+    pending = { countryCode: "+57", phone: "", otpToken: "" };
     if (lookupPhone) lookupPhone.value = "";
     if (lookupCode) lookupCode.value = "";
     if (lookupCc) lookupCc.value = "+57";
     showError(lookupError, "");
     showError(lookupVerifyError, "");
-    if (lookupDemo) lookupDemo.hidden = true;
-    if (lookupVerifyDemo) lookupVerifyDemo.hidden = true;
     showPanel("phone");
     if (resultsList) resultsList.innerHTML = "";
   }
@@ -154,7 +147,6 @@
   async function sendCode() {
     if (busy) return;
     showError(lookupError, "");
-    if (lookupDemo) lookupDemo.hidden = true;
 
     const countryCode = lookupCc?.value || "+57";
     const phone = sanitizePhone(lookupPhone?.value || "");
@@ -188,22 +180,10 @@
         countryCode,
         phone,
         otpToken: data.otpToken || "",
-        demoCode: data.code || "",
       };
-
-      if (data.demo && data.code) {
-        if (lookupDemo) {
-          lookupDemo.hidden = false;
-          if (lookupDemoCode) lookupDemoCode.textContent = data.code;
-        }
-      }
 
       if (lookupVerifyHint) {
         lookupVerifyHint.textContent = `Te enviamos un código de 6 dígitos por WhatsApp a ${maskPhone(countryCode, phone)}. Escríbelo abajo para ver tus reservas.`;
-      }
-      if (lookupVerifyDemo) {
-        lookupVerifyDemo.hidden = !(data.demo && data.code);
-        if (lookupVerifyDemoCode) lookupVerifyDemoCode.textContent = data.code || "";
       }
       if (lookupCode) lookupCode.value = "";
       showError(lookupVerifyError, "");
