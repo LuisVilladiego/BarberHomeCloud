@@ -2,11 +2,23 @@
  * Conexión a Google Calendar vía Google Identity Services (token en navegador).
  */
 (function () {
-  const AUTH_KEY = "barbercloud.google_auth";
-  const BUSY_KEY = "barbercloud.google_busy_cache";
-  const ACTIVE_CAL_KEY = "barbercloud.active_calendar";
+  const AUTH_BASE = "barbercloud.google_auth";
+  const BUSY_BASE = "barbercloud.google_busy_cache";
+  const ACTIVE_BASE = "barbercloud.active_calendar";
   const CANONICAL_ORIGIN = "https://barber-home-cloud.vercel.app";
   const cfg = () => window.GoogleConfig || {};
+
+  function authKey() {
+    return window.Tenant?.scopedStorageKey?.(AUTH_BASE) || AUTH_BASE;
+  }
+
+  function busyKey() {
+    return window.Tenant?.scopedStorageKey?.(BUSY_BASE) || BUSY_BASE;
+  }
+
+  function activeCalKey() {
+    return window.Tenant?.scopedStorageKey?.(ACTIVE_BASE) || ACTIVE_BASE;
+  }
 
   function googleAuthError(err) {
     const raw = String(err?.type || err?.message || err || "");
@@ -22,7 +34,7 @@
 
   function loadAuth() {
     try {
-      return JSON.parse(localStorage.getItem(AUTH_KEY) || "null");
+      return JSON.parse(localStorage.getItem(authKey()) || "null");
     } catch {
       return null;
     }
@@ -30,10 +42,10 @@
 
   function saveAuth(data) {
     if (!data) {
-      localStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem(authKey());
       return;
     }
-    localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+    localStorage.setItem(authKey(), JSON.stringify(data));
   }
 
   function isExpired(auth) {
@@ -197,7 +209,7 @@
       connectedAt: new Date().toISOString(),
     };
     saveAuth(auth);
-    localStorage.setItem(ACTIVE_CAL_KEY, "gmail");
+    localStorage.setItem(activeCalKey(), "gmail");
     try {
       await syncBusyCache();
     } catch (err) {
@@ -301,7 +313,7 @@
       }
     }
     saveAuth(null);
-    localStorage.removeItem(BUSY_KEY);
+    localStorage.removeItem(busyKey());
   }
 
   function getConnection() {
@@ -317,7 +329,7 @@
 
   function loadBusyCache() {
     try {
-      const cache = JSON.parse(localStorage.getItem(BUSY_KEY) || "null");
+      const cache = JSON.parse(localStorage.getItem(busyKey()) || "null");
       if (!cache || !Array.isArray(cache.blocks)) return null;
       return cache;
     } catch {
@@ -477,18 +489,18 @@
       blocks,
     };
     // Reemplaza siempre la cache (así un evento borrado libera el hueco)
-    localStorage.setItem(BUSY_KEY, JSON.stringify(cache));
+    localStorage.setItem(busyKey(), JSON.stringify(cache));
     reconcileLocalBookings(blocks, items);
 
-    const active = localStorage.getItem(ACTIVE_CAL_KEY);
+    const active = localStorage.getItem(activeCalKey());
     if (!active || active === "gmail") {
-      localStorage.setItem(ACTIVE_CAL_KEY, "gmail");
+      localStorage.setItem(activeCalKey(), "gmail");
     }
     return cache;
   }
 
   function clearBusyCache() {
-    localStorage.removeItem(BUSY_KEY);
+    localStorage.removeItem(busyKey());
   }
 
   async function createEvent({
@@ -550,7 +562,8 @@
     isSlotBusy,
     usesGoogleAvailability,
     createEvent,
-    ACTIVE_CAL_KEY,
-    BUSY_KEY,
+    ACTIVE_CAL_KEY: activeCalKey,
+    BUSY_KEY: busyKey,
+    AUTH_KEY: authKey,
   };
 })();

@@ -25,8 +25,6 @@
     "Diciembre",
   ];
   const DAY_KEYS = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
-  const CAL_CONFIGS_KEY = "barbercloud.calendar_configs";
-
   function loadConfig() {
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
@@ -39,15 +37,6 @@
     try {
       const fromAuto = loadConfig().timeFormat;
       if (fromAuto === "12" || fromAuto === "24") return fromAuto;
-      const all = JSON.parse(localStorage.getItem(CAL_CONFIGS_KEY) || "{}");
-      const preferred =
-        all.barberhome ||
-        all.gmail ||
-        all.barbercloud ||
-        Object.values(all).find((c) => c && (c.timeFormat === "12" || c.timeFormat === "24"));
-      if (preferred?.timeFormat === "12" || preferred?.timeFormat === "24") {
-        return preferred.timeFormat;
-      }
     } catch {
       /* ignore */
     }
@@ -498,7 +487,9 @@
   });
 
   window.addEventListener("storage", (e) => {
-    if (e.key !== "barbercloud.google_busy_cache" && e.key !== "barbercloud.bookings") return;
+    if (!e.key) return;
+    const busyPrefix = "barbercloud.google_busy_cache";
+    if (!e.key.startsWith(busyPrefix) && e.key !== "barbercloud.bookings") return;
     if (!isAvailabilityViewActive()) return;
     applyAvailabilityToUI();
   });
@@ -1101,21 +1092,6 @@
   });
 
   function resolveShopWhatsApp() {
-    try {
-      const all = JSON.parse(localStorage.getItem(CAL_CONFIGS_KEY) || "{}");
-      const cfg =
-        all.barberhome ||
-        all.gmail ||
-        all.barbercloud ||
-        Object.values(all).find((c) => c && (c.whatsappPhone || c.whatsappCc));
-      if (cfg?.whatsappPhone) {
-        const cc = String(cfg.whatsappCc || "+57").replace(/\D/g, "");
-        const phone = String(cfg.whatsappPhone).replace(/\D/g, "");
-        if (phone) return `${cc}${phone}`;
-      }
-    } catch {
-      /* ignore */
-    }
     try {
       const auto = loadConfig();
       if (auto.whatsappPhone) {

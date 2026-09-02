@@ -186,11 +186,53 @@
     }
   }
 
+  const SCOPED_STORAGE_BASES = [
+    "barbercloud.calendar_configs",
+    "barbercloud.google_auth",
+    "barbercloud.google_busy_cache",
+    "barbercloud.active_calendar",
+  ];
+
+  /**
+   * Clave localStorage aislada por negocio. Migra datos legacy globales una sola vez
+   * al negocio que los reclama; nunca los copia a otro tenant.
+   */
+  function scopedStorageKey(baseKey, negocioId) {
+    const nid = negocioId || currentId();
+    if (!nid) return baseKey;
+    const scoped = `${baseKey}.${nid}`;
+    try {
+      if (localStorage.getItem(scoped) != null) return scoped;
+
+      const legacy = localStorage.getItem(baseKey);
+      if (!legacy) return scoped;
+
+      const claimKey = `${baseKey}.__legacy_owner`;
+      const owner = localStorage.getItem(claimKey);
+      if (owner && owner !== nid) return scoped;
+
+      localStorage.setItem(scoped, legacy);
+      localStorage.setItem(claimKey, nid);
+      localStorage.removeItem(baseKey);
+    } catch {
+      /* ignore */
+    }
+    return scoped;
+  }
+
   function setCurrent(negocio) {
     try {
       if (!negocio?.id) return;
+      const prev = currentId();
       localStorage.setItem(NEGOCIO_ID_KEY, negocio.id);
       localStorage.setItem(NEGOCIO_CACHE_KEY, JSON.stringify(negocio));
+      if (prev && prev !== negocio.id) {
+        window.dispatchEvent(
+          new CustomEvent("barbercloud:tenant-changed", {
+            detail: { prevId: prev, negocioId: negocio.id },
+          })
+        );
+      }
     } catch {
       /* ignore */
     }
@@ -291,23 +333,20 @@
   }
 
   /** Claves que no se borran al cerrar sesión (sí se borran al pulsar Desconectar). */
-  const SESSION_PERSIST_KEYS = new Set([
-    "barbercloud.device_id",
-    "barbercloud.auth",
-    "barbercloud.google_auth",
-    "barbercloud.google_busy_cache",
-    "barbercloud.active_calendar",
-    "barbercloud.calendar_configs",
-  ]);
+  const SESSION_PERSIST_KEYS = new Set(["barbercloud.device_id", "barbercloud.auth"]);
 
   function shouldPersistAcrossLogout(key) {
     if (SESSION_PERSIST_KEYS.has(key)) return true;
     if (key === "barbercloud.welcome" || key.startsWith("barbercloud.welcome.")) return true;
     if (key.startsWith("barbercloud.login_throttle:")) return true;
+    if (key.endsWith(".__legacy_owner")) return true;
+    for (const base of SCOPED_STORAGE_BASES) {
+      if (key.startsWith(`${base}.`) && key.length > base.length + 1) return true;
+    }
     return false;
   }
 
-  /** Borra datos de negocio/caché. Conserva login, device y Google Calendar. */
+  /** Borra datos de negocio/caché. Conserva login, device y datos scoped por negocio. */
   function clearLocalData() {
     try {
       Object.keys(localStorage).forEach((key) => {
@@ -419,6 +458,8 @@
     isNegocioActive,
     hasActiveSubscription,
     currentId,
+    scopedStorageKey,
+    SCOPED_STORAGE_BASES,
     setCurrent,
     cached,
     isLocalHost,

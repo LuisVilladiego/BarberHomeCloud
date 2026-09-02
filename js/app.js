@@ -151,8 +151,6 @@
   const REMINDER_MINUTES = 30;
   const BOOKINGS_KEY = "barbercloud.bookings";
   const NOTIF_KEY = "barbercloud.notifications";
-  const CAL_CONFIGS_KEY = "barbercloud.calendar_configs";
-
   function parseBookingDate(booking) {
     if (!booking?.date || !booking?.time) return null;
     const time =
@@ -187,12 +185,12 @@
 
   function getMessageConfig() {
     try {
-      const all = JSON.parse(localStorage.getItem(CAL_CONFIGS_KEY) || "{}");
+      const all = window.CalendarStore?.loadAll?.() || {};
       const cfg =
         all.barberhome ||
         all.gmail ||
         all.barbercloud ||
-        Object.values(all).find((c) => c && typeof c === "object") ||
+        Object.values(all).find((c) => c && typeof c === "object" && !Array.isArray(c)) ||
         {};
       return {
         paused: !!cfg.paused,
@@ -992,6 +990,61 @@
     document.body.appendChild(script);
   }
 
+  function initMobileNav() {
+    if (initMobileNav._done) return;
+    const toggle = document.querySelector(".menu-toggle");
+    const sidebar = document.querySelector(".sidebar");
+    const backdrop = document.querySelector(".backdrop");
+    if (!toggle || !sidebar) return;
+    initMobileNav._done = true;
+
+    toggle.setAttribute("aria-expanded", "false");
+
+    function setOpen(open) {
+      sidebar.classList.toggle("is-open", open);
+      document.body.classList.toggle("nav-open", open);
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+    }
+
+    if (!sidebar.querySelector(".sidebar__close")) {
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "sidebar__close icon-btn";
+      closeBtn.type = "button";
+      closeBtn.setAttribute("aria-label", "Cerrar menú");
+      closeBtn.innerHTML =
+        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      closeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      });
+      sidebar.querySelector(".sidebar__top")?.appendChild(closeBtn);
+    }
+
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setOpen(!sidebar.classList.contains("is-open"));
+    });
+    backdrop?.addEventListener("click", () => setOpen(false));
+    sidebar.querySelectorAll(".nav__item").forEach((link) => {
+      link.addEventListener("click", () => setOpen(false));
+    });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 900) setOpen(false);
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && sidebar.classList.contains("is-open")) setOpen(false);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initMobileNav);
+  } else {
+    initMobileNav();
+  }
+
   initTenantGate().then(async (ok) => {
     if (!ok) return;
     revealAccess();
@@ -1018,27 +1071,6 @@
       if (!document.hidden) runNotificationJobs();
     });
 
-    const toggle = document.querySelector(".menu-toggle");
-    const sidebar = document.querySelector(".sidebar");
-    const backdrop = document.querySelector(".backdrop");
-
-    if (!toggle || !sidebar) return;
-
-    toggle.setAttribute("aria-expanded", "false");
-
-    function setOpen(open) {
-      sidebar.classList.toggle("is-open", open);
-      document.body.classList.toggle("nav-open", open);
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    }
-
-    toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("is-open")));
-    backdrop?.addEventListener("click", () => setOpen(false));
-    sidebar.querySelectorAll(".nav__item").forEach((link) => {
-      link.addEventListener("click", () => setOpen(false));
-    });
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 900) setOpen(false);
-    });
+    initMobileNav();
   });
 })();

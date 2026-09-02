@@ -1,6 +1,6 @@
 (function () {
   const AUTOAGENDA_KEY = "barbercloud.autoagenda";
-  const ACTIVE_CAL_KEY = "barbercloud.active_calendar";
+  const ACTIVE_CAL_BASE = "barbercloud.active_calendar";
   const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
   const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const START_HOUR = 5;
@@ -30,10 +30,14 @@
   let selectedBookingId = null;
   let selectedEvent = null;
   let services = loadServices();
-  let activeCalendarId = localStorage.getItem(ACTIVE_CAL_KEY) || "negocio";
+  function activeCalKey() {
+    return window.Tenant?.scopedStorageKey?.(ACTIVE_CAL_BASE) || ACTIVE_CAL_BASE;
+  }
+
+  let activeCalendarId = localStorage.getItem(activeCalKey()) || "negocio";
   if (activeCalendarId === "barberhome" || activeCalendarId === "barbercloud") {
     activeCalendarId = "negocio";
-    localStorage.setItem(ACTIVE_CAL_KEY, "negocio");
+    localStorage.setItem(activeCalKey(), "negocio");
   }
   let googleWeekEvents = [];
   let loadSeq = 0;
@@ -87,7 +91,7 @@
       const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
       if (auto.timeFormat === "12" || auto.timeFormat === "24") format = auto.timeFormat;
       else {
-        const all = JSON.parse(localStorage.getItem("barbercloud.calendar_configs") || "{}");
+        const all = window.CalendarStore?.loadAll?.() || {};
         const cfg =
           all.barberhome ||
           all.gmail ||
@@ -178,7 +182,7 @@
       activeCalendarId = "demo";
     } else if (!calendars.some((c) => c.id === activeCalendarId)) {
       activeCalendarId = calendars[0]?.id || "negocio";
-      localStorage.setItem(ACTIVE_CAL_KEY, activeCalendarId);
+      localStorage.setItem(activeCalKey(), activeCalendarId);
     }
     sourceSelect.innerHTML = calendars
       .map(
@@ -609,7 +613,7 @@
   });
   sourceSelect?.addEventListener("change", async () => {
     activeCalendarId = sourceSelect.value || "barberhome";
-    localStorage.setItem(ACTIVE_CAL_KEY, activeCalendarId);
+    localStorage.setItem(activeCalKey(), activeCalendarId);
     googleWeekEvents = [];
     if (activeCalendarId === "gmail" && window.GoogleCalendar?.isConnected?.()) {
       try {

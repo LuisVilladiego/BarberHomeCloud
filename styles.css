@@ -85,6 +85,10 @@ html.access-pending body {
   flex-shrink: 0;
 }
 
+.sidebar__close {
+  display: none;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -387,7 +391,8 @@ html.access-pending body {
   animation-delay: 60ms;
 }
 
-.panel:has(.row-menu.is-open) {
+.panel:has(.row-menu.is-open),
+.table:has(.row-menu.is-open) {
   overflow: visible;
 }
 
@@ -399,10 +404,16 @@ html.access-pending body {
 .table__head,
 .table__row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(160px, 1fr) minmax(180px, 1fr) 48px;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(160px, 1fr) minmax(180px, 1fr) 88px;
   gap: 12px;
   align-items: center;
   padding: 0 22px;
+}
+
+.table__row[hidden],
+.table__row.is-gone,
+.calendars-empty[hidden] {
+  display: none !important;
 }
 
 .table__head {
@@ -644,7 +655,7 @@ html.access-pending body {
   position: fixed;
   top: 14px;
   left: 14px;
-  z-index: 40;
+  z-index: 120;
   width: 42px;
   height: 42px;
   border: 1px solid var(--border);
@@ -653,6 +664,8 @@ html.access-pending body {
   color: var(--text);
   cursor: pointer;
   box-shadow: var(--shadow);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .backdrop {
@@ -660,7 +673,7 @@ html.access-pending body {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
-  z-index: 15;
+  z-index: 110;
 }
 
 body.nav-open .backdrop {
@@ -724,13 +737,19 @@ body.nav-open {
     transform: translateX(-105%);
     transition: transform 220ms ease;
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-    z-index: 40;
+    z-index: 115;
     padding-top: max(18px, env(safe-area-inset-top, 0px));
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar.is-open {
     transform: translateX(0);
+  }
+
+  .sidebar__close {
+    display: inline-grid;
+    place-items: center;
+    margin-left: auto;
   }
 
   .nav {
@@ -5083,9 +5102,16 @@ body.choose-plan-open {
 body.is-readonly .btn--primary:not(.billing-banner .btn):not(.trial-banner .btn),
 body.is-readonly .btn--secondary:not(.billing-banner .btn),
 body.is-readonly button[type="submit"]:not(.billing-banner button),
-body.is-readonly .row-menu__item:not([data-action="configurar"]) {
+body.is-readonly .row-menu__item:not([data-action="configurar"]):not([data-action="eliminar"]):not([data-action="pausar"]) {
   pointer-events: none;
   opacity: 0.55;
+}
+
+body.is-readonly .row-menu__item[data-action="eliminar"],
+body.is-readonly .row-menu__item[data-action="pausar"],
+body.is-readonly [data-calendar-delete] {
+  pointer-events: auto;
+  opacity: 1;
 }
 
 body.is-readonly input:not([readonly]),
@@ -7709,7 +7735,7 @@ img {
   .menu-toggle {
     top: max(12px, env(safe-area-inset-top, 0px));
     left: max(12px, env(safe-area-inset-left, 0px));
-    z-index: 45;
+    z-index: 120;
     width: 44px;
     height: 44px;
     background: #fff;
@@ -7718,12 +7744,28 @@ img {
   }
 
   .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
     width: min(300px, 88vw);
     padding-top: max(18px, env(safe-area-inset-top, 0px));
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
-    z-index: 40;
+    z-index: 115;
     height: 100dvh;
     max-height: 100dvh;
+    transform: translateX(-105%);
+    transition: transform 220ms ease;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .sidebar__close {
+    display: inline-grid;
+    place-items: center;
+    margin-left: auto;
   }
 
   .nav {
@@ -7740,7 +7782,7 @@ img {
   }
 
   .backdrop {
-    z-index: 35;
+    z-index: 110;
   }
 
   .help {

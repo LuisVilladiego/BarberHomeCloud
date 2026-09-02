@@ -1,5 +1,10 @@
 (function () {
-  const STORAGE_KEY = "barbercloud.calendar_configs";
+  const store = window.CalendarStore;
+  if (!store) {
+    console.error("[calendario-config] CalendarStore no cargó");
+    return;
+  }
+
   const CLIENT_VAR = "{{nombreCliente}}";
   const DEFAULT_LOGO = "assets/barberhome-logo-full.png";
 
@@ -182,39 +187,11 @@ ${link}`,
   let msgLogoData = "";
 
   function loadAll() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    } catch {
-      return {};
-    }
+    return store.loadAll();
   }
 
   function saveAll(all) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  }
-
-  function loadRemovedIds(all) {
-    const src = all || loadAll();
-    return Array.isArray(src._removed) ? src._removed : [];
-  }
-
-  function markCalendarRemoved(calendarId) {
-    if (!calendarId) return;
-    const all = loadAll();
-    const removed = new Set(loadRemovedIds(all));
-    removed.add(calendarId);
-    all._removed = [...removed];
-    delete all[calendarId];
-    saveAll(all);
-  }
-
-  function unmarkCalendarRemoved(calendarId) {
-    if (!calendarId) return;
-    const all = loadAll();
-    if (!loadRemovedIds(all).includes(calendarId)) return;
-    all._removed = loadRemovedIds(all).filter((id) => id !== calendarId);
-    if (!all._removed.length) delete all._removed;
-    saveAll(all);
+    return store.saveAll(all);
   }
 
   function syncTimeFormatToPublic(timeFormat) {
@@ -229,7 +206,7 @@ ${link}`,
 
   function persistPartial(patch) {
     const all = loadAll();
-    unmarkCalendarRemoved(calendarId);
+    store.unmarkRemoved(calendarId);
     all[calendarId] = { ...getConfig(), ...patch };
     saveAll(all);
     if (patch.timeFormat) syncTimeFormatToPublic(patch.timeFormat);
@@ -569,6 +546,12 @@ ${link}`,
   document.title = `Configuración · ${calendarName} · BarberCloud`;
 
   function startCalendarConfig() {
+    store.migrateLegacyOnce?.();
+    if (store.isRemoved(calendarId)) {
+      window.AppShell?.toast?.("Este calendario fue eliminado.");
+      location.replace("index.html");
+      return;
+    }
     fillForm(getConfig());
     syncTimeFormatToPublic(fields.timeFormat?.value || getConfig().timeFormat || "12");
   }
@@ -718,7 +701,7 @@ ${link}`,
       return;
     }
     const all = loadAll();
-    unmarkCalendarRemoved(calendarId);
+    store.unmarkRemoved(calendarId);
     all[calendarId] = cfg;
     saveAll(all);
     syncTimeFormatToPublic(cfg.timeFormat);
@@ -732,7 +715,13 @@ ${link}`,
 
   document.getElementById("btn-delete-calendar")?.addEventListener("click", () => {
     if (!confirm(`¿Eliminar el calendario "${calendarName}"?`)) return;
-    markCalendarRemoved(calendarId);
+    if (calendarId === "gmail" && window.GoogleCalendar?.isConnected()) {
+      window.GoogleCalendar.disconnect();
+    }
+    if (!store.markRemoved(calendarId)) {
+      window.AppShell?.toast?.("No se pudo eliminar el calendario. Intenta de nuevo.");
+      return;
+    }
     window.AppShell?.toast(`Calendario eliminado · ${calendarName}`);
     location.href = "index.html";
   });
