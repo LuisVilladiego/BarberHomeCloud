@@ -1,20 +1,36 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>BarberCloud — Agenda y WhatsApp para tu barbería</title>
+    <title>BarberCloud — Agenda, WhatsApp y tienda para tu barbería</title>
     <meta
       name="description"
-      content="Tus clientes reservan desde un link. Tú confirmas por WhatsApp y ves la agenda del equipo en un solo lugar. Prueba BarberCloud 7 días."
+      content="Tus clientes reservan, confirman por WhatsApp y pueden comprar tus productos en el mismo link. Prueba BarberCloud 7 días."
     />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("barbercloud.landing_theme");
+          var theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/landing.css?v=20260901n" />
+    <link rel="stylesheet" href="css/landing.css?v=20260901p" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
@@ -40,6 +56,7 @@
         <div class="landing-nav__panel" id="landing-nav-panel">
           <ul class="landing-nav__links">
             <li><a href="#producto">Producto</a></li>
+            <li><a href="#tienda">Tienda</a></li>
             <li><a href="#precios">Precios</a></li>
           </ul>
           <div class="landing-nav__actions">
@@ -47,6 +64,22 @@
             <a class="landing-btn landing-btn--primary" href="login.html">Empezar gratis</a>
           </div>
         </div>
+
+        <button
+          class="landing-theme"
+          type="button"
+          id="landing-theme-toggle"
+          data-theme-toggle
+          aria-label="Cambiar a tema claro"
+        >
+          <svg class="landing-theme__sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 3.2v1.8M12 19v1.8M4.9 4.9l1.3 1.3M17.8 17.8l1.3 1.3M3.2 12h1.8M19 12h1.8M4.9 19.1l1.3-1.3M17.8 6.2l1.3-1.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <svg class="landing-theme__moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15.2 4.2A8.2 8.2 0 1 0 19.8 15 6.4 6.4 0 0 1 15.2 4.2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </button>
 
         <div class="landing-nav__actions landing-nav__desktop-actions">
           <a class="landing-nav__login" href="login.html">Entrar</a>
@@ -59,23 +92,23 @@
       <section class="landing-hero">
         <div class="landing-hero__glow" aria-hidden="true"></div>
         <div class="landing-container landing-hero__grid">
-          <div class="landing-hero__copy">
+          <div class="landing-hero__copy landing-reveal is-inview">
             <p class="landing-hero__eyebrow">Software para barberías</p>
-            <h1>Tus clientes reservan. Tú atiendes.</h1>
+            <h1>Tus clientes reservan. Tú atiendes. Y vendes.</h1>
             <p class="landing-hero__lead">
-              Comparte un link, recibe la cita en la agenda y confirma por WhatsApp.
-              Sin hojas, sin chats sueltos.
+              Un link para agendar, confirmar por WhatsApp y vender productos
+              dentro de la misma plataforma.
             </p>
             <div class="landing-hero__cta">
               <a class="landing-btn landing-btn--primary landing-btn--lg" href="login.html">
                 Probar 7 días gratis
               </a>
-              <a class="landing-btn landing-btn--ghost landing-btn--lg" href="#precios">Ver precios</a>
+              <a class="landing-btn landing-btn--ghost landing-btn--lg" href="#tienda">Ver la tienda</a>
             </div>
             <p class="landing-hero__note">Sin tarjeta para empezar · Precios en pesos colombianos</p>
           </div>
 
-          <div class="landing-hero__visual" aria-hidden="true">
+          <div class="landing-hero__visual landing-reveal is-inview" aria-hidden="true">
             <article class="landing-card landing-card--book">
               <header>
                 <span class="landing-card__mark"></span>
@@ -103,6 +136,10 @@
               <p>Hola Andrés, tu cita en El Corte es hoy a las 4:30 p. m.</p>
               <span>WhatsApp · enviado</span>
             </article>
+            <article class="landing-card landing-card--sale">
+              <strong>Cera mate</strong>
+              <p>$ 28.000 · pedido nuevo</p>
+            </article>
           </div>
         </div>
       </section>
@@ -112,7 +149,7 @@
           <p>7 días de prueba</p>
           <p>WhatsApp automático</p>
           <p>Google Calendar</p>
-          <p>Varios barberos</p>
+          <p>Venta de productos</p>
         </div>
       </section>
 
@@ -120,7 +157,7 @@
         <div class="landing-container">
           <header class="landing-section__head">
             <h2>Lo esencial, bien hecho</h2>
-            <p>Reservas, WhatsApp, agenda y fidelización. El resto se configura dentro.</p>
+            <p>Reservas, WhatsApp, agenda y tienda. El resto se configura dentro.</p>
           </header>
           <div class="landing-product">
             <article>
@@ -136,8 +173,40 @@
               <p>Ves quién está ocupado. Si conectas Google Calendar, no se pisan horarios.</p>
             </article>
             <article>
-              <h3>Clientes que vuelven</h3>
-              <p>Puntos por visita y productos en el mismo link donde reservan.</p>
+              <h3>Tienda en tu link</h3>
+              <p>Vende ceras, kits o merch a tus clientes dentro de BarberCloud, en la misma página donde reservan.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="landing-section landing-shop" id="tienda">
+        <div class="landing-container">
+          <header class="landing-section__head">
+            <h2>Vende tus productos a tus clientes</h2>
+            <p>
+              Publica el catálogo, cobra dentro de la plataforma y entrega en el local.
+              El cliente no necesita otra app.
+            </p>
+          </header>
+          <div class="landing-shop__grid">
+            <article class="landing-shop-item">
+              <div class="landing-shop-item__visual landing-shop-item__visual--wax" aria-hidden="true"></div>
+              <h3>Cera mate</h3>
+              <p>$ 28.000</p>
+              <button class="landing-btn landing-btn--ghost" type="button" data-shop-add>Agregar</button>
+            </article>
+            <article class="landing-shop-item">
+              <div class="landing-shop-item__visual landing-shop-item__visual--kit" aria-hidden="true"></div>
+              <h3>Kit de barba</h3>
+              <p>$ 45.000</p>
+              <button class="landing-btn landing-btn--ghost" type="button" data-shop-add>Agregar</button>
+            </article>
+            <article class="landing-shop-item">
+              <div class="landing-shop-item__visual landing-shop-item__visual--tonic" aria-hidden="true"></div>
+              <h3>Tónico capilar</h3>
+              <p>$ 32.000</p>
+              <button class="landing-btn landing-btn--ghost" type="button" data-shop-add>Agregar</button>
             </article>
           </div>
         </div>
@@ -154,12 +223,12 @@
             <li>
               <span>02</span>
               <h3>Publica y comparte</h3>
-              <p>Servicios, horarios y WhatsApp. El cliente reserva solo.</p>
+              <p>Servicios, productos y WhatsApp. El cliente reserva y compra solo.</p>
             </li>
             <li>
               <span>03</span>
-              <h3>Atiende con la agenda</h3>
-              <p>Confirmaciones automáticas. Tú te concentras en el corte.</p>
+              <h3>Atiende y vende</h3>
+              <p>Confirmaciones automáticas. Tú cortas y entregas el pedido.</p>
             </li>
           </ol>
         </div>
@@ -180,7 +249,7 @@
         <div class="landing-container">
           <div class="landing-cta__box">
             <h2>Ordena la agenda esta semana</h2>
-            <p>Crea la cuenta, comparte tu link y recibe la primera reserva.</p>
+            <p>Crea la cuenta, comparte tu link y recibe la primera reserva — o la primera venta.</p>
             <a class="landing-btn landing-btn--primary landing-btn--lg" href="login.html">Empezar gratis</a>
           </div>
         </div>
@@ -195,6 +264,7 @@
         </a>
         <nav aria-label="Pie">
           <a href="#producto">Producto</a>
+          <a href="#tienda">Tienda</a>
           <a href="#precios">Precios</a>
           <a href="login.html">Entrar</a>
         </nav>
@@ -202,9 +272,11 @@
       </div>
     </footer>
 
+    <div class="landing-toast" id="landing-toast" hidden role="status"></div>
+
     <script src="js/business-model.js?v=20260829m"></script>
     <script src="js/plan-limits.js?v=20260824"></script>
     <script src="js/plans.js?v=20260822"></script>
-    <script src="js/landing.js?v=20260901n"></script>
+    <script src="js/landing.js?v=20260901p"></script>
   </body>
 </html>
