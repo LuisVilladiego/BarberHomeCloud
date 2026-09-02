@@ -1024,6 +1024,8 @@
 
     if (!toggle || !sidebar) return;
 
+    toggle.setAttribute("aria-expanded", "false");
+
     function setOpen(open) {
       sidebar.classList.toggle("is-open", open);
       document.body.classList.toggle("nav-open", open);

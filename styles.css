@@ -69,6 +69,10 @@ html.access-pending body {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  min-height: 0;
   z-index: 20;
 }
 
@@ -78,6 +82,7 @@ html.access-pending body {
   justify-content: space-between;
   gap: 8px;
   padding: 0 4px 10px;
+  flex-shrink: 0;
 }
 
 .brand {
@@ -172,9 +177,14 @@ html.access-pending body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding-right: 2px;
+  scroll-padding-bottom: 12px;
 }
 
 .nav__item {
@@ -217,12 +227,14 @@ html.access-pending body {
   background: transparent;
   cursor: pointer;
   text-align: left;
+  flex-shrink: 0;
 }
 
 .user-menu {
   position: relative;
   margin-top: auto;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .user-menu .user {
@@ -655,6 +667,10 @@ body.nav-open .backdrop {
   display: block;
 }
 
+body.nav-open {
+  overflow: hidden;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -702,23 +718,39 @@ body.nav-open .backdrop {
     position: fixed;
     left: 0;
     top: 0;
-    width: min(280px, 86vw);
+    width: min(300px, 88vw);
+    height: 100dvh;
+    max-height: 100dvh;
     transform: translateX(-105%);
     transition: transform 220ms ease;
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+    z-index: 40;
+    padding-top: max(18px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar.is-open {
     transform: translateX(0);
   }
 
+  .nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  }
+
   .main {
-    padding: 72px 16px 96px;
+    padding: max(72px, calc(56px + env(safe-area-inset-top, 0px))) 16px
+      calc(96px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    min-width: 0;
   }
 
   .page-header {
     flex-direction: column;
     align-items: flex-start;
+    padding-left: max(52px, calc(44px + env(safe-area-inset-left, 0px)));
   }
 
   .page-header__actions {
@@ -5373,6 +5405,7 @@ body.is-readonly select:not([disabled]) {
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .plan-chip--trial {
@@ -7661,6 +7694,10 @@ img {
     overflow-x: clip;
   }
 
+  .page-header {
+    padding-left: max(52px, calc(44px + env(safe-area-inset-left, 0px)));
+  }
+
   .page-header h1 {
     font-size: 1.4rem;
   }
@@ -7685,6 +7722,16 @@ img {
     padding-top: max(18px, env(safe-area-inset-top, 0px));
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     z-index: 40;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
   }
 
   .nav__item {
@@ -9376,6 +9423,7 @@ body.plans-modal-open {
   border-radius: 12px;
   background: linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 100%);
   border: 1px solid #bbf7d0;
+  flex-shrink: 0;
 }
 
 .sidebar-promo[hidden] {
