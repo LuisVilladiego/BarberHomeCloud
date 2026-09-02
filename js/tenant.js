@@ -290,15 +290,29 @@
     }
   }
 
-  /** Borra datos de negocio/caché; conserva device_id, auth y throttle de login. */
+  /** Claves que no se borran al cerrar sesión (sí se borran al pulsar Desconectar). */
+  const SESSION_PERSIST_KEYS = new Set([
+    "barbercloud.device_id",
+    "barbercloud.auth",
+    "barbercloud.google_auth",
+    "barbercloud.google_busy_cache",
+    "barbercloud.active_calendar",
+    "barbercloud.calendar_configs",
+  ]);
+
+  function shouldPersistAcrossLogout(key) {
+    if (SESSION_PERSIST_KEYS.has(key)) return true;
+    if (key === "barbercloud.welcome" || key.startsWith("barbercloud.welcome.")) return true;
+    if (key.startsWith("barbercloud.login_throttle:")) return true;
+    return false;
+  }
+
+  /** Borra datos de negocio/caché. Conserva login, device y Google Calendar. */
   function clearLocalData() {
     try {
       Object.keys(localStorage).forEach((key) => {
         if (!key.startsWith("barbercloud")) return;
-        if (key === "barbercloud.device_id") return;
-        if (key === "barbercloud.auth") return;
-        if (key === "barbercloud.welcome" || key.startsWith("barbercloud.welcome.")) return;
-        if (key.startsWith("barbercloud.login_throttle:")) return;
+        if (shouldPersistAcrossLogout(key)) return;
         localStorage.removeItem(key);
       });
     } catch {

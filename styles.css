@@ -788,11 +788,26 @@ body.nav-open .backdrop {
 }
 
 .page-lead {
-  margin: 0;
+  margin: 8px 0 0;
   max-width: 42rem;
   color: var(--text-muted);
   font-size: 0.98rem;
   line-height: 1.45;
+}
+
+#btn-save-autoagenda.is-saved {
+  background: #059669;
+  border-color: #059669;
+}
+
+#btn-save-autoagenda.is-dirty:not(.is-saved) {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22);
+}
+
+.section-footer__hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
 }
 
 .config-panel {

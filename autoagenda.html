@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260829m" />
+    <link rel="stylesheet" href="styles.css?v=20260901c" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
@@ -86,11 +86,18 @@
       </aside>
 
       <main class="main">
-        <header class="page-header page-header--stack">
-          <h1>Autoagenda</h1>
-          <p class="page-lead">
-            Crea un sitio web que puedes compartir con tus clientes para que se agenden por si mismos
-          </p>
+        <header class="page-header">
+          <div>
+            <h1>Autoagenda</h1>
+            <p class="page-lead">
+              Crea un sitio web que puedes compartir con tus clientes para que se agenden por si mismos
+            </p>
+          </div>
+          <div class="page-header__actions">
+            <button class="btn btn--primary" type="button" id="btn-save-autoagenda">
+              <span id="btn-save-autoagenda-label">Guardar</span>
+            </button>
+          </div>
         </header>
 
         <section class="panel config-panel" aria-labelledby="config-title">
@@ -167,7 +174,7 @@
             </span>
           </label>
           <div class="section-footer">
-            <button class="btn btn--primary" type="button" id="btn-save-avatar">Guardar</button>
+            <p class="section-footer__hint">La imagen se guarda al pulsar <strong>Guardar</strong> arriba.</p>
           </div>
         </section>
 
@@ -379,7 +386,7 @@
             <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>
     <script src="js/supabase-client.js?v=20260816s"></script>
-    <script src="js/tenant.js?v=20260824h"></script>
+    <script src="js/tenant.js?v=20260901a"></script>
     <script src="js/supabase-data.js?v=20260818m"></script>
     <script src="js/business-model.js?v=20260829n"></script>
     <script src="js/plan-limits.js?v=20260829n"></script>
@@ -389,6 +396,6 @@
 <script src="js/security.js?v=20260816"></script>
     <script src="js/auth.js?v=20260818m"></script>
     <script src="js/app.js?v=20260829n"></script>
-    <script src="js/autoagenda.js?v=20260824g"></script>
+    <script src="js/autoagenda.js?v=20260901c"></script>
   </body>
 </html>

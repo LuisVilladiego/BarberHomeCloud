@@ -25,13 +25,43 @@
     }
   }
 
+  function loadRemovedIds(all) {
+    const src = all || loadCalendarConfigs();
+    return Array.isArray(src._removed) ? src._removed : [];
+  }
+
+  function isCalendarRemoved(calendarId, all) {
+    return loadRemovedIds(all).includes(calendarId);
+  }
+
+  function markCalendarRemoved(calendarId) {
+    if (!calendarId || calendarId === "demo") return;
+    const all = loadCalendarConfigs();
+    const removed = new Set(loadRemovedIds(all));
+    removed.add(calendarId);
+    all._removed = [...removed];
+    delete all[calendarId];
+    saveCalendarConfigs(all);
+  }
+
+  function unmarkCalendarRemoved(calendarId) {
+    if (!calendarId || calendarId === "demo") return;
+    const all = loadCalendarConfigs();
+    if (!isCalendarRemoved(calendarId, all)) return;
+    all._removed = loadRemovedIds(all).filter((id) => id !== calendarId);
+    if (!all._removed.length) delete all._removed;
+    saveCalendarConfigs(all);
+  }
+
   /** Solo calendarios que el usuario guardó o conectó explícitamente. */
   function isCalendarConfigured(calendarId) {
+    const all = loadCalendarConfigs();
+    if (isCalendarRemoved(calendarId, all)) return false;
     if (calendarId === "gmail") {
       const auth = window.GoogleCalendar?.getConnection?.();
       return !!(auth?.email || window.GoogleCalendar?.isConnected?.());
     }
-    return !!loadCalendarConfigs()[calendarId];
+    return !!all[calendarId];
   }
 
   function isPreviewMode() {
@@ -146,6 +176,7 @@
     }
     window.AppShell?.toast?.("Abriendo Google…");
     try {
+      unmarkCalendarRemoved("gmail");
       const auth = await api.connect({ forceConsent: !api.isConnected() });
       try {
         await api.syncBusyCache?.();
@@ -228,8 +259,16 @@
       closeAllMenus();
 
       if (action === "pausar") {
+        const id = row?.dataset.calendarId || "";
         const next = row.dataset.paused !== "true";
         setPaused(row, next);
+        if (id && id !== "demo") {
+          const all = loadCalendarConfigs();
+          if (all[id]) {
+            all[id].paused = next;
+            saveCalendarConfigs(all);
+          }
+        }
         window.AppShell?.toast(next ? `Mensajes pausados · ${name}` : `Mensajes reanudados · ${name}`);
         return;
       }
@@ -256,20 +295,21 @@
           return;
         }
         const id = row?.dataset.calendarId || "";
-        if (id === "gmail" && window.GoogleCalendar?.isConnected()) {
-          if (!confirm("¿Desconectar Google Calendar?")) return;
-          window.GoogleCalendar.disconnect();
+        if (id === "gmail") {
+          if (window.GoogleCalendar?.isConnected()) {
+            if (!confirm("¿Desconectar Google Calendar?")) return;
+            window.GoogleCalendar.disconnect();
+          } else if (!confirm(`¿Eliminar el calendario "${name}"?`)) {
+            return;
+          }
+          markCalendarRemoved("gmail");
           refreshGoogleRow();
+          syncCalendarRows();
           window.AppShell?.toast("Google Calendar desconectado");
           return;
         }
         if (!confirm(`¿Eliminar el calendario "${name}"?`)) return;
-        if (id) {
-          const all = loadCalendarConfigs();
-          delete all[id];
-          saveCalendarConfigs(all);
-        }
-        row.remove();
+        if (id) markCalendarRemoved(id);
         syncCalendarRows();
         window.AppShell?.toast(`Calendario eliminado · ${name}`);
         return;
@@ -329,4 +369,10 @@
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendars);
   else window.addEventListener("barbercloud:panel-ready", startCalendars, { once: true });
+
+  window.BarberCalendars = {
+    markRemoved: markCalendarRemoved,
+    unmarkRemoved: unmarkCalendarRemoved,
+    isRemoved: (id) => isCalendarRemoved(id),
+  };
 })();

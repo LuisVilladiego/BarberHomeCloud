@@ -193,6 +193,30 @@ ${link}`,
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   }
 
+  function loadRemovedIds(all) {
+    const src = all || loadAll();
+    return Array.isArray(src._removed) ? src._removed : [];
+  }
+
+  function markCalendarRemoved(calendarId) {
+    if (!calendarId) return;
+    const all = loadAll();
+    const removed = new Set(loadRemovedIds(all));
+    removed.add(calendarId);
+    all._removed = [...removed];
+    delete all[calendarId];
+    saveAll(all);
+  }
+
+  function unmarkCalendarRemoved(calendarId) {
+    if (!calendarId) return;
+    const all = loadAll();
+    if (!loadRemovedIds(all).includes(calendarId)) return;
+    all._removed = loadRemovedIds(all).filter((id) => id !== calendarId);
+    if (!all._removed.length) delete all._removed;
+    saveAll(all);
+  }
+
   function syncTimeFormatToPublic(timeFormat) {
     try {
       const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
@@ -205,6 +229,7 @@ ${link}`,
 
   function persistPartial(patch) {
     const all = loadAll();
+    unmarkCalendarRemoved(calendarId);
     all[calendarId] = { ...getConfig(), ...patch };
     saveAll(all);
     if (patch.timeFormat) syncTimeFormatToPublic(patch.timeFormat);
@@ -693,6 +718,7 @@ ${link}`,
       return;
     }
     const all = loadAll();
+    unmarkCalendarRemoved(calendarId);
     all[calendarId] = cfg;
     saveAll(all);
     syncTimeFormatToPublic(cfg.timeFormat);
@@ -706,9 +732,7 @@ ${link}`,
 
   document.getElementById("btn-delete-calendar")?.addEventListener("click", () => {
     if (!confirm(`¿Eliminar el calendario "${calendarName}"?`)) return;
-    const all = loadAll();
-    delete all[calendarId];
-    saveAll(all);
+    markCalendarRemoved(calendarId);
     window.AppShell?.toast(`Calendario eliminado · ${calendarName}`);
     location.href = "index.html";
   });

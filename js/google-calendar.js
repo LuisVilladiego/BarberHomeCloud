@@ -310,7 +310,9 @@
 
   function isConnected() {
     const auth = loadAuth();
-    return !!(auth?.accessToken && auth?.email);
+    // Conectado = el usuario vinculó Google y no pulsó Desconectar.
+    // El token puede expirar; se renueva en getValidAccessToken() sin desconectar.
+    return !!(auth?.email || auth?.accessToken);
   }
 
   function loadBusyCache() {

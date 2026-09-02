@@ -80,6 +80,8 @@
   let editingTypeId = null;
   let pendingAvatar = "";
   let reorderMode = false;
+  let isDirty = false;
+  let savedFeedbackTimer = 0;
 
   function load() {
     const useEmpty = window.Tenant?.shouldUseEmptyForms?.() ?? true;
@@ -183,11 +185,65 @@
       .replaceAll('"', "&quot;");
   }
 
-  function syncBasicFields() {
+  function readBasicFields() {
     state.slug = slugInput.value.trim();
     state.title = titleInput.value.trim();
     state.description = descriptionInput.value;
+  }
+
+  function markDirty() {
+    isDirty = true;
+    updateSaveButton();
+  }
+
+  function updateSaveButton() {
+    const btn = document.getElementById("btn-save-autoagenda");
+    const label = document.getElementById("btn-save-autoagenda-label");
+    if (!btn || !label || btn.classList.contains("is-saved")) return;
+    btn.classList.toggle("is-dirty", isDirty);
+    label.textContent = isDirty ? "Guardar cambios" : "Guardar";
+  }
+
+  function showSavedFeedback() {
+    const btn = document.getElementById("btn-save-autoagenda");
+    const label = document.getElementById("btn-save-autoagenda-label");
+    if (!btn || !label) return;
+    isDirty = false;
+    btn.classList.remove("is-dirty");
+    btn.classList.add("is-saved");
+    label.textContent = "✅ Guardado";
+    clearTimeout(savedFeedbackTimer);
+    savedFeedbackTimer = setTimeout(() => {
+      btn.classList.remove("is-saved");
+      label.textContent = "Guardar";
+    }, 2200);
+  }
+
+  async function saveAll() {
+    readBasicFields();
+    state.avatarDataUrl = pendingAvatar || state.avatarDataUrl;
+    if (state.slug) {
+      const v = window.Tenant?.validateSlug?.(state.slug);
+      if (v && !v.ok) {
+        if (v.reason === "empty") {
+          setSlugHint(SLUG_HINT_DEFAULT);
+        } else {
+          setSlugHint(v.message, "err");
+        }
+        window.AppShell?.toast(v.message || "Revisa tu enlace público");
+        slugInput?.focus();
+        return;
+      }
+    }
     save();
+    clearTimeout(negocioSyncTimer);
+    await persistNegocio();
+    showSavedFeedback();
+    window.AppShell?.toast("Cambios guardados");
+  }
+
+  function syncBasicFields() {
+    readBasicFields();
   }
 
   function applyBasic() {
@@ -438,6 +494,7 @@
     renderSchedules();
     renderTypes();
     renderPreview();
+    updateSaveButton();
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startAutoagenda);
@@ -458,6 +515,8 @@
   }
 
   const slugStatus = document.getElementById("slug-status");
+  const SLUG_HINT_DEFAULT =
+    "Este será el link que compartirás para que tus clientes agenden su cita.";
   function setSlugHint(msg, kind) {
     if (!slugStatus) return;
     slugStatus.textContent = msg;
@@ -469,6 +528,10 @@
     const v = window.Tenant?.validateSlug?.(slugInput.value);
     if (!v) return;
     if (!v.ok) {
+      if (v.reason === "empty") {
+        setSlugHint(SLUG_HINT_DEFAULT);
+        return;
+      }
       setSlugHint(v.message, "err");
       return;
     }
@@ -496,12 +559,22 @@
       .replace(/[\s_]+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
     slugInput.value = next;
+    markDirty();
     clearTimeout(availTimer);
     availTimer = setTimeout(checkSlugLive, 400);
   });
   checkSlugLive();
 
-  ["input", "change"].forEach((evt) => form.addEventListener(evt, syncBasicFields));
+  ["input", "change"].forEach((evt) => {
+    form.addEventListener(evt, (e) => {
+      if (e.target === slugInput) return;
+      markDirty();
+    });
+  });
+
+  document.getElementById("btn-save-autoagenda")?.addEventListener("click", () => {
+    saveAll();
+  });
 
   function setAvatar(file) {
     if (!file) return;
@@ -515,6 +588,7 @@
       avatarPreview.src = pendingAvatar;
       avatarPreview.hidden = false;
       dropzoneIdle.hidden = true;
+      markDirty();
     };
     reader.readAsDataURL(file);
   }
@@ -534,14 +608,8 @@
   });
   dropzone.addEventListener("drop", (e) => setAvatar(e.dataTransfer?.files?.[0]));
 
-  document.getElementById("btn-save-avatar")?.addEventListener("click", () => {
-    state.avatarDataUrl = pendingAvatar || state.avatarDataUrl;
-    save();
-    window.AppShell?.toast("Imagen guardada");
-  });
-
   document.getElementById("btn-copy")?.addEventListener("click", async () => {
-    syncBasicFields();
+    readBasicFields();
     try {
       await navigator.clipboard.writeText(displayLink(state.slug));
       const label = document.querySelector("[data-copy-label]");
@@ -556,7 +624,7 @@
   });
 
   function openPublic() {
-    syncBasicFields();
+    readBasicFields();
     window.open(publicUrl(state.slug), "_blank", "noopener,noreferrer");
   }
 
@@ -587,7 +655,7 @@
   }
 
   document.getElementById("btn-qr")?.addEventListener("click", () => {
-    syncBasicFields();
+    readBasicFields();
     qrUrl.textContent = displayLink(state.slug);
     drawQr(publicUrl(state.slug));
     qrModal.hidden = false;
