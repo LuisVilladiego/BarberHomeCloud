@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>BarberCloud — Confirma citas de tu barbería por WhatsApp</title>
+    <title>BarberCloud — Agenda, WhatsApp y fidelización para tu barbería</title>
     <meta
       name="description"
-      content="BarberCloud automatiza confirmaciones, recordatorios y reservas para barberías. Sincroniza Google Calendar y reduce inasistencias."
+      content="BarberCloud centraliza reservas, confirmaciones por WhatsApp, Google Calendar, puntos de recompensa, marketplace y reportes para barberías en Colombia."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/landing.css?v=20260818" />
+    <link rel="stylesheet" href="css/landing.css?v=20260901e" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
@@ -39,236 +39,372 @@
 
         <div class="landing-nav__panel" id="landing-nav-panel">
           <ul class="landing-nav__links">
-            <li><a href="#funciones">Funciones</a></li>
+            <li><a href="#modulos">Módulos</a></li>
+            <li><a href="#como-funciona">Cómo funciona</a></li>
             <li><a href="#precios">Precios</a></li>
             <li><a href="manual.html">Manual</a></li>
           </ul>
           <div class="landing-nav__actions">
-            <a class="landing-nav__login" href="login.html">Login</a>
-            <a class="landing-btn landing-btn--primary" href="login.html">
-              Empieza gratis
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </a>
+            <a class="landing-nav__login" href="login.html">Iniciar sesión</a>
+            <a class="landing-btn landing-btn--primary" href="login.html">Crear cuenta</a>
           </div>
         </div>
 
         <div class="landing-nav__actions landing-nav__desktop-actions">
-          <a class="landing-nav__login" href="login.html">Login</a>
-          <a class="landing-btn landing-btn--primary" href="login.html">
-            Empieza gratis
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </a>
+          <a class="landing-nav__login" href="login.html">Iniciar sesión</a>
+          <a class="landing-btn landing-btn--primary" href="login.html">Crear cuenta</a>
         </div>
       </div>
     </header>
 
     <main>
-      <!-- Hero -->
       <section class="landing-hero">
         <div class="landing-hero__bg" aria-hidden="true"></div>
         <div class="landing-container landing-hero__grid">
           <div class="landing-hero__copy">
-            <span class="landing-hero__eyebrow">Para barberías y salones</span>
+            <span class="landing-hero__eyebrow">Panel web para barberías</span>
             <h1 class="landing-hero__title">
-              La app para <em>agendar, confirmar y recordar</em> citas por WhatsApp
+              Tu barbería en un solo lugar: <em>citas, clientes y ventas</em>
             </h1>
             <p class="landing-hero__lead">
-              Reduce inasistencias, automatiza mensajes a tus clientes y llena tu silla. Prueba
-              <strong>7 días gratis</strong> sin tarjeta o elige tu plan en COP. BarberCloud envía
-              confirmaciones y recordatorios mientras tú te enfocas en cortar.
+              Publica tu link de reservas, confirma citas por WhatsApp, sincroniza Google Calendar y
+              fideliza clientes con puntos y productos. Pensado para equipos pequeños que no quieren
+              perder tiempo en mensajes sueltos.
             </p>
             <div class="landing-hero__cta">
               <a class="landing-btn landing-btn--primary landing-btn--lg" href="login.html">
-                Empieza ahora
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                Probar 7 días gratis
               </a>
-              <a class="landing-btn landing-btn--ghost landing-btn--lg" href="#precios">Ver planes</a>
+              <a class="landing-btn landing-btn--ghost landing-btn--lg" href="#modulos">Ver módulos</a>
             </div>
-            <div class="landing-badge-gcal">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="16" rx="2" stroke="#4285F4" stroke-width="1.5"/>
-                <path d="M3 9h18M8 3v4M16 3v4" stroke="#4285F4" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M8 14h2v2H8v-2Zm4 0h2v2h-2v-2Z" fill="#34A853"/>
-              </svg>
-              Funciona con Google Calendar
-            </div>
-            <div class="landing-social-proof">
-              <div class="landing-stars" aria-label="4.9 de 5 estrellas">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.5l7.1-.6L12 2Z"/></svg>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.5l7.1-.6L12 2Z"/></svg>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.5l7.1-.6L12 2Z"/></svg>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.5l7.1-.6L12 2Z"/></svg>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.5l7.1-.6L12 2Z"/></svg>
-              </div>
-              <div class="landing-avatars" aria-hidden="true">
-                <span>JC</span>
-                <span>MR</span>
-                <span>AL</span>
-                <span>+</span>
-              </div>
-              <p class="landing-social-proof__text">
-                <strong>Miles de barberos</strong> confían en BarberCloud
-              </p>
-            </div>
+            <ul class="landing-hero__tags" aria-label="Incluye">
+              <li>Autoagenda con link propio</li>
+              <li>WhatsApp automático</li>
+              <li>Puntos y marketplace</li>
+              <li>Pagos en COP (Wompi)</li>
+            </ul>
           </div>
 
-          <div class="landing-phone-wrap" aria-hidden="true">
-            <div class="landing-phone">
-              <div class="landing-phone__notch"></div>
-              <div class="landing-phone__screen">
-                <div class="landing-wa-header">
-                  <div class="landing-wa-header__avatar">BC</div>
-                  <div>
-                    <div class="landing-wa-header__name">BarberCloud</div>
-                    <div class="landing-wa-header__status">en línea</div>
+          <div class="landing-hero__visual" aria-hidden="true">
+            <div class="landing-preview-stack">
+              <div class="landing-preview landing-preview--panel">
+                <div class="landing-preview__bar">
+                  <span></span><span></span><span></span>
+                  <em>Panel · Calendarios</em>
+                </div>
+                <div class="landing-preview__body">
+                  <div class="landing-preview__row landing-preview__row--ok">
+                    <strong>Tu negocio</strong>
+                    <span>Enviando mensajes</span>
+                  </div>
+                  <div class="landing-preview__row">
+                    <strong>Google Calendar</strong>
+                    <span>Conectado</span>
+                  </div>
+                  <div class="landing-preview__row landing-preview__row--muted">
+                    <strong>Calendario BarberCloud</strong>
+                    <span>Mensajes pausados</span>
                   </div>
                 </div>
-                <div class="landing-wa-chat">
-                  <div class="landing-wa-bubble">
-                    Hola Carlos 👋 Tienes cita mañana a las <strong>4:30 PM</strong> en
-                    <strong>Barbería El Corte</strong> con Luis.
-                    <span class="landing-wa-bubble__time">10:02</span>
-                  </div>
-                  <div class="landing-wa-bubble">
-                    ¿Confirmas tu asistencia?
-                    <div class="landing-wa-actions">
-                      <span>Sí ✅</span>
-                      <span>No ❌</span>
-                    </div>
-                    <span class="landing-wa-bubble__time">10:02</span>
-                  </div>
-                  <div class="landing-wa-bubble landing-wa-bubble--out">
-                    Sí ✅
-                    <span class="landing-wa-bubble__time">10:05 ✓✓</span>
-                  </div>
-                  <div class="landing-wa-bubble">
-                    ¡Perfecto! Te esperamos mañana. 💈
-                    <span class="landing-wa-bubble__time">10:05</span>
-                  </div>
-                </div>
-                <div class="landing-wa-status-bar">
-                  <span class="landing-wa-status landing-wa-status--wait">Esperando</span>
-                  <span class="landing-wa-status landing-wa-status--ok">Confirmado</span>
-                  <span class="landing-wa-status landing-wa-status--no">Cancelado</span>
-                </div>
+              </div>
+              <div class="landing-preview landing-preview--booking">
+                <div class="landing-preview__avatar"></div>
+                <strong>Barbería El Corte</strong>
+                <p>Corte clásico · 45 min</p>
+                <span class="landing-preview__chip">Reservar cita</span>
+                <span class="landing-preview__chip landing-preview__chip--soft">Canjear puntos</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Funciones -->
-      <section class="landing-section landing-section--muted" id="funciones">
+      <section class="landing-stats" aria-label="Datos del producto">
+        <div class="landing-container landing-stats__grid">
+          <article>
+            <strong>7 días</strong>
+            <span>de prueba sin tarjeta</span>
+          </article>
+          <article>
+            <strong>Link propio</strong>
+            <span>tu-barberia.barber-home-cloud.vercel.app</span>
+          </article>
+          <article>
+            <strong>Multi-barbero</strong>
+            <span>horarios y servicios por persona</span>
+          </article>
+          <article>
+            <strong>Colombia</strong>
+            <span>precios en pesos · soporte en español</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="landing-section landing-section--muted" id="como-funciona">
         <div class="landing-container">
           <header class="landing-section__head">
-            <span class="landing-section__eyebrow">Funciones</span>
-            <h2 class="landing-section__title">Todo lo que tu barbería necesita</h2>
+            <span class="landing-section__eyebrow">Cómo funciona</span>
+            <h2 class="landing-section__title">De la reserva al cliente que vuelve</h2>
             <p class="landing-section__lead">
-              Automatiza la comunicación con tus clientes y mantén tu agenda llena sin perseguir
-              confirmaciones manualmente.
+              Tres pasos con los que la mayoría de barberías arrancan en el primer día.
+            </p>
+          </header>
+          <ol class="landing-steps">
+            <li class="landing-step">
+              <span class="landing-step__num">1</span>
+              <h3>Configura tu página</h3>
+              <p>
+                Define slug, servicios, horarios y barberos en <strong>Autoagenda</strong>. Comparte el
+                link o QR desde el panel.
+              </p>
+            </li>
+            <li class="landing-step">
+              <span class="landing-step__num">2</span>
+              <h3>Automatiza WhatsApp</h3>
+              <p>
+                En cada calendario activas recordatorios, confirmación al crear la cita y mensaje
+                post-servicio. Ves el estado en colores en tu agenda.
+              </p>
+            </li>
+            <li class="landing-step">
+              <span class="landing-step__num">3</span>
+              <h3>Retén y vende más</h3>
+              <p>
+                Suma puntos por visita, ofrece productos en el <strong>Marketplace</strong> y revisa
+                métricas en <strong>Reportes</strong>.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="landing-section" id="modulos">
+        <div class="landing-container">
+          <header class="landing-section__head">
+            <span class="landing-section__eyebrow">Módulos</span>
+            <h2 class="landing-section__title">Lo que incluye el software</h2>
+            <p class="landing-section__lead">
+              Cada sección del panel resuelve una parte del día a día en la barbería. No es solo un
+              calendario: es operación, comunicación y fidelización.
             </p>
           </header>
 
-          <div class="landing-features">
-            <article class="landing-feature">
-              <div class="landing-feature__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A9.9 9.9 0 0 0 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                  <path d="M8.5 9.5c.3-.8 1-.8 1.3 0l.4 1.2c.1.3.4.5.7.5h1.3c.9 0 1.3 1 .7 1.6l-1 1c-.2.2-.3.5-.2.8l.4 1.2c.3.8-.7 1.4-1.3.8l-1-.8c-.3-.2-.6-.2-.9 0l-1 .8c-.6.5-1.6-.1-1.3-.8l.4-1.2c.1-.3 0-.6-.2-.8l-1-1c-.6-.5-.2-1.6.7-1.6H9c.3 0 .6-.2.7-.5l.4-1.2Z" fill="currentColor"/>
-                </svg>
+          <div class="landing-modules">
+            <article class="landing-module landing-module--wide">
+              <div class="landing-module__head">
+                <span class="landing-module__tag">Autoagenda</span>
+                <h3>Página pública para que reserven solos</h3>
               </div>
-              <h3>WhatsApp automático</h3>
               <p>
-                Confirmaciones y recordatorios por WhatsApp. Amarillo (esperando), verde
-                (confirmado) y rojo (cancelado) en tu calendario.
+                Tus clientes eligen servicio, barbero, día y hora desde el celular. Tú defines tipos de
+                cita, duración, precio y horarios por día de la semana.
               </p>
+              <ul class="landing-module__list">
+                <li>Link personalizado (slug) + QR desde el panel</li>
+                <li>Vista previa en vivo mientras editas</li>
+                <li>Imagen de perfil y descripción del negocio</li>
+                <li>Diagnóstico de huecos libres vs citas ocupadas</li>
+              </ul>
             </article>
 
-            <article class="landing-feature">
-              <div class="landing-feature__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/>
-                  <path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                </svg>
+            <article class="landing-module">
+              <div class="landing-module__head">
+                <span class="landing-module__tag landing-module__tag--wa">WhatsApp</span>
+                <h3>Confirmaciones y recordatorios</h3>
               </div>
-              <h3>Google Calendar</h3>
               <p>
-                Sincroniza tu agenda existente o usa el calendario de BarberCloud. Los horarios
-                ocupados se bloquean automáticamente.
+                Mensajes automáticos por calendario: al crear la cita, horas antes y después del
+                servicio. Personaliza textos con el nombre del cliente.
               </p>
+              <ul class="landing-module__list">
+                <li>Estados: esperando, confirmado, cancelado</li>
+                <li>Segundo recordatorio opcional</li>
+                <li>Pausar mensajes por calendario</li>
+              </ul>
             </article>
 
-            <article class="landing-feature">
-              <div class="landing-feature__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M7 4h10v4H7V4Zm0 6h10v10H7V10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-                  <path d="M10 14h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                </svg>
+            <article class="landing-module">
+              <div class="landing-module__head">
+                <span class="landing-module__tag">Calendario</span>
+                <h3>Agenda semanal del equipo</h3>
               </div>
-              <h3>Autoagenda</h3>
               <p>
-                Comparte un link público para que tus clientes reserven solos, las 24 horas, sin
-                llamadas ni mensajes de ida y vuelta.
+                Crea citas manualmente, arrastra servicios y bloquea horarios. Integra Google Calendar
+                para respetar eventos externos al reservar online.
               </p>
+              <ul class="landing-module__list">
+                <li>Vista semanal con citas del negocio</li>
+                <li>Varios calendarios (negocio, Google, BarberCloud)</li>
+                <li>Sincronización de ocupación</li>
+              </ul>
             </article>
 
-            <article class="landing-feature">
-              <div class="landing-feature__icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M4 19V5m0 14 4-5 3.5 3L16 8l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+            <article class="landing-module landing-module--accent">
+              <div class="landing-module__head">
+                <span class="landing-module__tag landing-module__tag--gold">Recompensas</span>
+                <h3>Programa de puntos</h3>
               </div>
-              <h3>Reportes</h3>
               <p>
-                Mide inasistencias, confirmaciones y volumen de citas. Toma decisiones con datos
-                reales de tu negocio.
+                Cada cita completada puede sumar puntos al cliente. Ellos los ven en la página de
+                reservas y canjean premios que tú configuras.
               </p>
+              <ul class="landing-module__list">
+                <li>Historial de puntos por cliente</li>
+                <li>Productos canjeables con puntos</li>
+                <li>Visible en el flujo público de booking</li>
+              </ul>
+            </article>
+
+            <article class="landing-module landing-module--accent">
+              <div class="landing-module__head">
+                <span class="landing-module__tag landing-module__tag--gold">Marketplace</span>
+                <h3>Tienda dentro de tu link</h3>
+              </div>
+              <p>
+                Publica productos (cremas, kits, merchandising) con fotos y stock. Los clientes compran
+                desde la misma página donde agendan.
+              </p>
+              <ul class="landing-module__list">
+                <li>Catálogo con imágenes</li>
+                <li>Productos de venta y de canje por puntos</li>
+                <li>Registro de ventas en el panel</li>
+              </ul>
+            </article>
+
+            <article class="landing-module">
+              <div class="landing-module__head">
+                <span class="landing-module__tag">Contactos</span>
+                <h3>Base de clientes</h3>
+              </div>
+              <p>
+                Unifica teléfonos, visitas y puntos de quienes ya reservaron. Busca rápido antes de
+                confirmar una cita manual.
+              </p>
+              <ul class="landing-module__list">
+                <li>Ficha por cliente con historial</li>
+                <li>Datos desde reservas y fidelización</li>
+                <li>Exportar y filtrar contactos</li>
+              </ul>
+            </article>
+
+            <article class="landing-module">
+              <div class="landing-module__head">
+                <span class="landing-module__tag">Reportes</span>
+                <h3>Números del negocio</h3>
+              </div>
+              <p>
+                Revisa citas del mes, confirmaciones enviadas y uso del plan. Útil para saber si te
+                conviene subir de plan antes de quedarte sin cupo.
+              </p>
+              <ul class="landing-module__list">
+                <li>Citas y confirmaciones por periodo</li>
+                <li>Uso vs límite de tu suscripción</li>
+                <li>Disponible en plan Pro y Business</li>
+              </ul>
+            </article>
+
+            <article class="landing-module">
+              <div class="landing-module__head">
+                <span class="landing-module__tag">Suscripción</span>
+                <h3>Planes y pagos</h3>
+              </div>
+              <p>
+                Free para probar, Basic con WhatsApp, Pro con marketplace y reportes. Pagos con Wompi
+                en pesos colombianos; facturación anual con descuento.
+              </p>
+              <ul class="landing-module__list">
+                <li>Límites claros de citas y barberos</li>
+                <li>Modo solo lectura si vence el plan</li>
+                <li>Sin permanencia forzada</li>
+              </ul>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- Precios -->
+      <section class="landing-section landing-section--muted" id="funciones">
+        <div class="landing-container">
+          <header class="landing-section__head">
+            <span class="landing-section__eyebrow">Resumen</span>
+            <h2 class="landing-section__title">Todo conectado entre sí</h2>
+          </header>
+          <div class="landing-features">
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">📅</div>
+              <h3>Reservas 24/7</h3>
+              <p>Link público con disponibilidad real según tu horario y citas existentes.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">💬</div>
+              <h3>WhatsApp</h3>
+              <p>Menos inasistencias con recordatorios automáticos configurables por calendario.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">🔗</div>
+              <h3>Google Calendar</h3>
+              <p>Conecta Gmail y evita doble reserva en horarios ya ocupados.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">⭐</div>
+              <h3>Puntos</h3>
+              <p>Recompensa visitas recurrentes sin otra app aparte.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">🛍️</div>
+              <h3>Marketplace</h3>
+              <p>Vende productos en la misma experiencia donde agendan.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">👥</div>
+              <h3>Multi-barbero</h3>
+              <p>Cada barbero con horario y servicios; el cliente elige a quién ir.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">📊</div>
+              <h3>Reportes</h3>
+              <p>Mide actividad y uso del plan desde el panel.</p>
+            </article>
+            <article class="landing-feature">
+              <div class="landing-feature__icon" aria-hidden="true">🔒</div>
+              <h3>Multi-negocio</h3>
+              <p>Cada barbería con su slug, datos y suscripción aisladas.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section class="landing-section" id="precios">
         <div class="landing-container">
           <header class="landing-section__head">
             <span class="landing-section__eyebrow">Precios</span>
-            <h2 class="landing-section__title">Planes para cada etapa de tu barbería</h2>
+            <h2 class="landing-section__title">Elige según citas y barberos</h2>
             <p class="landing-section__lead">
-              Empieza gratis o elige Basic, Pro o Business según barberos, citas y funciones que
-              necesites. Sin contratos largos.
+              Empieza gratis. Los planes de pago desbloquean WhatsApp, más cupo mensual, marketplace
+              y reportes según el nivel.
             </p>
           </header>
 
-          <div class="landing-pricing" id="landing-pricing-grid">
-            <!-- Renderizado por js/landing.js desde js/plans.js -->
-          </div>
+          <div class="landing-pricing" id="landing-pricing-grid"></div>
 
           <p class="landing-pricing__foot">
-            ¿Necesitas más citas?
-            <a href="login.html?next=suscripcion#plans">Ver todos los detalles y pagar con Wompi →</a>
+            Pago seguro con Wompi ·
+            <a href="login.html?next=suscripcion#plans">Ver detalle de planes en el panel →</a>
           </p>
         </div>
       </section>
 
-      <!-- CTA final -->
       <section class="landing-cta-band">
         <div class="landing-container">
           <div class="landing-cta-band__inner">
-            <h2>Tu barbería merece una agenda que trabaje sola</h2>
+            <h2>Listo para ordenar tu barbería</h2>
             <p>
-              Regístrate en minutos: prueba 7 días gratis o elige tu plan en pesos colombianos y
-              empieza a confirmar citas por WhatsApp hoy mismo.
+              Crea la cuenta, configura tu link en Autoagenda y compártelo hoy. Si tienes dudas, revisa
+              el manual o escríbenos por WhatsApp.
             </p>
-            <a class="landing-btn landing-btn--ghost landing-btn--lg" href="login.html">
-              Crear cuenta gratis
-            </a>
+            <div class="landing-cta-band__actions">
+              <a class="landing-btn landing-btn--ghost landing-btn--lg" href="login.html">Crear cuenta</a>
+              <a class="landing-btn landing-btn--outline landing-btn--lg" href="manual.html">Leer manual</a>
+            </div>
           </div>
         </div>
       </section>
@@ -283,31 +419,31 @@
               <span>BarberCloud</span>
             </a>
             <p>
-              SaaS para barberías y salones. Confirmaciones, recordatorios y reservas en un solo
-              lugar.
+              Software de gestión para barberías: reservas online, WhatsApp, puntos, marketplace y
+              reportes. Hecho para equipos en Colombia.
             </p>
           </div>
           <div>
             <h4>Producto</h4>
             <ul>
-              <li><a href="#funciones">Funciones</a></li>
+              <li><a href="#modulos">Módulos</a></li>
               <li><a href="#precios">Precios</a></li>
-              <li><a href="login.html">Login / Registro</a></li>
+              <li><a href="login.html">Crear cuenta</a></li>
               <li><a href="login.html?next=suscripcion#plans">Suscripción</a></li>
             </ul>
           </div>
           <div>
-            <h4>Soporte</h4>
+            <h4>Ayuda</h4>
             <ul>
-              <li><a href="manual.html">Manual</a></li>
-              <li><a href="feedback.html">Feedback</a></li>
+              <li><a href="manual.html">Manual del panel</a></li>
+              <li><a href="feedback.html">Enviar feedback</a></li>
               <li>
                 <a href="https://wa.me/573001234567" target="_blank" rel="noreferrer">WhatsApp soporte</a>
               </li>
             </ul>
           </div>
         </div>
-        <p class="landing-footer__copy">© 2026 BarberCloud. Todos los derechos reservados.</p>
+        <p class="landing-footer__copy">© 2026 BarberCloud</p>
       </div>
     </footer>
 
@@ -316,19 +452,19 @@
       href="https://wa.me/573001234567"
       target="_blank"
       rel="noreferrer"
-      aria-label="¿Tienes dudas? Escríbenos por WhatsApp"
+      aria-label="Escríbenos por WhatsApp"
     >
       <span class="landing-wa-widget__icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
         </svg>
       </span>
-      <span class="landing-wa-widget__text">¿Tienes dudas?</span>
+      <span class="landing-wa-widget__text">¿Dudas?</span>
     </a>
 
     <script src="js/business-model.js?v=20260829m"></script>
     <script src="js/plan-limits.js?v=20260824"></script>
     <script src="js/plans.js?v=20260822"></script>
-    <script src="js/landing.js?v=20260818"></script>
+    <script src="js/landing.js?v=20260901e"></script>
   </body>
 </html>

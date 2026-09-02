@@ -112,10 +112,10 @@
   const PAID_PLANS = PLANS.filter((p) => p.priceUsd > 0);
 
   const FEATURES_BY_PLAN = {
-    free: ["Link de reservas", "Hasta 30 citas/mes", "1 barbero"],
-    basic: ["WhatsApp automático", "Hasta 50 citas/mes", "2 barberos", "Autoagenda"],
-    pro: ["Todo Basic", "Hasta 100 citas/mes", "5 barberos", "Reportes y analytics"],
-    business: ["Todo Pro", "Hasta 300 citas/mes", "15 barberos", "Configuración avanzada"],
+    free: ["Link de reservas", "Hasta 30 citas/mes", "1 barbero", "Autoagenda básica"],
+    basic: ["WhatsApp automático", "Hasta 50 citas/mes", "2 barberos", "Autoagenda", "Puntos de recompensa"],
+    pro: ["Todo Basic", "Hasta 100 citas/mes", "5 barberos", "Marketplace", "Reportes y analytics"],
+    business: ["Todo Pro", "Hasta 300 citas/mes", "15 barberos", "Configuración avanzada", "Soporte prioritario"],
   };
 
   const PERMISSIONS = {
