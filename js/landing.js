@@ -1,8 +1,23 @@
 /**
- * BarberCloud landing — precios dinámicos desde js/plans.js + business-model.js
+ * BarberCloud landing — precios desde el modelo de negocio, copy público.
  */
 (function () {
   const POPULAR_PLAN_ID = "pro";
+
+  const FEATURE_LABELS = {
+    "Todo Basic": "Incluye Basic",
+    "Todo Pro": "Incluye Pro",
+    Autoagenda: "Link de reservas",
+    "Autoagenda básica": "Link de reservas",
+    Marketplace: "Tienda en tu link",
+    "Reportes y analytics": "Reportes del negocio",
+    "Configuración avanzada": "Más control del equipo",
+    "Soporte prioritario": "Atención prioritaria",
+  };
+
+  function publicFeature(text) {
+    return FEATURE_LABELS[text] || text;
+  }
 
   function renderPlans() {
     const container = document.getElementById("landing-pricing-grid");
@@ -13,25 +28,21 @@
     container.innerHTML = plans
       .map((plan) => {
         const popular = plan.id === POPULAR_PLAN_ID;
-        const features = window.Plans.planFeatures?.(plan) || [];
+        const features = (window.Plans.planFeatures?.(plan) || []).map(publicFeature);
         const cop = window.Plans.formatMoney(window.Plans.displayCop(plan, "monthly"));
-        const usd = window.Plans.formatUsd(window.Plans.displayUsd(plan, "monthly"));
-        const featureItems = features
-          .map(
-            (f) =>
-              `<li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5 9.5 17 19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>${f}</li>`
-          )
+        const items = features
+          .map((f) => `<li>${f}</li>`)
           .join("");
 
         return `
           <article class="landing-plan${popular ? " is-popular" : ""}">
-            ${popular ? '<span class="landing-plan__badge">Más popular</span>' : ""}
-            <p class="landing-plan__limit">${window.Plans.planSummary?.(plan) || plan.label}</p>
+            ${popular ? '<span class="landing-plan__badge">Recomendado</span>' : ""}
+            <p class="landing-plan__name">${plan.label || plan.name}</p>
             <p class="landing-plan__price">${cop}</p>
-            <p class="landing-plan__usd">~${usd} USD / mes</p>
-            <ul class="landing-plan__features">${featureItems}</ul>
-            <a class="landing-btn landing-btn--${popular ? "primary" : "ghost"}" href="login.html?next=suscripcion&plan=${plan.id}#plans">
-              Elegir plan
+            <p class="landing-plan__period">al mes</p>
+            <ul class="landing-plan__features">${items}</ul>
+            <a class="landing-btn landing-btn--${popular ? "primary" : "ghost"}" href="login.html">
+              Empezar
             </a>
           </article>`;
       })
@@ -50,10 +61,14 @@
     toggle?.addEventListener("click", () => {
       const open = nav.classList.toggle("is-open");
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
     });
 
     nav.querySelectorAll(".landing-nav__panel a").forEach((link) => {
-      link.addEventListener("click", () => nav.classList.remove("is-open"));
+      link.addEventListener("click", () => {
+        nav.classList.remove("is-open");
+        toggle?.setAttribute("aria-expanded", "false");
+      });
     });
   }
 
