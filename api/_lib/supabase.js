@@ -220,19 +220,59 @@ async function fetchOwnerEmail(ownerId) {
     });
     if (!res.ok) return null;
     const user = await res.json();
-    return user?.email || null;
+    return (
+      user?.email ||
+      user?.user?.email ||
+      user?.identities?.[0]?.identity_data?.email ||
+      null
+    );
   } catch {
     return null;
+  }
+}
+
+function readNotifyEmail(negocio) {
+  if (!negocio) return "";
+  const settings = negocio.settings && typeof negocio.settings === "object" ? negocio.settings : {};
+  const auto = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
+  return String(
+    settings.notify_email ||
+      settings.owner_email ||
+      auto.notify_email ||
+      auto.notifyEmail ||
+      negocio.owner_email ||
+      ""
+  ).trim();
+}
+
+async function persistNotifyEmail(negocio, email) {
+  const clean = String(email || "").trim().toLowerCase();
+  if (!negocio?.id || !clean || !clean.includes("@")) return negocio;
+  if (readNotifyEmail(negocio).toLowerCase() === clean) return negocio;
+  const settings = negocio.settings && typeof negocio.settings === "object" ? negocio.settings : {};
+  try {
+    const updated = await updateNegocio(negocio.id, {
+      settings: { ...settings, notify_email: clean },
+    });
+    return updated || negocio;
+  } catch (err) {
+    console.warn("[supabase] no se pudo guardar notify_email", err?.message);
+    return negocio;
   }
 }
 
 async function ownerEmailForNegocio({ slug, negocioId }) {
   let negocio = null;
   if (negocioId) negocio = await negocioById(negocioId);
-  else if (slug) negocio = await negocioBySlug(slug);
-  if (!negocio?.owner_id) return { email: null, negocio };
-  const email = await fetchOwnerEmail(negocio.owner_id);
-  return { email, negocio };
+  if (!negocio && slug) negocio = await negocioBySlug(slug);
+  if (!negocio) return { email: null, negocio: null };
+
+  let email = readNotifyEmail(negocio);
+  if (!email && negocio.owner_id) {
+    email = await fetchOwnerEmail(negocio.owner_id);
+    if (email) negocio = await persistNotifyEmail(negocio, email);
+  }
+  return { email: email || null, negocio };
 }
 
 module.exports = {
@@ -247,6 +287,8 @@ module.exports = {
   negocioOfOwner,
   normalizeSlug,
   ownerEmailForNegocio,
+  persistNotifyEmail,
+  readNotifyEmail,
   pagoByReference,
   provisionalSlug,
   rest,

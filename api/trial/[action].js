@@ -2,6 +2,7 @@ const {
   insertNegocio,
   listTrialNegocios,
   negocioOfOwner,
+  persistNotifyEmail,
   provisionalSlug,
   updateNegocio,
   userFromToken,
@@ -94,8 +95,10 @@ async function startTrial(user) {
       plan_id: "pro",
       current_period_start: period.start,
       current_period_end: period.end,
+      settings: { notify_email: String(user.email || "").trim().toLowerCase() },
     });
   } else if (subscriptionActive(negocio)) {
+    negocio = (await persistNotifyEmail(negocio, user.email)) || negocio;
     return {
       ok: true,
       negocio,
@@ -104,6 +107,7 @@ async function startTrial(user) {
       periodEnd: negocio.current_period_end,
     };
   } else if (alreadyUsedTrial(negocio)) {
+    await persistNotifyEmail(negocio, user.email);
     return {
       ok: false,
       statusCode: 409,
@@ -126,6 +130,8 @@ async function startTrial(user) {
   if (!negocio?.id) {
     return { ok: false, statusCode: 500, error: "No se pudo crear la barbería" };
   }
+
+  negocio = (await persistNotifyEmail(negocio, user.email)) || negocio;
 
   const days = daysLeft(negocio.current_period_end);
   const { sent } = reminderState(negocio);

@@ -244,29 +244,27 @@
     }
   }
 
+  function tenantNotifyEmail(negocio) {
+    if (!negocio) return "";
+    const settings = negocio.settings && typeof negocio.settings === "object" ? negocio.settings : {};
+    const auto = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
+    return String(
+      negocio.owner_email ||
+        settings.notify_email ||
+        settings.owner_email ||
+        auto.notify_email ||
+        ""
+    ).trim();
+  }
+
   async function resolveNotifyEmail(context = {}) {
-    const explicit = String(context.ownerEmail || context.adminEmail || "").trim();
+    const explicit = String(context.ownerEmail || "").trim();
     if (explicit) return explicit;
 
-    const biz = window.Tenant?.cached?.();
-    if (biz?.owner_email) return String(biz.owner_email).trim();
+    const fromTenant = tenantNotifyEmail(window.Tenant?.cached?.());
+    if (fromTenant) return fromTenant;
 
-    try {
-      const user = await window.BarberAuth?.currentUser?.();
-      if (user?.email) return String(user.email).trim();
-    } catch {
-      /* ignore */
-    }
-
-    try {
-      const settings = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
-      if (settings.email) return String(settings.email).trim();
-    } catch {
-      /* ignore */
-    }
-
-    const c = cfg();
-    return String(c.adminEmail || c.fromEmail || "").trim();
+    return "";
   }
 
   async function notifyOwnerViaServer(kind, payload) {
@@ -300,6 +298,9 @@
         return { ok: true, message: "Aviso enviado al correo de la membresía", to: server.to };
       }
       if (server?.skipped) return server;
+      if (server && server.ok === false && server.message) {
+        return { ok: false, message: server.message, to: server.to || "" };
+      }
     } catch (err) {
       console.warn("[EmailService] notify server booking", err);
     }
@@ -310,7 +311,7 @@
 
     const admin = await resolveNotifyEmail(booking);
     if (!admin) {
-      return { ok: false, message: "No hay correo del dueño de la membresía." };
+      return { ok: false, message: "No hay correo del dueño de esta barbería." };
     }
 
     try {
@@ -377,6 +378,9 @@
         return { ok: true, message: "Aviso de canje enviado al correo de la membresía", to: server.to };
       }
       if (server?.skipped) return server;
+      if (server && server.ok === false && server.message) {
+        return { ok: false, message: server.message, to: server.to || "" };
+      }
     } catch (err) {
       console.warn("[EmailService] notify server redeem", err);
     }
@@ -387,7 +391,7 @@
 
     const admin = await resolveNotifyEmail(redeem);
     if (!admin) {
-      return { ok: false, message: "No hay correo del dueño de la membresía." };
+      return { ok: false, message: "No hay correo del dueño de esta barbería." };
     }
 
     try {

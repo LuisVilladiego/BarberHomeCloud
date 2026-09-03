@@ -417,6 +417,7 @@
     }
 
     hydrateNegocioCaches(enriched);
+    await window.SupabaseData?.rememberNotifyEmail?.(user.email);
     await window.SupabaseData.pullToLocalCache?.({ replace: true });
     await refreshRole();
 
@@ -462,6 +463,7 @@
     SCOPED_STORAGE_BASES,
     setCurrent,
     cached,
+    withOwnerEmail,
     isLocalHost,
     readAutoagendaCache,
     getBusinessContext,

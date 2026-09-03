@@ -181,7 +181,10 @@
       showPublicGate("unavailable");
       return;
     }
-    window.Tenant?.setCurrent?.(negocio);
+    window.Tenant?.setCurrent?.(
+      window.Tenant?.withOwnerEmail?.(negocio, negocio.settings?.notify_email || negocio.settings?.owner_email) ||
+        negocio
+    );
     const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
     applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
     if (window.SupabaseData?.enabled?.()) {
@@ -2959,10 +2962,12 @@
       return { ok: false, skipped: true };
     }
     const biz = window.Tenant?.cached?.();
-    const admin = String(biz?.owner_email || c.adminEmail || c.fromEmail || "").trim();
+    const admin = String(
+      biz?.owner_email || biz?.settings?.notify_email || ""
+    ).trim();
     const url = String(c.appsScriptUrl || "").trim();
     if (!admin || !url || !c.appsScriptSecret) {
-      return { ok: false, message: "Correo del dueño de la membresía no configurado" };
+      return { ok: false, message: "No hay correo del dueño de esta barbería." };
     }
     const payloadBooking = {
       id: booking?.id || "",

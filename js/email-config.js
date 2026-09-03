@@ -13,11 +13,14 @@ window.EmailConfig = {
    */
   provider: "appscript",
 
-  fromName: "BarberHome",
+  fromName: "BarberCloud",
   fromEmail: "barberhomeluisvilladiego20@gmail.com",
 
-  /** Fallback solo si la API no resuelve el dueño de la membresía */
-  adminEmail: "barberhomeluisvilladiego20@gmail.com",
+  /**
+   * Remitente de Apps Script (Gmail de la plataforma). NUNCA es el destinatario
+   * de reservas: eso va al correo de la membresía (dueño del negocio).
+   */
+  adminEmail: "",
   notifyAdminOnBooking: true,
   /** Aviso cuando un cliente canjea puntos por un producto */
   notifyAdminOnRedeem: true,

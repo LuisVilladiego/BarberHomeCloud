@@ -607,6 +607,31 @@
     return row || null;
   }
 
+  async function rememberNotifyEmail(email) {
+    const client = db();
+    const clean = String(email || "").trim().toLowerCase();
+    if (!client || !clean || !clean.includes("@")) return { ok: false };
+    const own = await fetchOwnNegocio();
+    if (!own?.id) return { ok: false };
+    const settings = own.settings && typeof own.settings === "object" ? { ...own.settings } : {};
+    if (String(settings.notify_email || "").toLowerCase() === clean) return { ok: true, skipped: true };
+    const { data, error } = await client
+      .from("negocios")
+      .update({
+        settings: { ...settings, notify_email: clean },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", own.id)
+      .select()
+      .maybeSingle();
+    if (error) {
+      console.warn("[Supabase] notify_email", error.message);
+      return { ok: false, message: error.message };
+    }
+    if (data) window.Tenant?.setCurrent?.(window.Tenant?.withOwnerEmail?.(data, clean) || data);
+    return { ok: true, negocio: data };
+  }
+
   async function fetchNegocioBySlug(slug) {
     const client = db();
     if (!client || !slug) return null;
@@ -814,6 +839,7 @@
     startCitasLiveSync,
     stopCitasLiveSync,
     fetchOwnNegocio,
+    rememberNotifyEmail,
     fetchNegocioBySlug,
     slugAvailability,
     upsertNegocio,
