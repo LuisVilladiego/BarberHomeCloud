@@ -580,8 +580,8 @@
       window.AppShell?.toast("Estas citas son de ejemplo. Activa tu plan para agendar las tuyas.");
       return;
     }
-    if (isGoogleSource()) {
-      window.AppShell?.toast(`Cambia al calendario de ${businessName()} para crear citas aquí`);
+    if (isGoogleSource() && !window.GoogleCalendar?.isConnected?.()) {
+      window.AppShell?.toast("Conecta Google Calendar desde Inicio para agendar aquí");
       return;
     }
     const date = slot.getAttribute("data-date");
@@ -627,8 +627,8 @@
     window.AppShell?.toast(`Viendo · ${label}`);
   });
   document.getElementById("btn-new-appt")?.addEventListener("click", () => {
-    if (isGoogleSource()) {
-      window.AppShell?.toast(`Cambia al calendario de ${businessName()} para crear citas`);
+    if (isGoogleSource() && !window.GoogleCalendar?.isConnected?.()) {
+      window.AppShell?.toast("Conecta Google Calendar desde Inicio para agendar aquí");
       return;
     }
     openModal({});
@@ -693,7 +693,8 @@
       status: "confirmed",
       source: "admin",
       business: businessLabel,
-      calendarId: activeCalendarId === "gmail" ? "negocio" : activeCalendarId,
+      calendarId: window.GoogleCalendar?.isConnected?.() || activeCalendarId === "gmail" ? "gmail" : activeCalendarId,
+      googleSync: window.GoogleCalendar?.negocioWantsGoogle?.() ? "pending" : "",
     });
 
     submitBtn.disabled = false;
@@ -707,7 +708,13 @@
 
     closeModal();
     refreshCalendar();
-    window.AppShell?.toast(`Cita agendada · ${name} · ${time}`);
+    if (result.booking?.googleEventId) {
+      window.AppShell?.toast(`Cita agendada en Google Calendar · ${name} · ${time}`);
+    } else if (result.booking?.googleSync === "pending") {
+      window.AppShell?.toast(`Cita guardada. Se enviará a Google Calendar al sincronizar · ${name}`);
+    } else {
+      window.AppShell?.toast(`Cita agendada · ${name} · ${time}`);
+    }
   });
 
   document.getElementById("btn-complete-appt")?.addEventListener("click", () => {
@@ -812,6 +819,26 @@
         /* ignore */
       }
       startLiveBookingsSync();
+      if (window.GoogleCalendar?.isConnected?.()) {
+        try {
+          await window.GoogleCalendar.publishConnectionIfNeeded?.();
+        } catch {
+          /* ignore */
+        }
+        try {
+          const sync = await window.GoogleCalendar.syncPendingBookings();
+          if (sync?.synced) {
+            window.AppShell?.toast?.(
+              sync.synced === 1
+                ? "1 cita enviada a Google Calendar"
+                : `${sync.synced} citas enviadas a Google Calendar`
+            );
+            refreshCalendar();
+          }
+        } catch (err) {
+          console.warn("[calendario] sync Google", err);
+        }
+      }
     })();
   }
 

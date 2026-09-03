@@ -65,7 +65,7 @@
     return {
       title: isSignup ? "Crea tu cuenta" : "Entra a tu barbería",
       lead: isSignup
-        ? "Gestiona citas, clientes y reservas de tu barbería. Es súper fácil, tomará 2 minutos."
+        ? "7 días de prueba gratis con acceso completo. Luego eliges un plan."
         : "Abre tu panel para gestionar citas, clientes, reservas y puntos de fidelidad.",
       googleLabel: isSignup ? "Crear cuenta con Gmail" : "Entrar con Gmail",
       emailLabel: isSignup
@@ -253,7 +253,7 @@
       return;
     }
 
-    const sync = await window.Tenant?.syncWithAuthenticatedUser?.();
+    await window.Tenant?.syncWithAuthenticatedUser?.();
 
     // Desde landing «Elegir plan»: login primero, pago después.
     if (next === "suscripcion") {
@@ -264,25 +264,14 @@
       return;
     }
 
-    if (sync?.needsOnboarding) {
-      const trial = await window.Billing?.startTrial?.();
-      if (trial?.ok) {
-        await window.Tenant?.syncWithAuthenticatedUser?.();
-      } else if (trial?.message && next !== "suscripcion") {
-        location.href = "suscripcion.html?need=1";
-        return;
-      }
+    const trial = await window.Billing?.startTrial?.();
+    if (trial?.ok) {
+      await window.Tenant?.syncWithAuthenticatedUser?.();
       location.href = "index.html";
       return;
     }
 
-    if (window.Tenant?.hasActiveSubscription?.()) {
-      location.href = "index.html";
-      return;
-    }
-
-    const billing = window.Billing?.cached?.();
-    if (billing?.periodEnd) {
+    if (window.Billing?.isActive?.() || window.Tenant?.hasActiveSubscription?.()) {
       location.href = "index.html";
       return;
     }

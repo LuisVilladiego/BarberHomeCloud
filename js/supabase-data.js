@@ -56,6 +56,8 @@
         createdAt: b.createdAt || null,
         lifecycleStatus: b.lifecycleStatus || "",
         confirmationStatus: b.confirmationStatus || "",
+        googleSync: b.googleSync || "",
+        googleSyncError: b.googleSyncError || "",
       },
       updated_at: new Date().toISOString(),
     };
@@ -86,6 +88,8 @@
       createdAt: r.meta?.createdAt || r.created_at,
       lifecycleStatus: r.meta?.lifecycleStatus || "",
       confirmationStatus: r.meta?.confirmationStatus || "",
+      googleSync: r.meta?.googleSync || (r.google_event_id ? "synced" : ""),
+      googleSyncError: r.meta?.googleSyncError || "",
     };
   }
 
@@ -633,11 +637,11 @@
       id: payload.id,
       slug: payload.slug,
       name: payload.name || "",
-      subscription_status: payload.subscription_status || "active",
-      plan_id: payload.plan_id || "pro",
       autoagenda: payload.autoagenda || {},
       updated_at: new Date().toISOString(),
     };
+    if (payload.subscription_status) row.subscription_status = payload.subscription_status;
+    if (payload.plan_id) row.plan_id = payload.plan_id;
     if (payload.owner_id) row.owner_id = payload.owner_id;
     if (payload.whatsapp != null) row.whatsapp = payload.whatsapp;
     if (payload.onboarding_completed != null) row.onboarding_completed = payload.onboarding_completed;

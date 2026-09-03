@@ -211,9 +211,24 @@
     saveAuth(auth);
     localStorage.setItem(activeCalKey(), "gmail");
     try {
+      await persistGoogleFlag({
+        connected: true,
+        email: auth.email,
+        calendarId: auth.calendarId,
+        calendarName: auth.calendarName,
+      });
+    } catch (err) {
+      console.warn("[Google Calendar] No se pudo guardar el vínculo en el negocio", err);
+    }
+    try {
       await syncBusyCache();
     } catch (err) {
       console.warn("[Google Calendar] No se pudo sincronizar disponibilidad", err);
+    }
+    try {
+      await syncPendingBookings();
+    } catch (err) {
+      console.warn("[Google Calendar] No se pudieron enviar citas pendientes", err);
     }
     return auth;
   }
@@ -314,6 +329,7 @@
     }
     saveAuth(null);
     localStorage.removeItem(busyKey());
+    persistGoogleFlag({ connected: false }).catch(() => {});
   }
 
   function getConnection() {
@@ -347,9 +363,68 @@
   }
 
   /** ¿La agenda pública debe respetar ocupación de Google? */
+  function readAutoagenda() {
+    const fromTenant = window.Tenant?.cached?.()?.autoagenda;
+    if (fromTenant && typeof fromTenant === "object") return fromTenant;
+    try {
+      const local = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      return local && typeof local === "object" ? local : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function negocioWantsGoogle() {
+    if (isConnected()) return true;
+    return !!readAutoagenda()?.googleCalendar?.connected;
+  }
+
+  async function publishConnectionIfNeeded() {
+    if (!isConnected()) return;
+    const flag = readAutoagenda()?.googleCalendar;
+    if (flag?.connected && flag.email) return;
+    const auth = loadAuth();
+    await persistGoogleFlag({
+      connected: true,
+      email: auth?.email || "",
+      calendarId: auth?.calendarId || "primary",
+      calendarName: auth?.calendarName || "",
+    });
+  }
+
+  async function persistGoogleFlag(link) {
+    const auto = { ...readAutoagenda() };
+    auto.googleCalendar = link?.connected
+      ? {
+          connected: true,
+          email: link.email || "",
+          calendarId: link.calendarId || "primary",
+          calendarName: link.calendarName || "",
+        }
+      : { connected: false };
+    try {
+      localStorage.setItem("barbercloud.autoagenda", JSON.stringify(auto));
+    } catch {
+      /* ignore */
+    }
+    const own = await window.SupabaseData?.fetchOwnNegocio?.();
+    if (!own?.id || !window.SupabaseData?.upsertNegocio) return;
+    const merged = {
+      ...(own.autoagenda && typeof own.autoagenda === "object" ? own.autoagenda : {}),
+      ...auto,
+      googleCalendar: auto.googleCalendar,
+    };
+    await window.SupabaseData.upsertNegocio({
+      id: own.id,
+      slug: own.slug,
+      name: own.name,
+      autoagenda: merged,
+    });
+  }
+
   function usesGoogleAvailability() {
     // Si Google está conectado (o hay cache de ocupación), bloquea huecos ocupados ahí.
-    return isConnected() || !!(loadBusyCache()?.blocks?.length);
+    return isConnected() || negocioWantsGoogle() || !!(loadBusyCache()?.blocks?.length);
   }
 
   /**
@@ -503,6 +578,60 @@
     localStorage.removeItem(busyKey());
   }
 
+  function calendarTimeZone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Bogota";
+    } catch {
+      return "America/Bogota";
+    }
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function dateTimeLocal(date, time) {
+    const hhmm = String(time || "09:00").slice(0, 5);
+    return `${date}T${hhmm.length === 5 ? hhmm : "09:00"}:00`;
+  }
+
+  function addMinutesToDateTime(date, time, durationMin) {
+    const [h, m] = String(time || "09:00").split(":").map(Number);
+    const startMin = (h || 0) * 60 + (m || 0);
+    const endMin = startMin + (Number(durationMin) || 60);
+    const extraDays = Math.floor(endMin / (24 * 60));
+    const rem = ((endMin % (24 * 60)) + 24 * 60) % (24 * 60);
+    const dt = new Date(`${date}T12:00:00`);
+    dt.setDate(dt.getDate() + extraDays);
+    return {
+      date: `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`,
+      time: `${pad2(Math.floor(rem / 60))}:${pad2(rem % 60)}`,
+    };
+  }
+
+  function isBookingActive(booking) {
+    const life = String(
+      window.BookingStore?.lifecycleStatus?.(booking) || booking?.lifecycleStatus || booking?.status || ""
+    ).toLowerCase();
+    if (life === "cancelled" || life === "canceled" || life === "completed" || life === "no_show") {
+      return false;
+    }
+    if (String(booking?.status || "").toLowerCase().includes("cancel")) return false;
+    return true;
+  }
+
+  function needsGooglePush(booking) {
+    if (!booking?.id || !booking.date || !booking.time) return false;
+    if (booking.googleEventId) return false;
+    if (booking.source === "google") return false;
+    if (booking.googleSync === "skipped" || booking.googleSync === "synced") return false;
+    if (!isBookingActive(booking)) return false;
+    const today = new Date();
+    const todayIso = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+    if (String(booking.date) < todayIso) return false;
+    return true;
+  }
+
   async function createEvent({
     summary,
     description,
@@ -514,15 +643,13 @@
     const auth = loadAuth();
     const token = await getValidAccessToken();
     const calId = encodeURIComponent(calendarId || auth?.calendarId || "primary");
-    const [h, m] = String(time || "09:00").split(":").map(Number);
-    const start = new Date(`${date}T00:00:00`);
-    start.setHours(h || 0, m || 0, 0, 0);
-    const end = new Date(start.getTime() + (Number(duration) || 60) * 60000);
+    const tz = calendarTimeZone();
+    const endAt = addMinutesToDateTime(date, time, duration);
     const body = {
-      summary: summary || "Cita BarberHome",
+      summary: summary || "Cita BarberCloud",
       description: description || "",
-      start: { dateTime: start.toISOString() },
-      end: { dateTime: end.toISOString() },
+      start: { dateTime: dateTimeLocal(date, time), timeZone: tz },
+      end: { dateTime: dateTimeLocal(endAt.date, endAt.time), timeZone: tz },
     };
     const res = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calId}/events`,
@@ -547,6 +674,90 @@
     return data;
   }
 
+  async function deleteEvent(eventId, calendarId) {
+    if (!eventId) return { ok: true, skipped: true };
+    const auth = loadAuth();
+    const token = await getValidAccessToken();
+    const calId = encodeURIComponent(calendarId || auth?.calendarId || "primary");
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${encodeURIComponent(eventId)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (res.status === 404 || res.status === 410 || res.ok) return { ok: true };
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error?.message || `Error HTTP ${res.status}`);
+  }
+
+  async function pushBooking(booking) {
+    if (!booking?.id) return null;
+    if (booking.googleEventId) return { id: booking.googleEventId, already: true };
+    if (!isConnected()) return null;
+    const name = booking.name || "Cliente";
+    const phone = booking.phone || "";
+    const service = booking.serviceName || "Cita";
+    const data = await createEvent({
+      summary: `${service} · ${name}${phone ? ` ${phone}` : ""}`.trim(),
+      description: [
+        "Reserva BarberCloud",
+        `Cliente: ${name}`,
+        phone ? `WhatsApp: ${phone}` : "",
+        booking.notes ? `Notas: ${booking.notes}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      date: booking.date,
+      time: booking.time,
+      duration: booking.duration,
+      calendarId: loadAuth()?.calendarId,
+    });
+    if (data?.id && window.BookingStore?.patchBooking) {
+      window.BookingStore.patchBooking(booking.id, {
+        googleEventId: data.id,
+        googleSync: "synced",
+        calendarId: "gmail",
+      });
+    }
+    return data;
+  }
+
+  async function syncPendingBookings() {
+    if (!isConnected()) return { ok: false, synced: 0, reason: "disconnected" };
+    const store = window.BookingStore;
+    if (!store?.loadBookings) return { ok: true, synced: 0 };
+    const list = store.loadBookings();
+    let synced = 0;
+    let failed = 0;
+    for (const booking of list) {
+      if (!needsGooglePush(booking)) continue;
+      try {
+        const ev = await pushBooking(booking);
+        if (ev?.id) synced += 1;
+      } catch (err) {
+        failed += 1;
+        console.warn("[Google Calendar] no se pudo enviar cita", booking.id, err);
+        store.patchBooking?.(booking.id, {
+          googleSync: "error",
+          googleSyncError: err?.message || "error",
+        });
+      }
+    }
+    return { ok: failed === 0, synced, failed };
+  }
+
+  async function removeBookingEvent(booking) {
+    if (!booking?.googleEventId || !isConnected()) return { ok: true, skipped: true };
+    try {
+      await deleteEvent(booking.googleEventId);
+      return { ok: true };
+    } catch (err) {
+      console.warn("[Google Calendar] no se pudo borrar evento", err);
+      return { ok: false, message: err?.message };
+    }
+  }
+
   window.GoogleCalendar = {
     connect,
     disconnect,
@@ -561,7 +772,13 @@
     clearBusyCache,
     isSlotBusy,
     usesGoogleAvailability,
+    negocioWantsGoogle,
     createEvent,
+    deleteEvent,
+    pushBooking,
+    syncPendingBookings,
+    removeBookingEvent,
+    publishConnectionIfNeeded,
     ACTIVE_CAL_KEY: activeCalKey,
     BUSY_KEY: busyKey,
     AUTH_KEY: authKey,

@@ -3138,7 +3138,9 @@
     }
 
     if (window.BookingStore && date && time) {
-      const useGoogle = usesGoogleBusy();
+      const useGoogle = !!(
+        window.GoogleCalendar?.negocioWantsGoogle?.() || usesGoogleBusy()
+      );
       let result = await window.BookingStore.bookAtomically({
         ...data,
         date,
@@ -3150,6 +3152,7 @@
         slug: config.slug || slug,
         business: config.title || "BarberHome",
         calendarId: useGoogle ? "gmail" : "barberhome",
+        googleSync: useGoogle ? "pending" : "",
         status: "pending_confirmation",
         source: "public",
         name,
@@ -3188,31 +3191,13 @@
         window.AppShell?.toast?.("No se pudo enviar el aviso al correo del barbero");
       }
 
-      // Crear evento en Google en segundo plano (no bloquea el correo)
-      if (useGoogle && window.GoogleCalendar?.isConnected?.()) {
-        Promise.resolve()
-          .then(() =>
-            window.GoogleCalendar.createEvent({
-              summary: `${selectedType?.name || "Cita"} ${data.name || ""} ${fullPhone}`.trim(),
-              description: `Reserva BarberHome\nCliente: ${data.name || ""}\nWhatsApp: ${fullPhone}`,
-              date,
-              time,
-              duration,
-            })
-          )
-          .then((gEvent) => {
-            if (gEvent?.id && result.booking?.id && window.BookingStore) {
-              const list = window.BookingStore.loadBookings();
-              const idx = list.findIndex((b) => b.id === result.booking.id);
-              if (idx >= 0) {
-                list[idx] = { ...list[idx], googleEventId: gEvent.id };
-                window.BookingStore.saveBookings(list);
-              }
-            }
-          })
-          .catch((err) => {
-            console.warn("[booking] No se pudo crear evento en Google", err);
-          });
+      // El cliente público no tiene el token del barbero. Si esta misma
+      // sesión sí está conectada (el dueño probando su link), se envía ya.
+      // Si no, queda pending y el panel la empuja a Google Calendar.
+      if (useGoogle && window.GoogleCalendar?.isConnected?.() && result.booking && !result.booking.googleEventId) {
+        window.GoogleCalendar.pushBooking(result.booking).catch((err) => {
+          console.warn("[booking] No se pudo crear evento en Google", err);
+        });
       }
     } else {
       const booking = {

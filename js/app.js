@@ -1055,6 +1055,15 @@
     loadPlansModal();
 
     applyMembershipChrome();
+    window.Billing?.pingTrialReminders?.();
+    if (window.GoogleCalendar?.isConnected?.()) {
+      window.GoogleCalendar.publishConnectionIfNeeded?.().catch(() => {});
+      window.GoogleCalendar.syncPendingBookings?.()
+        .then((sync) => {
+          if (sync?.synced) renderTodayOps();
+        })
+        .catch((err) => console.warn("[app] sync Google", err));
+    }
     renderTodayOps();
     window.BookingStore?.subscribe?.(renderTodayOps);
     window.addEventListener("barbercloud:bookings-changed", renderTodayOps);

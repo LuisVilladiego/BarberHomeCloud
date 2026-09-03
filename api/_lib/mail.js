@@ -151,9 +151,36 @@ async function sendRedeemAlert({ toEmail, redeem }) {
   return { ok: true, message: "Aviso de canje enviado" };
 }
 
+async function sendTrialEmail({ toEmail, toName, daysLeft, periodEnd, copy }) {
+  const name = String(toName || "barbero").trim();
+  const days = Number(daysLeft) || 0;
+  const payload = {
+    to_email: String(toEmail || "").trim(),
+    to_name: name,
+    subject: copy?.subject || "Tu prueba de BarberCloud",
+    headline: copy?.headline || "",
+    message: copy?.body || "",
+    html:
+      copy?.html ||
+      `<p>Hola ${name},</p><p>${copy?.body || ""}</p><p><a href="${copy?.href || ""}">${copy?.cta || "Abrir BarberCloud"}</a></p>`,
+    text: copy?.body || "",
+    days_left: days,
+    period_end: periodEnd || "",
+    cta_label: copy?.cta || "Abrir BarberCloud",
+    cta_url: copy?.href || "",
+  };
+  try {
+    await postAppsScript({ type: "trial", ...payload });
+  } catch {
+    await postAppsScript({ type: "notify", ...payload });
+  }
+  return { ok: true, message: "Aviso de prueba enviado" };
+}
+
 module.exports = {
   isConfigured: () => !!mailConfig(),
   sendOtpEmail,
   sendBookingAlert,
   sendRedeemAlert,
+  sendTrialEmail,
 };

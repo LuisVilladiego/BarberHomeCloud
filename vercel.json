@@ -15,5 +15,11 @@
       "source": "/:slug((?!api/)(?!.*\\.).*)",
       "destination": "/booking.html"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/trial/remind",
+      "schedule": "0 14 * * *"
+    }
   ]
 }

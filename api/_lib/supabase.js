@@ -134,6 +134,28 @@ async function insertNegocio(row) {
   return Array.isArray(rows) ? rows[0] || null : null;
 }
 
+async function listTrialNegocios() {
+  const attempts = [
+    "id,name,owner_id,subscription_status,current_period_end,current_period_start,last_payment_at,plan_id,settings",
+    "id,name,owner_id,subscription_status,current_period_end,current_period_start,last_payment_at,plan_id",
+  ];
+  let lastErr;
+  for (const select of attempts) {
+    try {
+      const rows = await rest("negocios", {
+        query: {
+          select,
+          subscription_status: "in.(trial,trialing)",
+        },
+      });
+      return Array.isArray(rows) ? rows : [];
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error("No se pudieron leer las pruebas");
+}
+
 async function insertPago(row) {
   const rows = await rest("pagos", {
     method: "POST",
@@ -219,6 +241,7 @@ module.exports = {
   insertNegocio,
   insertPago,
   listNegocios,
+  listTrialNegocios,
   negocioById,
   negocioBySlug,
   negocioOfOwner,

@@ -321,7 +321,7 @@
       (bookingInput.source === "public" || bookingInput.status === "pending_confirmation"
         ? "pending"
         : "confirmed");
-    const booking = {
+    let booking = {
       id: bookingInput.id || crypto.randomUUID(),
       name: bookingInput.name || "Cliente",
       phone: bookingInput.phone || "",
@@ -341,9 +341,17 @@
       calendarId: bookingInput.calendarId || "negocio",
       slug: bookingInput.slug || window.Tenant?.cached?.()?.slug || "",
       negocioId: bookingInput.negocioId || window.Tenant?.currentId?.() || "",
+      googleEventId: bookingInput.googleEventId || "",
+      googleSync: bookingInput.googleSync || "",
       createdAt: new Date().toISOString(),
       claimAt: claim.at,
     };
+    if (window.GoogleCalendar?.negocioWantsGoogle?.() && !booking.googleEventId) {
+      booking.googleSync = booking.googleSync || "pending";
+      if (!booking.calendarId || booking.calendarId === "negocio" || booking.calendarId === "barberhome") {
+        booking.calendarId = "gmail";
+      }
+    }
 
     // Revalidar lock propio justo antes de escribir
     const lockNow = safeParse(localStorage.getItem(key), null);
@@ -395,6 +403,16 @@
       /* ignore */
     }
     bc?.postMessage({ type: "booking-created", booking });
+    if (booking.googleSync === "pending" && window.GoogleCalendar?.isConnected?.()) {
+      try {
+        const ev = await window.GoogleCalendar.pushBooking(booking);
+        if (ev?.id) {
+          booking = { ...booking, googleEventId: ev.id, googleSync: "synced", calendarId: "gmail" };
+        }
+      } catch (err) {
+        console.warn("[booking-store] Google Calendar", err);
+      }
+    }
     return { ok: true, booking };
   }
 
@@ -418,12 +436,17 @@
   }
 
   function cancelBooking(id) {
-    return patchBooking(id, {
+    const prev = loadBookings().find((b) => b.id === id);
+    const next = patchBooking(id, {
       lifecycleStatus: "cancelled",
       confirmationStatus: "declined",
       status: "cancelled",
       cancelledAt: new Date().toISOString(),
     });
+    if (prev?.googleEventId) {
+      window.GoogleCalendar?.removeBookingEvent?.(prev);
+    }
+    return next;
   }
 
   function subscribe(fn) {

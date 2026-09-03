@@ -15,6 +15,8 @@
  *  - type: "recover" → código al cliente (recuperar contraseña)
  *  - type: "booking" → aviso de reserva al admin
  *  - type: "redeem"  → aviso de canje de puntos por producto al admin
+ *  - type: "trial"   → aviso de prueba gratis (inicia / quedan X días)
+ *  - type: "notify"  → mismo formato que trial (respaldo)
  */
 
 var SECRET = "barberhome-otp-2026";
@@ -32,7 +34,7 @@ function doPost(e) {
     }
 
     var type = String(data.type || "verify").toLowerCase();
-    if (["verify", "recover", "booking", "redeem"].indexOf(type) < 0) {
+    if (["verify", "recover", "booking", "redeem", "trial", "notify"].indexOf(type) < 0) {
       return json_({ ok: false, message: "Tipo no permitido" });
     }
     if (type === "booking") {
@@ -40,6 +42,9 @@ function doPost(e) {
     }
     if (type === "redeem") {
       return sendRedeemAlert_(data);
+    }
+    if (type === "trial" || type === "notify") {
+      return sendTrialNotice_(data);
     }
     if (type === "recover") {
       return sendRecoverCode_(data);
@@ -63,7 +68,7 @@ function doGet(e) {
     return json_({
       ok: true,
       message:
-        "BarberHome mail OK. Usa POST type=verify, recover, booking o redeem.",
+        "BarberHome mail OK. Usa POST type=verify, recover, booking, redeem o trial.",
     });
   } catch (err) {
     return json_({ ok: false, message: "Error interno" });
@@ -368,6 +373,77 @@ function sendRedeemAlert_(data) {
   });
 
   return json_({ ok: true, message: "Aviso de canje enviado" });
+}
+
+function sendTrialNotice_(data) {
+  var to = String(data.to_email || "").trim();
+  var name = String(data.to_name || "barbero").trim();
+  var fromName = String(data.from_name || "BarberCloud").trim();
+  var subject = String(data.subject || "Tu prueba de BarberCloud").trim();
+  var headline = String(data.headline || "Tu prueba gratis").trim();
+  var message = String(data.message || data.text || data.body || "").trim();
+  var ctaLabel = String(data.cta_label || "Abrir BarberCloud").trim();
+  var ctaUrl = String(data.cta_url || data.href || "https://barber-home-cloud.vercel.app/index.html").trim();
+  var days = String(data.days_left != null ? data.days_left : "").trim();
+
+  if (!to) {
+    return json_({ ok: false, message: "Falta to_email" });
+  }
+  if (!isValidEmail_(to)) {
+    return json_({ ok: false, message: "Correo inválido" });
+  }
+  if (!message) {
+    message =
+      days === "0"
+        ? "Hoy termina tu prueba gratis. Elige un plan para seguir usando BarberCloud."
+        : "Tu prueba de BarberCloud se está acabando. Elige un plan para no pausar tu enlace de reservas.";
+  }
+
+  var body =
+    "Hola " +
+    name +
+    ",\n\n" +
+    message +
+    "\n\n" +
+    ctaLabel +
+    ": " +
+    ctaUrl +
+    "\n\n— " +
+    fromName;
+
+  var html =
+    '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827;background:#f8fafc">' +
+    '<p style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#2563eb;font-weight:700;margin:0 0 8px">BarberCloud</p>' +
+    '<p style="font-size:22px;font-weight:700;margin:0 0 12px">' +
+    escapeHtml_(headline) +
+    "</p>" +
+    "<p>Hola <strong>" +
+    escapeHtml_(name) +
+    "</strong>,</p>" +
+    "<p>" +
+    escapeHtml_(message) +
+    "</p>" +
+    '<p style="margin:28px 0">' +
+    '<a href="' +
+    escapeHtml_(ctaUrl) +
+    '" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:700">' +
+    escapeHtml_(ctaLabel) +
+    "</a></p>" +
+    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Tus datos no se borran cuando termina la prueba.</p>' +
+    "<p>— " +
+    escapeHtml_(fromName) +
+    "</p>" +
+    "</div>";
+
+  MailApp.sendEmail({
+    to: to,
+    subject: subject,
+    body: body,
+    htmlBody: html,
+    name: fromName,
+  });
+
+  return json_({ ok: true, message: "Aviso de prueba enviado" });
 }
 
 function row_(label, value) {

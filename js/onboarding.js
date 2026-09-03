@@ -268,23 +268,32 @@
       phone: `${state.cc} ${state.phone}`.trim(),
     });
     const user = await window.BarberAuth?.currentUser?.();
-    const subStatus = user ? "expired" : "trial";
-    localStorage.setItem(
-      "barbercloud.subscription",
-      JSON.stringify({
+    if (!window.Billing?.isActive?.()) {
+      const now = new Date();
+      const end = new Date(now.getTime() + 7 * 86400000);
+      const local = {
         planId: "pro",
-        status: subStatus,
+        status: "trial",
+        periodStart: now.toISOString(),
+        periodEnd: end.toISOString(),
         cancelAtPeriodEnd: false,
-        payment: { provider: "pending" },
-      })
-    );
+        payment: { provider: "trial" },
+      };
+      localStorage.setItem("barbercloud.subscription", JSON.stringify(local));
+      window.Billing?.cache?.({
+        negocioId: window.Tenant?.currentId?.() || null,
+        status: "trial",
+        planId: "pro",
+        periodStart: local.periodStart,
+        periodEnd: local.periodEnd,
+        lastPaymentAt: null,
+      });
+    }
     if (window.SupabaseData?.enabled?.()) {
       const payload = {
         slug: auto.slug,
         name: auto.title,
         owner_id: user?.id || undefined,
-        subscription_status: subStatus,
-        plan_id: "pro",
         phone: `${state.cc} ${state.phone}`.trim(),
         description: auto.description,
         autoagenda: auto,

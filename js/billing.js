@@ -357,10 +357,29 @@
         window.Tenant?.hydrateNegocioCaches?.(data.negocio);
       }
       await refresh();
-      return { ok: true, periodEnd: data.periodEnd, alreadyActive: !!data.alreadyActive };
+      return {
+        ok: true,
+        periodEnd: data.periodEnd,
+        alreadyActive: !!data.alreadyActive,
+        mail: data.mail || null,
+      };
     } catch (err) {
       console.warn("[billing] trial", err);
       return { ok: false, message: "No se pudo conectar para iniciar la prueba." };
+    }
+  }
+
+  async function pingTrialReminders() {
+    if (!enabled()) return;
+    const token = await accessToken();
+    if (!token) return;
+    try {
+      await fetch("/api/trial/remind", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      /* ignore */
     }
   }
 
@@ -382,6 +401,7 @@
     hasPaidMembership,
     isRestricted,
     pagoByReference,
+    pingTrialReminders,
     refresh,
     startCheckout,
     startTrial,
