@@ -182,8 +182,12 @@
       return;
     }
     window.Tenant?.setCurrent?.(
-      window.Tenant?.withOwnerEmail?.(negocio, negocio.settings?.notify_email || negocio.settings?.owner_email) ||
-        negocio
+      window.Tenant?.withOwnerEmail?.(
+        negocio,
+        negocio.settings?.notify_email ||
+          negocio.settings?.owner_email ||
+          negocio.autoagenda?.googleCalendar?.email
+      ) || negocio
     );
     const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
     applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
@@ -2963,7 +2967,10 @@
     }
     const biz = window.Tenant?.cached?.();
     const admin = String(
-      biz?.owner_email || biz?.settings?.notify_email || ""
+      biz?.owner_email ||
+        biz?.settings?.notify_email ||
+        biz?.autoagenda?.googleCalendar?.email ||
+        ""
     ).trim();
     const url = String(c.appsScriptUrl || "").trim();
     if (!admin || !url || !c.appsScriptSecret) {

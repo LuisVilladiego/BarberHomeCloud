@@ -253,6 +253,7 @@
         settings.notify_email ||
         settings.owner_email ||
         auto.notify_email ||
+        auto.googleCalendar?.email ||
         ""
     ).trim();
   }
@@ -297,10 +298,7 @@
       if (server?.ok) {
         return { ok: true, message: "Aviso enviado al correo de la membresía", to: server.to };
       }
-      if (server?.skipped) return server;
-      if (server && server.ok === false && server.message) {
-        return { ok: false, message: server.message, to: server.to || "" };
-      }
+      if (server?.to) booking.ownerEmail = booking.ownerEmail || server.to;
     } catch (err) {
       console.warn("[EmailService] notify server booking", err);
     }
@@ -377,10 +375,7 @@
       if (server?.ok) {
         return { ok: true, message: "Aviso de canje enviado al correo de la membresía", to: server.to };
       }
-      if (server?.skipped) return server;
-      if (server && server.ok === false && server.message) {
-        return { ok: false, message: server.message, to: server.to || "" };
-      }
+      if (server?.to) redeem.ownerEmail = redeem.ownerEmail || server.to;
     } catch (err) {
       console.warn("[EmailService] notify server redeem", err);
     }

@@ -240,6 +240,7 @@ function readNotifyEmail(negocio) {
       settings.owner_email ||
       auto.notify_email ||
       auto.notifyEmail ||
+      auto.googleCalendar?.email ||
       negocio.owner_email ||
       ""
   ).trim();
@@ -270,8 +271,8 @@ async function ownerEmailForNegocio({ slug, negocioId }) {
   let email = readNotifyEmail(negocio);
   if (!email && negocio.owner_id) {
     email = await fetchOwnerEmail(negocio.owner_id);
-    if (email) negocio = await persistNotifyEmail(negocio, email);
   }
+  if (email) negocio = await persistNotifyEmail(negocio, email);
   return { email: email || null, negocio };
 }
 

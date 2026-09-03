@@ -1,6 +1,5 @@
 const { sendBookingAlert, sendRedeemAlert, isConfigured } = require("../_lib/mail");
 const { ownerEmailForNegocio } = require("../_lib/supabase");
-const { hasSubscriptionAccess, normalizeStatus } = require("../_lib/business-model");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -18,26 +17,28 @@ module.exports = async function handler(req, res) {
 
     const { email, negocio } = await ownerEmailForNegocio({ slug, negocioId });
     if (!negocio) {
-      return res.status(404).json({ ok: false, message: "Negocio no encontrado." });
-    }
-
-    const active = hasSubscriptionAccess(
-      normalizeStatus(negocio.subscription_status),
-      negocio.current_period_end
-    );
-    if (!active) {
-      return res.status(200).json({ ok: false, skipped: true, message: "Membresía inactiva." });
+      return res.status(404).json({
+        ok: false,
+        fallback: true,
+        message: "Negocio no encontrado.",
+      });
     }
 
     if (!email) {
       return res.status(200).json({
         ok: false,
+        fallback: true,
         message: "No hay correo del dueño de la membresía para este negocio.",
       });
     }
 
     if (!isConfigured()) {
-      return res.status(503).json({ ok: false, message: "Correo no configurado en el servidor." });
+      return res.status(200).json({
+        ok: false,
+        fallback: true,
+        to: email,
+        message: "Correo no configurado en el servidor.",
+      });
     }
 
     if (kind === "redeem") {
@@ -60,8 +61,9 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ...result, to: email });
   } catch (err) {
     console.error("[booking/notify]", err);
-    return res.status(500).json({
+    return res.status(200).json({
       ok: false,
+      fallback: true,
       message: err?.message || "No se pudo enviar el aviso.",
     });
   }

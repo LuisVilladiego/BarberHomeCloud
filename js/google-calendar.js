@@ -420,6 +420,9 @@
       name: own.name,
       autoagenda: merged,
     });
+    if (link?.connected && link.email) {
+      await window.SupabaseData.rememberNotifyEmail?.(link.email);
+    }
   }
 
   function usesGoogleAvailability() {
