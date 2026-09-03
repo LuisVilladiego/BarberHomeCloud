@@ -27,7 +27,24 @@
   const DAY_KEYS = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
   function loadConfig() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      if (!parsed || typeof parsed !== "object") return {};
+      if (slug) {
+        const storedSlug =
+          window.Tenant?.normalizeSlug?.(parsed.slug || "") ||
+          String(parsed.slug || "")
+            .trim()
+            .toLowerCase();
+        const urlSlug =
+          window.Tenant?.normalizeSlug?.(slug) ||
+          String(slug)
+            .trim()
+            .toLowerCase();
+        if (!storedSlug || storedSlug !== urlSlug || window.Tenant?.isDemoSlug?.(storedSlug)) {
+          return {};
+        }
+      }
+      return parsed;
     } catch {
       return {};
     }
@@ -74,12 +91,13 @@
     window.Tenant?.normalizeSlug?.(params.get("s") || "") ||
     params.get("s") ||
     "";
-  let config = loadConfig();
-  let types =
-    Array.isArray(config.appointmentTypes) && config.appointmentTypes.length
+  let config = slug ? {} : loadConfig();
+  let types = slug
+    ? []
+    : Array.isArray(config.appointmentTypes) && config.appointmentTypes.length
       ? config.appointmentTypes
       : [{ id: "type-1", name: "Agendar cita", duration: 60, price: 0, scheduleId: "" }];
-  let schedules = Array.isArray(config.schedules) ? config.schedules : [];
+  let schedules = slug ? [] : Array.isArray(config.schedules) ? config.schedules : [];
 
   const title = document.getElementById("public-title");
   const description = document.getElementById("public-description");
@@ -111,10 +129,27 @@
   const calLoading = document.getElementById("cal-loading");
   const calLoadingText = calLoading?.querySelector(".book-cal__loading-text");
 
-  if (config.title) title.textContent = config.title;
-  if (config.description) description.textContent = config.description;
-  avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
-  document.title = `${config.title || "Agendar"} · BarberCloud`;
+  function revealPublicPage() {
+    document.documentElement.classList.remove("public-boot");
+  }
+
+  function applyHeaderFromConfig(next) {
+    const data = next || {};
+    if (title) title.textContent = data.title || "";
+    if (description) description.textContent = data.description || "";
+    if (avatar) {
+      if (data.avatarDataUrl) {
+        avatar.src = data.avatarDataUrl;
+        avatar.hidden = false;
+      } else {
+        avatar.removeAttribute("src");
+        avatar.hidden = true;
+      }
+    }
+    document.title = `${data.title || "Agendar"} · BarberCloud`;
+  }
+
+  if (!slug) applyHeaderFromConfig(config);
 
   function rewardsBrand() {
     const name = String(config.title || "").trim();
@@ -131,12 +166,14 @@
   function syncPublicExtras() {
     const shopBtn = document.getElementById("btn-shop");
     const puntosBtn = document.getElementById("btn-puntos");
-    if (shopBtn) shopBtn.hidden = false;
-    if (puntosBtn) puntosBtn.hidden = false;
+    if (shopBtn) shopBtn.hidden = config.showShop === false;
+    if (puntosBtn) puntosBtn.hidden = config.showRewards === false;
   }
 
-  applyRewardsCopy();
-  syncPublicExtras();
+  if (!slug) {
+    applyRewardsCopy();
+    syncPublicExtras();
+  }
 
   function applyPublicConfig(next) {
     config = next || {};
@@ -145,10 +182,7 @@
         ? config.appointmentTypes
         : [{ id: "type-1", name: "Agendar cita", duration: 60, price: 0, scheduleId: "" }];
     schedules = Array.isArray(config.schedules) ? config.schedules : [];
-    if (config.title && title) title.textContent = config.title;
-    if (config.description && description) description.textContent = config.description;
-    if (avatar) avatar.src = config.avatarDataUrl || "assets/barberhome-avatar.png";
-    document.title = `${config.title || "Agendar"} · BarberCloud`;
+    applyHeaderFromConfig(config);
     applyRewardsCopy();
     syncPublicExtras();
     renderServices();
@@ -169,42 +203,54 @@
   }
 
   async function hydrateTenantPage() {
-    if (!slug) return;
-    if (!window.SupabaseData?.enabled?.()) return;
-    const negocio = await window.SupabaseData.fetchNegocioBySlug(slug);
-    if (negocio === undefined) return;
-    if (!negocio) {
-      showPublicGate("not-found");
-      return;
-    }
-    if (!window.Tenant?.isNegocioActive?.(negocio)) {
-      showPublicGate("unavailable");
-      return;
-    }
-    window.Tenant?.setCurrent?.(
-      window.Tenant?.withOwnerEmail?.(
-        negocio,
-        negocio.settings?.notify_email ||
-          negocio.settings?.owner_email ||
-          negocio.autoagenda?.googleCalendar?.email
-      ) || negocio
-    );
-    const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
-    applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
-    if (window.SupabaseData?.enabled?.()) {
-      window.BookingStore?.setAvailabilitySource?.("occupancy_only");
-    }
     try {
-      await refreshPublicOccupancy(negocio.slug);
-      const sale = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "sale");
-      const redeem = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "redeem");
-      localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(Array.isArray(sale) ? sale : []));
-      localStorage.setItem(
-        "barbercloud.loyalty_redeem_products",
-        JSON.stringify(Array.isArray(redeem) ? redeem : [])
+      if (!slug) {
+        applyPublicConfig(config);
+        return;
+      }
+      if (!window.SupabaseData?.enabled?.()) {
+        showPublicGate("unavailable");
+        return;
+      }
+      const negocio = await window.SupabaseData.fetchNegocioBySlug(slug);
+      if (negocio === undefined) {
+        return;
+      }
+      if (!negocio) {
+        showPublicGate("not-found");
+        return;
+      }
+      if (!window.Tenant?.isNegocioActive?.(negocio)) {
+        showPublicGate("unavailable");
+        return;
+      }
+      window.Tenant?.setCurrent?.(
+        window.Tenant?.withOwnerEmail?.(
+          negocio,
+          negocio.settings?.notify_email ||
+            negocio.settings?.owner_email ||
+            negocio.autoagenda?.googleCalendar?.email
+        ) || negocio
       );
-    } catch (err) {
-      console.warn("[booking] ocupacion/productos", err);
+      const agenda = negocio.autoagenda && typeof negocio.autoagenda === "object" ? negocio.autoagenda : {};
+      applyPublicConfig({ ...agenda, slug: negocio.slug, title: agenda.title || negocio.name });
+      if (window.SupabaseData?.enabled?.()) {
+        window.BookingStore?.setAvailabilitySource?.("occupancy_only");
+      }
+      try {
+        await refreshPublicOccupancy(negocio.slug);
+        const sale = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "sale");
+        const redeem = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "redeem");
+        localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(Array.isArray(sale) ? sale : []));
+        localStorage.setItem(
+          "barbercloud.loyalty_redeem_products",
+          JSON.stringify(Array.isArray(redeem) ? redeem : [])
+        );
+      } catch (err) {
+        console.warn("[booking] ocupacion/productos", err);
+      }
+    } finally {
+      revealPublicPage();
     }
   }
 
@@ -632,8 +678,11 @@
       .join("");
   }
 
-  renderServices();
-  hydrateTenantPage().catch((err) => console.warn("[booking] tenant", err));
+  if (!slug) renderServices();
+  hydrateTenantPage().catch((err) => {
+    console.warn("[booking] tenant", err);
+    revealPublicPage();
+  });
 
   services.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-service]");
@@ -1255,12 +1304,14 @@
   });
 
   document.getElementById("btn-puntos")?.addEventListener("click", () => {
+    if (config.showRewards === false) return;
     hideAll();
     puntosStep.hidden = false;
     openPuntosFlow();
   });
 
   document.getElementById("btn-shop")?.addEventListener("click", async () => {
+    if (config.showShop === false) return;
     hideAll();
     if (shopStep) shopStep.hidden = false;
     if (publicShopGrid) {

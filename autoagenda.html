@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260901g" />
+    <link rel="stylesheet" href="styles.css?v=20260903d" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   </head>
@@ -235,6 +235,33 @@
           </div>
         </section>
 
+        <section class="panel config-panel" aria-labelledby="extras-title">
+          <div class="config-panel__toolbar">
+            <div>
+              <h2 id="extras-title" class="config-panel__title">Botones extra en tu link</h2>
+              <p class="section-lead">
+                Oculta Rewards o Tienda si no los usas. Los tipos de cita siguen visibles.
+              </p>
+            </div>
+          </div>
+          <div class="settings-card settings-card--stack" style="margin: 0 22px 18px; border: 0; padding: 0; box-shadow: none">
+            <label class="toggle-row">
+              <span>
+                <strong>Mostrar Rewards</strong>
+                <small>Canje de puntos en el link público</small>
+              </span>
+              <input type="checkbox" id="show-rewards" checked />
+            </label>
+            <label class="toggle-row">
+              <span>
+                <strong>Mostrar Tienda</strong>
+                <small>Venta de productos en el link público</small>
+              </span>
+              <input type="checkbox" id="show-shop" checked />
+            </label>
+          </div>
+        </section>
+
         <section class="panel config-panel" aria-labelledby="preview-title">
           <div class="config-panel__toolbar">
             <h2 id="preview-title" class="config-panel__title">Así se ve tu sitio web:</h2>
@@ -266,7 +293,7 @@
               <p class="public-cta">Reserva una cita con nosotros:</p>
               <div class="public-services" id="preview-services"></div>
               <div class="public-extras" id="preview-extras">
-                <button type="button" class="service-row" tabindex="-1">
+                <button type="button" class="service-row" id="preview-rewards-row" tabindex="-1">
                   <span class="service-row__body">
                     <span class="service-row__name" id="preview-rewards-name">Rewards</span>
                     <span class="service-row__duration">Canjea con tus puntos</span>
@@ -275,7 +302,7 @@
                     <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
-                <button type="button" class="service-row" tabindex="-1">
+                <button type="button" class="service-row" id="preview-shop-row" tabindex="-1">
                   <span class="service-row__body">
                     <span class="service-row__name">Tienda</span>
                     <span class="service-row__duration">Comprar productos</span>
@@ -396,6 +423,6 @@
 <script src="js/security.js?v=20260816"></script>
     <script src="js/auth.js?v=20260818m"></script>
     <script src="js/app.js?v=20260902b"></script>
-    <script src="js/autoagenda.js?v=20260901c"></script>
+    <script src="js/autoagenda.js?v=20260903d"></script>
   </body>
 </html>

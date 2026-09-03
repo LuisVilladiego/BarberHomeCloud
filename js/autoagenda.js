@@ -55,6 +55,8 @@
       title: "",
       description: "",
       avatarDataUrl: "",
+      showRewards: true,
+      showShop: true,
       schedules: [],
       appointmentTypes: [],
     };
@@ -72,6 +74,8 @@
     if (window.Tenant?.isDemoSlug?.(next.slug)) {
       next.slug = "";
     }
+    if (next.showRewards == null) next.showRewards = true;
+    if (next.showShop == null) next.showShop = true;
     return next;
   }
 
@@ -189,6 +193,10 @@
     state.slug = slugInput.value.trim();
     state.title = titleInput.value.trim();
     state.description = descriptionInput.value;
+    const rewards = document.getElementById("show-rewards");
+    const shop = document.getElementById("show-shop");
+    if (rewards) state.showRewards = !!rewards.checked;
+    if (shop) state.showShop = !!shop.checked;
   }
 
   function markDirty() {
@@ -260,6 +268,10 @@
       dropzoneIdle.hidden = false;
       pendingAvatar = "";
     }
+    const rewards = document.getElementById("show-rewards");
+    const shop = document.getElementById("show-shop");
+    if (rewards) rewards.checked = state.showRewards !== false;
+    if (shop) shop.checked = state.showShop !== false;
   }
 
   function renderSchedules() {
@@ -349,6 +361,10 @@
     if (rewardsName) {
       rewardsName.textContent = state.title ? `${state.title} Rewards` : "Rewards";
     }
+    const rewardsRow = document.getElementById("preview-rewards-row");
+    const shopRow = document.getElementById("preview-shop-row");
+    if (rewardsRow) rewardsRow.hidden = state.showRewards === false;
+    if (shopRow) shopRow.hidden = state.showShop === false;
     services.innerHTML = state.appointmentTypes
       .map(
         (t) => `
@@ -775,5 +791,16 @@
 
   document.getElementById("btn-delete-type")?.addEventListener("click", () => {
     if (editingTypeId) deleteType(editingTypeId);
+  });
+
+  document.getElementById("show-rewards")?.addEventListener("change", () => {
+    readBasicFields();
+    markDirty();
+    save();
+  });
+  document.getElementById("show-shop")?.addEventListener("change", () => {
+    readBasicFields();
+    markDirty();
+    save();
   });
 })();

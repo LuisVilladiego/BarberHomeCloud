@@ -10,9 +10,33 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=20260901g" />
+    <link rel="stylesheet" href="styles.css?v=20260903d" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <style>
+      html.public-boot .public-card { visibility: hidden; }
+      html.public-boot .public-page::before {
+        content: "";
+        width: 28px;
+        height: 28px;
+        margin: 72px auto 0;
+        border: 2.5px solid #d1d5db;
+        border-top-color: #111827;
+        border-radius: 50%;
+        animation: public-boot-spin 0.7s linear infinite;
+      }
+      @keyframes public-boot-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <script>
+      (function () {
+        var path = (location.pathname || "").replace(/^\//, "").replace(/\.html$/i, "");
+        var hasSlug = path && path !== "booking";
+        var hasQuery = /(?:^|[?&])s=/.test(location.search);
+        if (hasSlug || hasQuery) document.documentElement.classList.add("public-boot");
+      })();
+    </script>
   </head>
   <body class="public-body">
     <main class="public-page" id="public-page">
@@ -21,17 +45,15 @@
           <img
             class="public-avatar"
             id="public-avatar"
-            src="assets/barberhome-avatar.png"
-            alt="BarberHome"
+            src=""
+            alt=""
             width="72"
             height="72"
+            hidden
           />
           <div class="public-header__text">
-            <h1 id="public-title">BarberHome</h1>
-            <p id="public-description" class="public-desc">
-              EL mejor servicio de 💈Barbería💈, ahora en la comodidad de tu hogar 🏡 gracias a
-              BarberHome😎
-            </p>
+            <h1 id="public-title"></h1>
+            <p id="public-description" class="public-desc"></p>
           </div>
         </header>
 
@@ -921,7 +943,7 @@
     <script src="js/plan-limits.js?v=20260829n"></script>
     <script src="js/booking-store.js?v=20260902b"></script>
     <script src="js/loyalty-engine.js?v=20260818"></script>
-    <script src="js/booking-public.js?v=20260903b"></script>
+    <script src="js/booking-public.js?v=20260903d"></script>
     <script src="js/booking-lookup.js?v=20260830a"></script>
   </body>
 </html>
