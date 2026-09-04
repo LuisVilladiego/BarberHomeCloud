@@ -143,10 +143,7 @@ async function sendWhatsApp({ to, body, contentSid, contentVariables }) {
 }
 
 function resolveUtilityContentSid(fromAddress) {
-  const configured = String(process.env.TWILIO_WHATSAPP_UTILITY_CONTENT_SID || "").trim();
-  if (configured) return configured;
-  if (fromAddress === SANDBOX_WHATSAPP_FROM) return SANDBOX_DEFAULT_CONTENT_SID;
-  return "";
+  return String(process.env.TWILIO_WHATSAPP_UTILITY_CONTENT_SID || "").trim();
 }
 
 function buildUtilityContentVariables({ title, body, datePart, timePart, contentSid }) {
@@ -170,23 +167,23 @@ function buildUtilityContentVariables({ title, body, datePart, timePart, content
 
 async function sendBusinessWhatsApp({ toE164, title, body, datePart, timePart, businessName }) {
   const cfg = twilioConfig();
+  const brand = String(businessName || "BarberCloud").trim();
+  const text = String(body || title || "").trim() || `${brand}: recordatorio de cita`;
   const utilitySid = resolveUtilityContentSid(cfg?.from || "");
-  const contentVariables = buildUtilityContentVariables({
-    title,
-    body,
-    datePart,
-    timePart,
-    contentSid: utilitySid,
-  });
 
   if (utilitySid) {
+    const contentVariables = buildUtilityContentVariables({
+      title,
+      body: text,
+      datePart,
+      timePart,
+      contentSid: utilitySid,
+    });
     return sendWhatsApp({ to: toE164, contentSid: utilitySid, contentVariables });
   }
 
-  const brand = String(businessName || "BarberCloud").trim();
-  const text = String(body || title || "").trim();
-  const fallbackBody = text || `${brand}: recordatorio de cita`;
-  return sendWhatsApp({ to: toE164, body: fallbackBody.slice(0, 1024) });
+  // Sandbox / sesión abierta: texto libre. La plantilla OTP no sirve para citas.
+  return sendWhatsApp({ to: toE164, body: text.slice(0, 1024) });
 }
 
 async function sendLookupCode({ toE164, code, businessName }) {

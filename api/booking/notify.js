@@ -42,7 +42,7 @@ async function handleWhatsAppSend(body) {
 
   const type = String(body.messageType || body.type || "test").toLowerCase();
   const booking = body.booking ? bookingFromRow(body.booking) : null;
-  const testPhone = String(body.testPhone || body.phone || "").replace(/\D/g, "");
+  const testPhone = String(body.testPhone || "").replace(/\D/g, "");
   const testCountryCode = String(body.testCountryCode || body.countryCode || "+57").trim();
 
   const result = await sendWhatsAppMessage({

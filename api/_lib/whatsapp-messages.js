@@ -21,7 +21,7 @@ function defaultCalendarConfig(negocio) {
     secondReminder: false,
     secondHoursBefore: "12",
     createMsgEnabled: true,
-    createMsgDelay: "5",
+    createMsgDelay: "0",
     createMsgTitle: `Confirmación de cita ${name}`,
     createMsgBody: `Hola {{nombreCliente}}, se ha confirmado tu cita con ${name}. Información de tu cita:`,
     createShowDateTime: "both",
@@ -49,7 +49,7 @@ function calendarConfigFor(negocio, calendarId) {
   const all = readCalendarConfigs(negocio);
   const id = calendarId || DEFAULT_CALENDAR_ID;
   const base = defaultCalendarConfig(negocio);
-  return { ...base, ...(all[id] || all.barberhome || all.gmail || Object.values(all)[0] || {}) };
+  return { ...base, ...(all[id] || all.barberhome || {}) };
 }
 
 async function persistCalendarConfigs(negocioId, calendarMessages) {
@@ -76,16 +76,16 @@ function bookingFromRow(row) {
     date: row.date,
     time: row.time,
     duration: row.duration || 60,
-    serviceName: row.service_name || "Cita",
+    serviceName: row.service_name || row.serviceName || "Cita",
     status: row.status || "",
     business: row.business || "",
-    calendarId: row.calendar_id || DEFAULT_CALENDAR_ID,
+    calendarId: row.calendar_id || row.calendarId || DEFAULT_CALENDAR_ID,
     slug: row.slug || "",
-    negocioId: row.negocio_id || "",
-    countryCode: meta.countryCode || "+57",
-    lifecycleStatus: meta.lifecycleStatus || "",
-    confirmationStatus: meta.confirmationStatus || "",
-    createdAt: meta.createdAt || row.created_at || null,
+    negocioId: row.negocio_id || row.negocioId || "",
+    countryCode: meta.countryCode || row.countryCode || "+57",
+    lifecycleStatus: meta.lifecycleStatus || row.lifecycleStatus || "",
+    confirmationStatus: meta.confirmationStatus || row.confirmationStatus || "",
+    createdAt: meta.createdAt || row.createdAt || row.created_at || null,
     waMessages: meta.waMessages && typeof meta.waMessages === "object" ? meta.waMessages : {},
   };
 }
@@ -175,17 +175,17 @@ async function sendWhatsAppMessage({ negocio, booking, type, testPhone, testCoun
     return { ok: false, message: "La plantilla del mensaje está vacía." };
   }
 
-  const toE164 =
+  const dest =
     testPhone && testCountryCode
       ? toE164(testCountryCode, String(testPhone).replace(/\D/g, ""))
       : phoneE164FromBooking(booking);
-  if (!toE164) {
+  if (!dest) {
     return { ok: false, message: "El cliente no tiene WhatsApp válido." };
   }
 
   try {
     const delivery = await sendBusinessWhatsApp({
-      toE164,
+      toE164: dest,
       title: rendered.title,
       body: rendered.text,
       datePart: rendered.datePart,
@@ -197,7 +197,7 @@ async function sendWhatsAppMessage({ negocio, booking, type, testPhone, testCoun
     }
     return { ok: true, message: "WhatsApp enviado.", sid: delivery.sid, preview: rendered.text };
   } catch (err) {
-    console.error("[whatsapp] send", type, err);
+    console.error("[whatsapp] send", type, dest, err);
     return { ok: false, message: err?.message || "No se pudo enviar el WhatsApp." };
   }
 }

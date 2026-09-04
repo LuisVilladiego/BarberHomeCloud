@@ -3256,10 +3256,13 @@
 
       try {
         const wa = await window.WhatsAppService?.sendBookingConfirmation?.(result.booking, {
-          respectDelay: true,
+          respectDelay: false,
         });
-        if (wa?.ok && !wa?.queued) {
+        if (wa?.ok && !wa?.queued && !wa?.skipped) {
           window.AppShell?.toast?.("Confirmación enviada por WhatsApp al cliente");
+        } else if (wa && !wa.ok) {
+          console.warn("[booking] WhatsApp confirmación:", wa.message);
+          window.AppShell?.toast?.(wa.message || "No se pudo enviar el WhatsApp al cliente");
         }
       } catch (err) {
         console.warn("[booking] WhatsApp confirmación", err);
