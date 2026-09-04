@@ -2,9 +2,12 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script src="js/brand.js?v=20260903e"></script>
     <script src="js/access-gate.js?v=20260829m"></script>
-    <title>Configurar calendario · BarberCloud</title>
+    <title>Configurar calendario · Gestiónweb.app</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,9 +22,9 @@
     <div class="app">
       <aside class="sidebar">
         <div class="sidebar__top">
-          <a class="brand" href="index.html" aria-label="BarberCloud">
+          <a class="brand" href="index.html" aria-label="Gestiónweb.app">
             <img class="brand__logo" src="assets/logo.png" alt="" width="32" height="32" />
-            <span class="brand__name">BarberCloud</span>
+            <span class="brand__name">Gestiónweb.app</span>
           </a>
           <button class="icon-btn notifications" type="button" aria-label="Notificaciones">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -87,7 +90,7 @@
 
       <main class="main">
         <header class="page-header">
-          <h1 id="cal-config-title">Configuración para BarberHome</h1>
+          <h1 id="cal-config-title">Configuración del calendario</h1>
           <div class="page-header__actions">
             <button class="btn btn--secondary" type="button" id="btn-view-scheduled">
               Ver mensajes programados
@@ -229,7 +232,7 @@
           <section class="settings-card" aria-labelledby="msg-type-title">
             <div class="settings-card__left">
               <h2 id="msg-type-title">Tipo de mensaje</h2>
-              <p>Escoge el tipo de mensaje que enviarás desde BarberCloud</p>
+              <p>Escoge el tipo de mensaje que enviarás desde Gestiónweb.app</p>
             </div>
             <div class="settings-card__right">
               <div class="msg-type-choices" role="radiogroup" aria-label="Tipo de mensaje">
@@ -299,7 +302,7 @@
                   name="msgTitle"
                   type="text"
                   maxlength="60"
-                  value="Recordatorio de Cita BarberHome"
+                  value="Recordatorio de cita"
                 />
                 <p class="settings-field__counter" id="cfg-msg-title-count">0/60</p>
               </label>
@@ -370,7 +373,7 @@
                       alt=""
                       hidden
                     />
-                    <strong class="tpl-preview__title" id="preview-title">Recordatorio de Cita BarberHome</strong>
+                    <strong class="tpl-preview__title" id="preview-title">Recordatorio de cita</strong>
                     <p class="tpl-preview__body" id="preview-body"></p>
                     <p class="tpl-preview__datetime" id="preview-datetime"></p>
                     <small class="tpl-preview__example" id="preview-datetime-hint">(Fecha de ejemplo)</small>
@@ -444,7 +447,7 @@
                     name="secondMsgTitle"
                     type="text"
                     maxlength="60"
-                    value="Recordatorio de cita de Barberia con Luis Villadiego"
+                    value="Recordatorio de cita"
                   />
                   <p class="settings-field__counter" id="cfg-second-title-count">0/60</p>
                 </label>
@@ -457,7 +460,7 @@
                     name="secondMsgBody"
                     maxlength="200"
                     rows="3"
-                  >Tienes una cita con Barber Home</textarea>
+                  >Tienes una cita programada</textarea>
                   <p class="settings-field__counter" id="cfg-second-body-count">0/200</p>
                 </label>
 
@@ -480,7 +483,7 @@
                   <div class="tpl-preview" aria-live="polite">
                     <article class="tpl-preview__card">
                       <strong class="tpl-preview__title" id="second-preview-title"
-                        >Recordatorio de cita de Barberia con Luis Villadiego</strong
+                        >Recordatorio de cita</strong
                       >
                       <p class="tpl-preview__body" id="second-preview-body"></p>
                       <p class="tpl-preview__datetime" id="second-preview-time">
@@ -536,7 +539,7 @@
                     name="createMsgTitle"
                     type="text"
                     maxlength="60"
-                    value="Confirmación de cita BarberHome"
+                    value="Confirmación de cita"
                   />
                   <p class="settings-field__counter" id="cfg-create-title-count">0/60</p>
                 </label>
@@ -549,7 +552,7 @@
                     name="createMsgBody"
                     maxlength="200"
                     rows="4"
-                  >Hola {{nombreCliente}}, se ha confirmado tu cita con BarberHome. Información de tu cita:</textarea>
+                  >Hola {{nombreCliente}}, se ha confirmado tu cita. Información de tu cita:</textarea>
                   <p class="settings-field__counter" id="cfg-create-body-count">0/200</p>
                 </label>
 
@@ -587,7 +590,7 @@
                   <div class="tpl-preview" aria-live="polite">
                     <article class="tpl-preview__card">
                       <strong class="tpl-preview__title" id="create-preview-title"
-                        >Confirmación de cita BarberHome</strong
+                        >Confirmación de cita</strong
                       >
                       <p class="tpl-preview__body" id="create-preview-body"></p>
                       <div class="tpl-preview__meta" id="create-preview-meta">
@@ -644,7 +647,7 @@
                     name="afterMsgTitle"
                     type="text"
                     maxlength="60"
-                    value="BarberHome"
+                    value="Mi negocio"
                   />
                   <p class="settings-field__counter" id="cfg-after-title-count">0/60</p>
                 </label>
@@ -657,14 +660,14 @@
                     name="afterMsgBody"
                     maxlength="900"
                     rows="8"
-                  >Gracias por confiar en BarberHome 💈
+                  >Gracias por confiar en nosotros 💈
 
 Siempre es un gusto atenderte.
 
 🔥 Recomendación: agenda tu próxima cita desde ya para asegurar tu horario
 
 📅 Agenda tu próxima cita aquí:
-https://barbercloud.com/barberhomeluisvilladiego
+https://gestionweb.app/barberhomeluisvilladiego
 
 Te espero para el próximo corte 👊</textarea>
                   <p class="settings-field__counter" id="cfg-after-body-count">0/900</p>
@@ -684,7 +687,7 @@ Te espero para el próximo corte 👊</textarea>
                   <span class="settings-field__label">Así se ve tu plantilla:</span>
                   <div class="tpl-preview" aria-live="polite">
                     <article class="tpl-preview__card">
-                      <strong class="tpl-preview__title" id="after-preview-title">BarberHome</strong>
+                      <strong class="tpl-preview__title" id="after-preview-title">Mi negocio</strong>
                       <p class="tpl-preview__body tpl-preview__body--links" id="after-preview-body"></p>
                     </article>
                   </div>
@@ -728,7 +731,7 @@ Te espero para el próximo corte 👊</textarea>
                 <span>
                   <strong>Agregar zona horaria al mensaje</strong>
                   <small
-                    >Actívalo si tienes clientes en múltiples países/zonas horarias. BarberCloud
+                    >Actívalo si tienes clientes en múltiples países/zonas horarias. Gestiónweb.app
                     adivina la zona horaria usando el código internacional del teléfono de tu
                     cliente.</small
                   >
@@ -743,7 +746,7 @@ Te espero para el próximo corte 👊</textarea>
                     Calendar</strong
                   >
                   <small
-                    >Por defecto BarberCloud solo envía el mensaje de confirmación al primer
+                    >Por defecto Gestiónweb.app solo envía el mensaje de confirmación al primer
                     WhatsApp que consigue en el evento. Si enciendes esta opción se enviará el
                     mensaje de confirmación a todos los números que se encuentren en el
                     evento.</small

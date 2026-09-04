@@ -11,7 +11,7 @@
   function businessContext() {
     if (window.Tenant?.getBusinessContext) return window.Tenant.getBusinessContext();
     try {
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       return {
         title: String(auto.title || "").trim(),
         slug: String(auto.slug || "").trim(),
@@ -80,7 +80,7 @@ ${link}`,
       return { businessName: ctx.title ? `${ctx.title} Gmail` : "Google Calendar", ...base };
     }
     if (calendarId === "barbercloud") {
-      return { businessName: ctx.title ? `Calendario ${ctx.title}` : "Calendario en BarberCloud", ...base };
+      return { businessName: ctx.title ? `Calendario ${ctx.title}` : "Calendario en Gestiónweb.app", ...base };
     }
     return { businessName: name, ...base };
   }
@@ -93,7 +93,7 @@ ${link}`,
       return buildDefaults("gmail", "Google Calendar");
     },
     get barbercloud() {
-      return buildDefaults("barbercloud", "Calendario en BarberCloud");
+      return buildDefaults("barbercloud", "Calendario en Gestiónweb.app");
     },
   };
 
@@ -206,9 +206,9 @@ ${link}`,
 
   function syncTimeFormatToPublic(timeFormat) {
     try {
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       auto.timeFormat = timeFormat === "24" ? "24" : "12";
-      localStorage.setItem("barbercloud.autoagenda", JSON.stringify(auto));
+      localStorage.setItem("gestionweb.autoagenda", JSON.stringify(auto));
     } catch {
       /* ignore */
     }
@@ -553,7 +553,7 @@ ${link}`,
   if (titleEl) {
     titleEl.textContent = `Configuración para ${calendarName}`;
   }
-  document.title = `Configuración · ${calendarName} · BarberCloud`;
+  document.title = `Configuración · ${calendarName} · Gestiónweb.app`;
 
   function startCalendarConfig() {
     store.migrateLegacyOnce?.();
@@ -567,7 +567,7 @@ ${link}`,
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendarConfig);
-  else window.addEventListener("barbercloud:panel-ready", startCalendarConfig, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", startCalendarConfig, { once: true });
 
   fields.msgTitle?.addEventListener("input", () => {
     updateCounters();

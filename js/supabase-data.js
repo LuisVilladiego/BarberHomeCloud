@@ -23,7 +23,7 @@
     try {
       return (
         window.Tenant?.currentId?.() ||
-        localStorage.getItem("barbercloud.negocio_id") ||
+        localStorage.getItem("gestionweb.negocio_id") ||
         ""
       );
     } catch {
@@ -45,7 +45,7 @@
       notes: b.notes || "",
       status: b.status || "pending_confirmation",
       source: b.source || "public",
-      business: b.business || "BarberHome",
+      business: b.business || "Mi negocio",
       calendar_id: b.calendarId || "",
       slug: b.slug || "",
       client_fingerprint: b.clientFingerprint || "",
@@ -392,7 +392,7 @@
     };
 
     try {
-      const bookings = JSON.parse(localStorage.getItem("barbercloud.bookings") || "[]");
+      const bookings = JSON.parse(localStorage.getItem("gestionweb.bookings") || "[]");
       report.locales.citas = Array.isArray(bookings) ? bookings.length : 0;
       for (const b of bookings) {
         const r = await upsertCita(b);
@@ -404,7 +404,7 @@
     }
 
     try {
-      const users = JSON.parse(localStorage.getItem("barbercloud.loyalty_users") || "[]");
+      const users = JSON.parse(localStorage.getItem("gestionweb.loyalty_users") || "[]");
       report.locales.clientes = Array.isArray(users) ? users.length : 0;
       for (const u of users) {
         const r = await upsertCliente(u);
@@ -416,8 +416,8 @@
     }
 
     try {
-      const sale = JSON.parse(localStorage.getItem("barbercloud.marketplace_products") || "[]");
-      const redeem = JSON.parse(localStorage.getItem("barbercloud.loyalty_redeem_products") || "[]");
+      const sale = JSON.parse(localStorage.getItem("gestionweb.marketplace_products") || "[]");
+      const redeem = JSON.parse(localStorage.getItem("gestionweb.loyalty_redeem_products") || "[]");
       report.locales.productos =
         (Array.isArray(sale) ? sale.length : 0) + (Array.isArray(redeem) ? redeem.length : 0);
       for (const p of sale) {
@@ -447,7 +447,7 @@
     if (replace) {
       merged = (Array.isArray(remote) ? remote : []).filter((b) => b?.id && !b?.occupancyOnly);
     } else {
-      const localRaw = safeParse(localStorage.getItem("barbercloud.bookings"), []);
+      const localRaw = safeParse(localStorage.getItem("gestionweb.bookings"), []);
       const local = Array.isArray(localRaw) ? localRaw.filter((b) => !b?.occupancyOnly) : [];
       const byId = new Map(local.map((b) => [b.id, b]));
       remote.forEach((b) => {
@@ -464,11 +464,11 @@
     });
 
     const nextJson = JSON.stringify(merged);
-    const prevJson = localStorage.getItem("barbercloud.bookings") || "";
+    const prevJson = localStorage.getItem("gestionweb.bookings") || "";
     const changed = nextJson !== prevJson || !!options.force;
 
     if (changed) {
-      localStorage.setItem("barbercloud.bookings", nextJson);
+      localStorage.setItem("gestionweb.bookings", nextJson);
       window.BookingStore?.notifyExternalUpdate?.();
     }
 
@@ -553,7 +553,7 @@
     let clientes = 0;
     try {
       const rows = await fetchClientes({ strict: replace });
-      localStorage.setItem("barbercloud.loyalty_users", JSON.stringify(rows));
+      localStorage.setItem("gestionweb.loyalty_users", JSON.stringify(rows));
       clientes = rows.length;
     } catch (err) {
       console.warn("[Supabase] pull clientes", err.message);
@@ -562,10 +562,10 @@
     let productos = 0;
     try {
       const sale = await fetchProductos("sale", { strict: replace });
-      localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(sale));
+      localStorage.setItem("gestionweb.marketplace_products", JSON.stringify(sale));
       const redeem = await fetchProductos("redeem", { strict: replace });
       localStorage.setItem(
-        "barbercloud.loyalty_redeem_products",
+        "gestionweb.loyalty_redeem_products",
         JSON.stringify(
           redeem.map((p) => ({
             id: p.id,

@@ -1,9 +1,9 @@
 (function () {
-  const STORAGE_KEY = "barbercloud.autoagenda";
-  const BOOKINGS_KEY = "barbercloud.bookings";
-  const LOYALTY_USERS_KEY = "barbercloud.loyalty_users";
-  const LOYALTY_SESSION_KEY = "barbercloud.loyalty_session";
-  const LOYALTY_HISTORY_KEY = "barbercloud.loyalty_history";
+  const STORAGE_KEY = "gestionweb.autoagenda";
+  const BOOKINGS_KEY = "gestionweb.bookings";
+  const LOYALTY_USERS_KEY = "gestionweb.loyalty_users";
+  const LOYALTY_SESSION_KEY = "gestionweb.loyalty_session";
+  const LOYALTY_HISTORY_KEY = "gestionweb.loyalty_history";
   const LOYALTY = {
     /** Usado solo para calcular el costo en pts de cada producto al canjear */
     pesosPerPoint: 800,
@@ -146,7 +146,7 @@
         avatar.hidden = true;
       }
     }
-    document.title = `${data.title || "Agendar"} · BarberCloud`;
+    document.title = `${data.title || "Agendar"} · Gestiónweb.app`;
   }
 
   if (!slug) applyHeaderFromConfig(config);
@@ -241,9 +241,9 @@
         await refreshPublicOccupancy(negocio.slug);
         const sale = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "sale");
         const redeem = await window.SupabaseData.fetchProductosPorSlug?.(negocio.slug, "redeem");
-        localStorage.setItem("barbercloud.marketplace_products", JSON.stringify(Array.isArray(sale) ? sale : []));
+        localStorage.setItem("gestionweb.marketplace_products", JSON.stringify(Array.isArray(sale) ? sale : []));
         localStorage.setItem(
-          "barbercloud.loyalty_redeem_products",
+          "gestionweb.loyalty_redeem_products",
           JSON.stringify(Array.isArray(redeem) ? redeem : [])
         );
       } catch (err) {
@@ -541,8 +541,8 @@
 
   window.addEventListener("storage", (e) => {
     if (!e.key) return;
-    const busyPrefix = "barbercloud.google_busy_cache";
-    if (!e.key.startsWith(busyPrefix) && e.key !== "barbercloud.bookings") return;
+    const busyPrefix = "gestionweb.google_busy_cache";
+    if (!e.key.startsWith(busyPrefix) && e.key !== "gestionweb.bookings") return;
     if (!isAvailabilityViewActive()) return;
     applyAvailabilityToUI();
   });
@@ -633,7 +633,7 @@
         return h * 60 + m > nowMins + 30;
       });
     }
-    // Ocultar horarios tomados en BarberCloud y/o Google Calendar
+    // Ocultar horarios tomados en Gestiónweb.app y/o Google Calendar
     const iso = toISODate(date);
     available = available.filter((t) => isSlotOpen(iso, t, duration));
     return available;
@@ -761,12 +761,12 @@
   );
 
   /* —— Tienda pública (productos del Marketplace admin) —— */
-  const PRODUCTS_KEY = "barbercloud.marketplace_products";
-  const REDEEM_PRODUCTS_KEY = "barbercloud.loyalty_redeem_products";
-  const CART_KEY = "barbercloud.marketplace_cart";
-  const REDEEM_CART_KEY = "barbercloud.loyalty_redeem_cart";
-  const SALES_KEY = "barbercloud.marketplace_sales";
-  const PRODUCT_REDEEMS_KEY = "barbercloud.loyalty_product_redemptions";
+  const PRODUCTS_KEY = "gestionweb.marketplace_products";
+  const REDEEM_PRODUCTS_KEY = "gestionweb.loyalty_redeem_products";
+  const CART_KEY = "gestionweb.marketplace_cart";
+  const REDEEM_CART_KEY = "gestionweb.loyalty_redeem_cart";
+  const SALES_KEY = "gestionweb.marketplace_sales";
+  const PRODUCT_REDEEMS_KEY = "gestionweb.loyalty_product_redemptions";
   const PLACEHOLDER =
     "data:image/svg+xml," +
     encodeURIComponent(
@@ -972,7 +972,7 @@
       try {
         const sale = await window.SupabaseData.fetchProductosPorSlug?.(s, "sale");
         localStorage.setItem(
-          "barbercloud.marketplace_products",
+          "gestionweb.marketplace_products",
           JSON.stringify(Array.isArray(sale) ? sale : [])
         );
       } catch (err) {
@@ -1162,7 +1162,7 @@
   }
 
   function buildShopWhatsAppMessage(lines, total) {
-    const business = config.title || "BarberHome";
+    const business = config.title || "Mi negocio";
     const items = lines
       .map(
         (line) =>
@@ -1197,7 +1197,7 @@
   let lastRedeemWhatsApp = null;
 
   function buildRedeemWhatsAppMessage(payload) {
-    const business = config.title || "BarberHome";
+    const business = config.title || "Mi negocio";
     const c = payload?.customer || {};
     const lines = [
       `Hola, canjeé puntos en ${business} y quiero coordinar la entrega:`,
@@ -3025,7 +3025,7 @@
     ).trim();
     const url = String(c.appsScriptUrl || "").trim();
     if (!admin || !url || !c.appsScriptSecret) {
-      return { ok: false, message: "No hay correo del dueño de esta barbería." };
+      return { ok: false, message: "No hay correo del dueño de este negocio." };
     }
     const payloadBooking = {
       id: booking?.id || "",
@@ -3039,7 +3039,7 @@
       notes: booking?.notes || "",
       status: booking?.status || "pending_confirmation",
       source: booking?.source || "public",
-      business: booking?.business || c.fromName || "BarberHome",
+      business: booking?.business || c.fromName || "Mi negocio",
       clientFingerprint:
         booking?.clientFingerprint || window.Security?.getDeviceId?.() || "",
     };
@@ -3050,7 +3050,7 @@
       body: JSON.stringify({
         secret: c.appsScriptSecret,
         type: "booking",
-        from_name: c.fromName || "BarberHome",
+        from_name: c.fromName || "Mi negocio",
         to_email: admin,
         admin_email: admin,
         client_name: payloadBooking.name,
@@ -3213,7 +3213,7 @@
         duration,
         price: selectedType?.price || 0,
         slug: config.slug || slug,
-        business: config.title || "BarberHome",
+        business: config.title || "Mi negocio",
         calendarId: useGoogle ? "gmail" : "barberhome",
         googleSync: useGoogle ? "pending" : "",
         status: "pending_confirmation",
@@ -3285,7 +3285,7 @@
         price: selectedType?.price || 0,
         slug: config.slug || slug,
         negocioId: window.Tenant?.currentId?.() || "",
-        business: config.title || "BarberHome",
+        business: config.title || "Mi negocio",
         status: "pending_confirmation",
         source: "public",
         clientFingerprint,
@@ -3296,7 +3296,7 @@
       if (window.BookingStore?.saveBookings) window.BookingStore.saveBookings(list);
       else {
         localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
-        window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
+        window.dispatchEvent(new CustomEvent("gestionweb:bookings-changed"));
       }
       try {
         const alertFn =
