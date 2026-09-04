@@ -190,7 +190,8 @@ async function sendWhatsAppMessage({ negocio, booking, type, testPhone, testCoun
       body: rendered.text,
       datePart: rendered.datePart,
       timePart: rendered.timePart,
-      businessName: negocio?.name || cfg.businessName || "BarberCloud",
+      businessName: negocio?.name || cfg.businessName || "Gestiónweb",
+      customerName: booking?.name || "Cliente",
     });
     if (booking?.id && type !== "test") {
       await markMessageSent(booking.id, type, { sid: delivery.sid });

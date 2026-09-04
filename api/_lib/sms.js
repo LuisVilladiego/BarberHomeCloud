@@ -1,13 +1,11 @@
 /**
  * WhatsApp vía Twilio (servidor).
  * Variables: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM
- * Plantilla: TWILIO_WHATSAPP_CONTENT_SID (HX...) — obligatoria fuera del sandbox.
- * Modo auth OTP: TWILIO_WHATSAPP_CONTENT_MODE=auth (solo variable {{1}} = código).
+ * OTP: TWILIO_WHATSAPP_CONTENT_SID + TWILIO_WHATSAPP_CONTENT_MODE=auth
+ * Citas: TWILIO_WHATSAPP_UTILITY_CONTENT_SID (plantilla utility aprobada).
  */
 
 const SANDBOX_WHATSAPP_FROM = "whatsapp:+14155238886";
-/** Plantilla preaprobada del sandbox (recordatorio de cita). Solo para pruebas. */
-const SANDBOX_DEFAULT_CONTENT_SID = "HXb5b62575e6e4ff6129ad7c8efe1f983e";
 
 function whatsappAddress(value) {
   const raw = String(value || "").trim();
@@ -28,11 +26,16 @@ function twilioConfig() {
   return { accountSid, authToken, from };
 }
 
-function resolveContentSid(fromAddress) {
-  const configured = String(process.env.TWILIO_WHATSAPP_CONTENT_SID || "").trim();
-  if (configured) return configured;
-  if (fromAddress === SANDBOX_WHATSAPP_FROM) return SANDBOX_DEFAULT_CONTENT_SID;
-  return "";
+function isSandboxFrom(fromAddress) {
+  return whatsappAddress(fromAddress) === SANDBOX_WHATSAPP_FROM;
+}
+
+function resolveAuthContentSid() {
+  return String(process.env.TWILIO_WHATSAPP_CONTENT_SID || "").trim();
+}
+
+function resolveUtilityContentSid() {
+  return String(process.env.TWILIO_WHATSAPP_UTILITY_CONTENT_SID || "").trim();
 }
 
 function formatTwilioError(err) {
@@ -42,14 +45,20 @@ function formatTwilioError(err) {
   if (code === 20003 || /compliance profile/i.test(msg)) {
     return "WhatsApp no está habilitado: completa la verificación KYC en Twilio Trust Hub.";
   }
-  if (code === 572002 || /verified recipient/i.test(msg)) {
-    return "El número destino debe estar verificado en Twilio o unido al sandbox de WhatsApp.";
+  if (code === 21656 || /Content Variables/i.test(msg)) {
+    return "Las variables de la plantilla de WhatsApp no coinciden. Revisa TWILIO_WHATSAPP_UTILITY_CONTENT_SID.";
   }
   if (code === 21655 || /ContentSid is Invalid/i.test(msg)) {
     return "La plantilla de WhatsApp no es válida. Revisa TWILIO_WHATSAPP_CONTENT_SID.";
   }
+  if (code === 63016 || /template.*not.*exist|not yet approved/i.test(msg)) {
+    return "La plantilla de WhatsApp aún no está aprobada por Meta.";
+  }
   if (code === 63007 || /not a valid WhatsApp/i.test(msg)) {
-    return "Este número no tiene WhatsApp o no está unido al sandbox de Twilio.";
+    return "El número remitente no está registrado como sender de WhatsApp en Twilio.";
+  }
+  if (code === 572002 || /verified recipient/i.test(msg)) {
+    return "El número destino debe estar verificado en Twilio o unido al sandbox de WhatsApp.";
   }
   if (/join.*sandbox|sandbox.*join/i.test(msg)) {
     return "Para pruebas, envía el mensaje join al sandbox de WhatsApp desde tu celular.";
@@ -58,9 +67,9 @@ function formatTwilioError(err) {
   return msg || "No se pudo enviar el WhatsApp.";
 }
 
-function buildContentVariables({ code, businessName, contentSid }) {
+function buildAuthContentVariables({ code, businessName, contentSid }) {
   const mode = String(process.env.TWILIO_WHATSAPP_CONTENT_MODE || "").trim().toLowerCase();
-  const brand = String(businessName || "BarberCloud").trim();
+  const brand = String(businessName || "Gestiónweb").trim();
 
   if (mode === "auth") {
     return JSON.stringify({ 1: String(code || "") });
@@ -73,14 +82,37 @@ function buildContentVariables({ code, businessName, contentSid }) {
       .replace(/\{\{brand\}\}/g, brand);
   }
 
-  if (contentSid === SANDBOX_DEFAULT_CONTENT_SID) {
-    return JSON.stringify({
-      1: String(code || ""),
-      2: `${brand} · consulta de reservas`,
-    });
+  return JSON.stringify({ 1: String(code || ""), 2: brand });
+}
+
+function buildUtilityContentVariables({ customerName, businessName, title, body, datePart, timePart }) {
+  const custom = String(process.env.TWILIO_WHATSAPP_UTILITY_VARIABLES || "").trim();
+  const name = String(customerName || "Cliente").trim() || "Cliente";
+  const brand = String(businessName || "Gestiónweb").trim() || "Gestiónweb";
+  const message = String(body || title || "Tienes una actualización de tu cita.").trim();
+  const date = String(datePart || "por confirmar").trim() || "por confirmar";
+  const time = String(timePart || "por confirmar").trim() || "por confirmar";
+
+  if (custom) {
+    return custom
+      .replace(/\{\{1\}\}/g, name.slice(0, 200))
+      .replace(/\{\{2\}\}/g, brand.slice(0, 200))
+      .replace(/\{\{3\}\}/g, message.slice(0, 900))
+      .replace(/\{\{4\}\}/g, date.slice(0, 120))
+      .replace(/\{\{5\}\}/g, time.slice(0, 80))
+      .replace(/\{\{nombreCliente\}\}/g, name)
+      .replace(/\{\{negocio\}\}/g, brand)
+      .replace(/\{\{date\}\}/g, date)
+      .replace(/\{\{time\}\}/g, time);
   }
 
-  return JSON.stringify({ 1: String(code || ""), 2: brand });
+  return JSON.stringify({
+    1: name.slice(0, 200),
+    2: brand.slice(0, 200),
+    3: message.slice(0, 900),
+    4: date.slice(0, 120),
+    5: time.slice(0, 80),
+  });
 }
 
 async function twilioSendMessage(params) {
@@ -127,7 +159,7 @@ async function sendWhatsApp({ to, body, contentSid, contentVariables }) {
   params.set("To", toAddress);
   params.set("From", cfg.from);
 
-  const sid = contentSid || resolveContentSid(cfg.from);
+  const sid = String(contentSid || "").trim();
   if (sid) {
     params.set("ContentSid", sid);
     if (contentVariables) params.set("ContentVariables", contentVariables);
@@ -135,73 +167,69 @@ async function sendWhatsApp({ to, body, contentSid, contentVariables }) {
     params.set("Body", String(body || "").slice(0, 1024));
   } else {
     throw new Error(
-      "Falta TWILIO_WHATSAPP_CONTENT_SID. WhatsApp exige plantilla aprobada (ContentSid)."
+      "Falta TWILIO_WHATSAPP_UTILITY_CONTENT_SID. WhatsApp de producción exige plantilla aprobada."
     );
   }
 
   return twilioSendMessage(params);
 }
 
-function resolveUtilityContentSid(fromAddress) {
-  return String(process.env.TWILIO_WHATSAPP_UTILITY_CONTENT_SID || "").trim();
-}
-
-function buildUtilityContentVariables({ title, body, datePart, timePart, contentSid }) {
-  const full = String(body || "").trim();
-  const custom = String(process.env.TWILIO_WHATSAPP_UTILITY_VARIABLES || "").trim();
-  if (custom) {
-    return custom
-      .replace(/\{\{1\}\}/g, full.slice(0, 900))
-      .replace(/\{\{2\}\}/g, String(title || "").slice(0, 200))
-      .replace(/\{\{date\}\}/g, String(datePart || ""))
-      .replace(/\{\{time\}\}/g, String(timePart || ""));
-  }
-  if (contentSid === SANDBOX_DEFAULT_CONTENT_SID) {
-    return JSON.stringify({
-      1: String(datePart || title || "Tu cita").slice(0, 200),
-      2: String(full || timePart || title || "Recordatorio").slice(0, 900),
-    });
-  }
-  return JSON.stringify({ 1: full.slice(0, 1024) });
-}
-
-async function sendBusinessWhatsApp({ toE164, title, body, datePart, timePart, businessName }) {
+async function sendBusinessWhatsApp({
+  toE164,
+  title,
+  body,
+  datePart,
+  timePart,
+  businessName,
+  customerName,
+}) {
   const cfg = twilioConfig();
-  const brand = String(businessName || "BarberCloud").trim();
+  const brand = String(businessName || "Gestiónweb").trim();
   const text = String(body || title || "").trim() || `${brand}: recordatorio de cita`;
-  const utilitySid = resolveUtilityContentSid(cfg?.from || "");
+  const utilitySid = resolveUtilityContentSid();
 
   if (utilitySid) {
     const contentVariables = buildUtilityContentVariables({
+      customerName,
+      businessName: brand,
       title,
       body: text,
       datePart,
       timePart,
-      contentSid: utilitySid,
     });
     return sendWhatsApp({ to: toE164, contentSid: utilitySid, contentVariables });
   }
 
-  // Sandbox / sesión abierta: texto libre. La plantilla OTP no sirve para citas.
-  return sendWhatsApp({ to: toE164, body: text.slice(0, 1024) });
+  if (isSandboxFrom(cfg?.from)) {
+    return sendWhatsApp({ to: toE164, body: text.slice(0, 1024) });
+  }
+
+  throw new Error(
+    "Falta TWILIO_WHATSAPP_UTILITY_CONTENT_SID. En producción WhatsApp no permite texto libre fuera de una conversación abierta."
+  );
 }
 
 async function sendLookupCode({ toE164, code, businessName }) {
   const cfg = twilioConfig();
-  const contentSid = resolveContentSid(cfg?.from || "");
-  const contentVariables = buildContentVariables({
-    code,
-    businessName,
-    contentSid,
-  });
-
+  const contentSid = resolveAuthContentSid();
   if (contentSid) {
+    const contentVariables = buildAuthContentVariables({
+      code,
+      businessName,
+      contentSid,
+    });
     return sendWhatsApp({ to: toE164, contentSid, contentVariables });
   }
 
-  const brand = String(businessName || "BarberCloud").trim();
-  const body = `${brand}: tu código para consultar reservas es ${code}. Válido 10 min. No lo compartas.`;
-  return sendWhatsApp({ to: toE164, body });
+  if (isSandboxFrom(cfg?.from)) {
+    const brand = String(businessName || "Gestiónweb").trim();
+    const body = `${brand}: tu código para consultar reservas es ${code}. Válido 10 min. No lo compartas.`;
+    return sendWhatsApp({ to: toE164, body });
+  }
+
+  throw new Error(
+    "Falta TWILIO_WHATSAPP_CONTENT_SID. El código de consulta requiere plantilla Authentication aprobada."
+  );
 }
 
 module.exports = {
