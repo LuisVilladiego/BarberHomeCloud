@@ -63,7 +63,7 @@
   function hubCopy(nextMode) {
     const isSignup = nextMode === "signup";
     return {
-      title: isSignup ? "Crea tu cuenta" : "Entra a tu barbería",
+      title: isSignup ? "Crea tu cuenta" : "Entra a tu negocio",
       lead: isSignup
         ? "7 días de prueba gratis con acceso completo. Luego eliges un plan."
         : "Abre tu panel para gestionar citas, clientes, reservas y puntos de fidelidad.",
@@ -192,7 +192,7 @@
     showHub("signup");
   }
 
-  const AUTH_NEXT_KEY = "barbercloud.auth.next";
+  const AUTH_NEXT_KEY = "gestionweb.auth.next";
   const PLATFORM_ADMIN_EMAIL = "adminbarbercloud@gmail.com";
 
   function readAuthNext() {
@@ -246,7 +246,7 @@
     const userEmail = String(user?.email || "").trim().toLowerCase();
     const isKnownPlatformAdmin = userEmail === PLATFORM_ADMIN_EMAIL;
 
-    // Dueño de la plataforma → panel SaaS (/admin), antes del flujo de barbería.
+    // Dueño de la plataforma → panel SaaS (/admin), antes del flujo del negocio.
     if (next === "admin" || isKnownPlatformAdmin || (!next && (await isPlatformAdmin()))) {
       clearAuthNext();
       location.href = "admin.html";
@@ -302,7 +302,7 @@
         toEmail: email,
         toName: name || "barbero",
         code,
-        productLabel: "BarberCloud",
+        productLabel: "Gestiónweb.app",
       });
     }
     if (send?.otpToken) pending.otpToken = send.otpToken;

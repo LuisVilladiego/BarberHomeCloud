@@ -1,7 +1,7 @@
 (function () {
   const ORDER = [
-    { id: "intro", label: "Introducción a BarberCloud" },
-    { id: "pasos", label: "Pasos para usar BarberCloud" },
+    { id: "intro", label: "Introducción a Gestiónweb.app" },
+    { id: "pasos", label: "Pasos para usar Gestiónweb.app" },
     { id: "guardar", label: "Donde guardar las citas" },
     { id: "google", label: "Integración con Google Calendar" },
     { id: "mensajes", label: "Cómo personalizar los mensajes" },

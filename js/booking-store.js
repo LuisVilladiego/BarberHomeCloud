@@ -3,10 +3,10 @@
  * Regla de carrera: gana quien obtiene el lock con timestamp más temprano.
  */
 (function () {
-  const BOOKINGS_KEY = "barbercloud.bookings";
-  const LOCK_PREFIX = "barbercloud.slot_lock:";
+  const BOOKINGS_KEY = "gestionweb.bookings";
+  const LOCK_PREFIX = "gestionweb.slot_lock:";
   const LOCK_TTL_MS = 12000;
-  const CHANNEL = "barbercloud.bookings";
+  const CHANNEL = "gestionweb.bookings";
 
   const listeners = new Set();
   let bc = null;
@@ -140,7 +140,7 @@
   function notifyListeners(payload) {
     bc?.postMessage(payload);
     listeners.forEach((fn) => fn(payload));
-    window.dispatchEvent(new CustomEvent("barbercloud:bookings-changed"));
+    window.dispatchEvent(new CustomEvent("gestionweb:bookings-changed"));
   }
 
   /** Tras actualizar localStorage desde Supabase (sin re-subir a la nube). */
@@ -337,7 +337,7 @@
       confirmationStatus: confirmation,
       status: compatStatus(lifecycle, confirmation),
       source: bookingInput.source || "admin",
-      business: bookingInput.business || window.Tenant?.cached?.()?.name || "Mi barbería",
+      business: bookingInput.business || window.Tenant?.cached?.()?.name || "Mi negocio",
       calendarId: bookingInput.calendarId || "negocio",
       slug: bookingInput.slug || window.Tenant?.cached?.()?.slug || "",
       negocioId: bookingInput.negocioId || window.Tenant?.currentId?.() || "",
@@ -383,7 +383,7 @@
       console.warn("[booking-store] upsert cita remota", err);
     }
     try {
-      const notifKey = "barbercloud.notifications";
+      const notifKey = "gestionweb.notifications";
       const notifs = safeParse(localStorage.getItem(notifKey), []);
       const list = Array.isArray(notifs) ? notifs : [];
       list.unshift({

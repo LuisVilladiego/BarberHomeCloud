@@ -341,7 +341,7 @@
 
   document.getElementById("admin-logout")?.addEventListener("click", async () => {
     try {
-      localStorage.removeItem("barbercloud.auth");
+      localStorage.removeItem("gestionweb.auth");
       const client = window.SupabaseClient?.getClient?.();
       await client?.auth?.signOut?.();
     } catch {

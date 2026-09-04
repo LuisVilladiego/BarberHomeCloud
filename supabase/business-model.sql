@@ -1,4 +1,4 @@
--- BarberCloud · modelo de negocio (Confirmafy-style)
+-- Gestiónweb.app · modelo de negocio (Confirmafy-style)
 -- Ejecutar DESPUÉS de schema.sql, tenant.sql y rls.sql
 
 -- —— Campos del negocio (Business) ——

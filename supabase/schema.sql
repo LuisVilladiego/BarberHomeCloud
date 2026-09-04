@@ -1,4 +1,4 @@
--- BarberHomeCloud · schema + storage
+-- Gestiónweb.app · schema + storage
 -- Ejecuta TODO este archivo en: Supabase → SQL Editor → New query → Run
 -- Luego pega Project URL + anon key en js/supabase-config.js
 
@@ -45,7 +45,7 @@ create table if not exists public.citas (
   notes text default '',
   status text not null default 'pending_confirmation',
   source text default 'public',
-  business text default 'BarberHome',
+  business text default 'Mi negocio',
   calendar_id text default '',
   slug text default '',
   cliente_id uuid references public.clientes (id) on delete set null,

@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
 
     const negocio = await negocioOfOwner(user.id);
     if (!negocio?.id) {
-      return res.status(404).json({ error: "No encontramos tu barbería." });
+      return res.status(404).json({ error: "No encontramos tu negocio." });
     }
 
     if (negocio.owner_id !== user.id) {

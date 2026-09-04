@@ -1,5 +1,5 @@
 /**
- * Modelo de negocio BarberCloud (referencia Confirmafy).
+ * Modelo de negocio Gestiónweb.app (referencia Confirmafy).
  * Planes, estados de suscripción, roles y límites — no hardcodear en componentes.
  */
 (function () {
@@ -193,7 +193,7 @@
       trial: {
         kicker: "Prueba gratis",
         title: days > 0 ? `Te quedan ${days} ${dayWord} de prueba` : "Tu prueba está por terminar",
-        detail: "Usa el panel de verdad: configura tu barbería y recibe reservas. Activa un plan para no pausar el enlace público.",
+        detail: "Usa el panel de verdad: configura tu negocio y recibe reservas. Activa un plan para no pausar el enlace público.",
         cta: "Elegir plan",
         href: "suscripcion.html?need=1",
         chip: days > 0 ? `Prueba · ${days}d` : "Prueba",
@@ -201,7 +201,7 @@
       },
       active: {
         kicker: "Plan activo",
-        title: "Tu barbería está en marcha",
+        title: "Tu negocio está en marcha",
         detail: "El enlace público recibe reservas y el panel está desbloqueado según tu plan.",
         cta: "Ver plan",
         href: "suscripcion.html",
@@ -228,7 +228,7 @@
       },
       expired: {
         kicker: "Suscripción vencida",
-        title: "Tu barbería está en pausa",
+        title: "Tu negocio está en pausa",
         detail: "El enlace público está desactivado. Esto es una vista de ejemplo: no mostramos tus calendarios ni clientes. Renueva para recuperar el negocio.",
         cta: "Renovar ahora",
         href: "suscripcion.html?need=1",
@@ -246,7 +246,7 @@
       },
       none: {
         kicker: "Sin plan",
-        title: "Así se ve BarberCloud",
+        title: "Así se ve Gestiónweb.app",
         detail: "Esta es una maqueta de ejemplo. Elige un plan para publicar tu URL, recibir reservas y usar tus propios calendarios.",
         cta: "Elegir plan",
         href: "suscripcion.html?need=1",
@@ -259,7 +259,7 @@
 
   function readSubscriptionCache() {
     try {
-      const billing = JSON.parse(localStorage.getItem("barbercloud.billing") || "null");
+      const billing = JSON.parse(localStorage.getItem("gestionweb.billing") || "null");
       if (billing?.status) {
         return {
           planId: billing.planId,
@@ -269,7 +269,7 @@
           lastPaymentAt: billing.lastPaymentAt,
         };
       }
-      const sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+      const sub = JSON.parse(localStorage.getItem("gestionweb.subscription") || "{}");
       const biz = window.Tenant?.cached?.();
       return {
         planId: sub.planId || biz?.plan_id || "pro",

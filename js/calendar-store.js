@@ -3,7 +3,7 @@
  * Los eliminados viven en una clave aparte para no perderse al guardar configs.
  */
 (function () {
-  const BASE_KEY = "barbercloud.calendar_configs";
+  const BASE_KEY = "gestionweb.calendar_configs";
 
   function currentNegocioId() {
     return window.Tenant?.currentId?.() || window.Tenant?.cached?.()?.id || "";
@@ -97,7 +97,7 @@
   }
 
   function notifyChange() {
-    window.dispatchEvent(new CustomEvent("barbercloud:calendars-changed"));
+    window.dispatchEvent(new CustomEvent("gestionweb:calendars-changed"));
   }
 
   function isRemoved(calendarId) {

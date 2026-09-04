@@ -10,6 +10,7 @@ const {
 } = require("../_lib/supabase");
 const { hasSubscriptionAccess, normalizePlanId } = require("../_lib/business-model");
 const { isConfigured, sendTrialEmail } = require("../_lib/mail");
+const { processAllScheduledMessages } = require("../_lib/whatsapp-messages");
 const {
   TRIAL_DAYS,
   alreadyUsedTrial,
@@ -184,7 +185,14 @@ async function handleRemind(req) {
     for (const negocio of trials) {
       results.push({ id: negocio.id, ...(await remindOne(negocio)) });
     }
-    return { ok: true, scanned: trials.length, results };
+    let whatsapp = null;
+    try {
+      whatsapp = await processAllScheduledMessages();
+    } catch (err) {
+      console.error("[trial/remind] whatsapp", err);
+      whatsapp = { ok: false, message: err?.message || "whatsapp_error" };
+    }
+    return { ok: true, scanned: trials.length, results, whatsapp };
   }
 
   const user = await userFromToken(bearer(req));

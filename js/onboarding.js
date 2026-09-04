@@ -84,7 +84,7 @@
   function validateStep(n) {
     readStep();
     if (n === 1) {
-      if (state.business.length < 2) return "Escribe el nombre de tu barbería.";
+      if (state.business.length < 2) return "Escribe el nombre de tu negocio.";
     }
     if (n === 2) {
       if (!state.days.some((d) => d.enabled)) return "Activa al menos un día.";
@@ -249,7 +249,7 @@
       return;
     }
     const auto = buildAutoagenda();
-    localStorage.setItem("barbercloud.autoagenda", JSON.stringify(auto));
+    localStorage.setItem("gestionweb.autoagenda", JSON.stringify(auto));
     const settings = {
       name: state.owner || state.business,
       waPhone: `${state.cc} ${state.phone}`.trim(),
@@ -257,10 +257,10 @@
       lang: "es",
     };
     try {
-      const prev = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
-      localStorage.setItem("barbercloud_settings", JSON.stringify({ ...prev, ...settings }));
+      const prev = JSON.parse(localStorage.getItem("gestionweb_settings") || "{}");
+      localStorage.setItem("gestionweb_settings", JSON.stringify({ ...prev, ...settings }));
     } catch {
-      localStorage.setItem("barbercloud_settings", JSON.stringify(settings));
+      localStorage.setItem("gestionweb_settings", JSON.stringify(settings));
     }
     window.Tenant.markOnboarded();
     window.BarberService?.createFirstFromOnboarding?.({
@@ -279,7 +279,7 @@
         cancelAtPeriodEnd: false,
         payment: { provider: "trial" },
       };
-      localStorage.setItem("barbercloud.subscription", JSON.stringify(local));
+      localStorage.setItem("gestionweb.subscription", JSON.stringify(local));
       window.Billing?.cache?.({
         negocioId: window.Tenant?.currentId?.() || null,
         status: "trial",

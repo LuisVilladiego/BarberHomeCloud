@@ -51,7 +51,7 @@ function trialCopy(days, periodEnd) {
   const planUrl = `${APP_URL}/suscripcion.html?need=1`;
   if (days >= 7 || days === 6) {
     return {
-      subject: "Tu prueba de 7 días en BarberCloud ya empezó",
+      subject: "Tu prueba de 7 días en Gestiónweb.app ya empezó",
       preview: `Tienes ${days} días de acceso completo.`,
       headline: "Tu prueba gratis ya está activa",
       body: `Tienes ${days} días de acceso normal al panel: reservas, WhatsApp, agenda y tienda. La prueba termina el ${endLabel}.`,
@@ -61,17 +61,17 @@ function trialCopy(days, periodEnd) {
   }
   if (days >= 3) {
     return {
-      subject: `Te quedan ${days} días de prueba en BarberCloud`,
+      subject: `Te quedan ${days} días de prueba en Gestiónweb.app`,
       preview: `Tu prueba termina el ${endLabel}.`,
       headline: `Te quedan ${days} días de prueba`,
-      body: `Sigue usando BarberCloud con normalidad. El ${endLabel} se acaba la prueba gratis. Elige un plan para no pausar tu link de reservas.`,
+      body: `Sigue usando Gestiónweb.app con normalidad. El ${endLabel} se acaba la prueba gratis. Elige un plan para no pausar tu link de reservas.`,
       cta: "Elegir un plan",
       href: planUrl,
     };
   }
   if (days === 2) {
     return {
-      subject: "Te quedan 2 días de prueba en BarberCloud",
+      subject: "Te quedan 2 días de prueba en Gestiónweb.app",
       preview: `Tu prueba termina el ${endLabel}.`,
       headline: "Quedan 2 días de prueba",
       body: `El ${endLabel} termina tu acceso de prueba. Si no eliges un plan, el panel pasa a solo lectura y se pausa el enlace público.`,
@@ -81,7 +81,7 @@ function trialCopy(days, periodEnd) {
   }
   if (days === 1) {
     return {
-      subject: "Mañana termina tu prueba gratis de BarberCloud",
+      subject: "Mañana termina tu prueba gratis de Gestiónweb.app",
       preview: `Último día mañana · ${endLabel}.`,
       headline: "Mañana se acaba tu prueba",
       body: `Hoy todavía tienes acceso normal. Mañana (${endLabel}) termina la prueba. Activa un plan para seguir recibiendo reservas.`,
@@ -90,7 +90,7 @@ function trialCopy(days, periodEnd) {
     };
   }
   return {
-    subject: "Hoy termina tu prueba de BarberCloud",
+    subject: "Hoy termina tu prueba de Gestiónweb.app",
     preview: "Elige un plan para no perder el acceso.",
     headline: "Hoy termina tu prueba gratis",
     body: "Cuando se acabe el plazo, el panel queda en pausa hasta que elijas un plan. Tus datos no se borran.",

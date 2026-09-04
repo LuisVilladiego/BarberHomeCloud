@@ -3,9 +3,9 @@
  * Une citas + cuentas de Puntos (correo / Google).
  */
 (function () {
-  const BOOKINGS_KEY = "barbercloud.bookings";
-  const AUTOAGENDA_KEY = "barbercloud.autoagenda";
-  const LOYALTY_USERS_KEY = "barbercloud.loyalty_users";
+  const BOOKINGS_KEY = "gestionweb.bookings";
+  const AUTOAGENDA_KEY = "gestionweb.autoagenda";
+  const LOYALTY_USERS_KEY = "gestionweb.loyalty_users";
 
   const RULES = {
     frequentMinIn60: 4,
@@ -75,9 +75,9 @@
     try {
       const data = JSON.parse(localStorage.getItem(AUTOAGENDA_KEY) || "{}");
       if (data?.title) return data.title;
-      return "BarberHome";
+      return "Mi negocio";
     } catch {
-      return "BarberHome";
+      return "Mi negocio";
     }
   }
 
@@ -724,8 +724,8 @@
   window.addEventListener("storage", (e) => {
     if (e.key === BOOKINGS_KEY || e.key === LOYALTY_USERS_KEY) refresh();
   });
-  window.addEventListener("barbercloud:bookings-changed", refresh);
+  window.addEventListener("gestionweb:bookings-changed", refresh);
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(refresh);
-  else window.addEventListener("barbercloud:panel-ready", refresh, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", refresh, { once: true });
 })();

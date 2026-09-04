@@ -3,7 +3,7 @@
  * Sincroniza con tabla barberos en Supabase cuando está disponible.
  */
 (function () {
-  const AUTO_KEY = "barbercloud.autoagenda";
+  const AUTO_KEY = "gestionweb.autoagenda";
 
   function readAuto() {
     try {
@@ -48,7 +48,7 @@
     const auto = readAuto();
     auto.barbers = barbers.map((b, i) => normalizeBarber(b, i));
     writeAuto(auto);
-    window.dispatchEvent(new CustomEvent("barbercloud:barbers-changed"));
+    window.dispatchEvent(new CustomEvent("gestionweb:barbers-changed"));
     syncToCloud(auto.barbers).catch((err) => console.warn("[BarberService] sync", err));
     return auto.barbers;
   }
@@ -69,7 +69,7 @@
     const auto = readAuto();
     auto.barbers = remote.map((b, i) => normalizeBarber(b, i));
     writeAuto(auto);
-    window.dispatchEvent(new CustomEvent("barbercloud:barbers-changed"));
+    window.dispatchEvent(new CustomEvent("gestionweb:barbers-changed"));
     return auto.barbers;
   }
 
@@ -131,7 +131,7 @@
   };
 
   if (window.SupabaseData?.enabled?.()) {
-    window.addEventListener("barbercloud:panel-ready", () => {
+    window.addEventListener("gestionweb:panel-ready", () => {
       pullFromCloud().catch(() => {});
     }, { once: true });
   }

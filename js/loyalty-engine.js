@@ -1,10 +1,10 @@
 /**
- * Puntos de fidelización del negocio (BarberCloud).
+ * Puntos de fidelización del negocio (Gestiónweb.app).
  * +5 pts al marcar un servicio como completado. El admin solo ajusta excepciones.
  */
 (function () {
-  const USERS_KEY = "barbercloud.loyalty_users";
-  const HISTORY_KEY = "barbercloud.loyalty_history";
+  const USERS_KEY = "gestionweb.loyalty_users";
+  const HISTORY_KEY = "gestionweb.loyalty_history";
   const POINTS_PER_SERVICE = 5;
 
   function safeParse(raw, fallback) {

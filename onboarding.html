@@ -2,8 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Configura tu barbería · BarberCloud</title>
+    <title>Configura tu negocio · Gestiónweb.app</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,7 +24,7 @@
         </div>
         <div class="tutorial-card__brand">
           <img src="assets/logo.png" alt="" width="28" height="28" />
-          <strong>BarberCloud</strong>
+          <strong>Gestiónweb.app</strong>
         </div>
         <p class="ob-account-link">
           ¿Ya tienes cuenta? <a href="login.html">Entra aquí</a>
@@ -34,7 +36,7 @@
             Así te van a ver tus clientes en la autoagenda. Puedes cambiarlo después.
           </p>
           <label class="field">
-            <span class="field__label">Nombre de la barbería</span>
+            <span class="field__label">Nombre de tu negocio</span>
             <input id="ob-business" type="text" required maxlength="80" placeholder="Barbería Juan" />
           </label>
           <label class="field">
@@ -90,7 +92,7 @@
         <section data-step="5" hidden>
           <h1>Personaliza tu autoagenda</h1>
           <p class="tutorial-card__lead">
-            El slug es la URL pública de tu barbería: barbercloud.com/<strong id="ob-slug-live">tu-barberia</strong>
+            El slug es la URL pública de tu negocio: gestionweb.app/<strong id="ob-slug-live">tu-barberia</strong>
           </p>
           <label class="field">
             <span class="field__label">Enlace público</span>
@@ -116,7 +118,7 @@
         </section>
 
         <section data-step="7" hidden>
-          <h1>Tu BarberCloud está listo</h1>
+          <h1>Tu Gestiónweb.app está listo</h1>
           <p class="tutorial-card__lead">
             Ya puedes agendar, cargar Rewards y recibir reservas en tu enlace.
           </p>
@@ -126,7 +128,7 @@
           </p>
           <p class="tutorial-card__lead" id="ob-cloud-hint">
             Para guardar el negocio en la nube y que nadie más vea tus clientes,
-            <a href="login.html">crea tu cuenta BarberCloud</a>.
+            <a href="login.html">crea tu cuenta Gestiónweb.app</a>.
           </p>
         </section>
 
@@ -138,6 +140,7 @@
       </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/brand.js?v=20260903e"></script>
     <script src="js/supabase-config.js?v=20260816s"></script>
     <script src="js/supabase-client.js?v=20260818a"></script>
     <script src="js/business-model.js?v=20260829m"></script>

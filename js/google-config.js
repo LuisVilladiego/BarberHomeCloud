@@ -1,5 +1,5 @@
 /**
- * Credenciales OAuth de Google Cloud (proyecto BarberHomeCloud).
+ * Credenciales OAuth de Google Cloud (proyecto Gestiónweb.app).
  * Solo Client ID en frontend — nunca pegues el client_secret aquí.
  *
  * En Google Cloud Console → APIs y servicios → Credenciales → tu cliente OAuth:

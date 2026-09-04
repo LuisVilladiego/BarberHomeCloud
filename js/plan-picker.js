@@ -1,5 +1,5 @@
 /**
- * Modal "Elige tu plan" reutilizable en BarberCloud.
+ * Modal "Elige tu plan" reutilizable en Gestiónweb.app.
  * Conecta con Billing.startCheckout → Wompi.
  */
 (function () {
@@ -60,7 +60,7 @@
               </button>
             </div>
           </div>
-          <p class="choose-plan-question">Elige el plan para tu barbería</p>
+          <p class="choose-plan-question">Elige el plan para tu negocio</p>
           <div class="choose-plan-cards" id="choose-plan-cards"></div>
           <p class="choose-plan-error auth-error" id="choose-plan-error" hidden></p>
           <div class="choose-plan-footer">
@@ -89,13 +89,13 @@
           </button>
           <h2 id="sub-features-title" class="sub-features-title">Suscríbete y accede a todo</h2>
           <p class="sub-features-lead">
-            BarberCloud automatiza confirmaciones, recordatorios y tu link de reservas público.
+            Gestiónweb.app automatiza confirmaciones, recordatorios y tu link de reservas público.
           </p>
           <ul class="sub-features-list">
             <li>Mensajes automáticos por WhatsApp</li>
             <li>Recordatorios y confirmaciones sin esfuerzo</li>
             <li>Google Calendar y autoagenda en línea</li>
-            <li>Panel completo para gestionar tu barbería</li>
+            <li>Panel completo para gestionar tu negocio</li>
           </ul>
           <div class="sub-features-actions">
             <button class="btn btn--secondary" type="button" data-close-sub-features>Más tarde</button>

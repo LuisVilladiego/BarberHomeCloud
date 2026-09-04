@@ -1,5 +1,5 @@
 /**
- * Planes BarberCloud — delega en business-model.js (fuente autoritativa del servidor).
+ * Planes Gestiónweb.app — delega en business-model.js (fuente autoritativa del servidor).
  */
 const {
   ANNUAL_DISCOUNT,

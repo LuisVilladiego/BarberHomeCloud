@@ -1,5 +1,5 @@
 (function () {
-  const KEY = "barbercloud_settings";
+  const KEY = "gestionweb_settings";
   const defaults = {
     email: "",
     name: "",
@@ -46,7 +46,7 @@
 
   function accountNameFromAuth() {
     try {
-      const data = JSON.parse(localStorage.getItem("barbercloud.auth") || "{}");
+      const data = JSON.parse(localStorage.getItem("gestionweb.auth") || "{}");
       const user = data?.user || data?.currentSession?.user || data?.session?.user;
       const meta = user?.user_metadata || {};
       return String(meta.name || meta.full_name || user?.email || "").trim();
@@ -84,7 +84,7 @@
     const nameEl = document.getElementById("account-name");
     if (emailEl) {
       try {
-        const data = JSON.parse(localStorage.getItem("barbercloud.auth") || "{}");
+        const data = JSON.parse(localStorage.getItem("gestionweb.auth") || "{}");
         const user = data?.user || data?.currentSession?.user || data?.session?.user;
         emailEl.textContent = user?.email || state.email || "—";
       } catch {
@@ -208,7 +208,7 @@
   });
   document.getElementById("btn-confirm-delete")?.addEventListener("click", () => {
     const keys = Object.keys(localStorage).filter(
-      (k) => k.startsWith("barbercloud") || k.startsWith("confirmafy")
+      (k) => k.startsWith("gestionweb") || k.startsWith("barbercloud") || k.startsWith("confirmafy")
     );
     keys.forEach((k) => localStorage.removeItem(k));
     closeModal("delete-modal");
@@ -282,7 +282,7 @@
       (rep.locales?.citas || 0) + (rep.locales?.clientes || 0) + (rep.locales?.productos || 0);
     if (!locales) {
       toast(
-        "Este navegador no tiene datos locales. Ábrelo en localhost (donde ya usabas BarberHome) y pulsa de nuevo."
+        "Este navegador no tiene datos locales. Ábrelo en localhost (donde ya usabas la app) y pulsa de nuevo."
       );
       return;
     }
@@ -322,7 +322,7 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startSettings);
-  else window.addEventListener("barbercloud:panel-ready", startSettings, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", startSettings, { once: true });
 
   document.getElementById("btn-auth-logout")?.addEventListener("click", async () => {
     if (window.AppShell?.logout) {
@@ -331,7 +331,7 @@
     }
     await window.BarberAuth?.signOut?.();
     try {
-      localStorage.removeItem("barbercloud.auth");
+      localStorage.removeItem("gestionweb.auth");
     } catch {
       /* ignore */
     }

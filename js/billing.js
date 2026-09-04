@@ -3,7 +3,7 @@
  * el webhook de Wompi); localStorage se usa como caché para pintar rápido.
  */
 (function () {
-  const CACHE_KEY = "barbercloud.billing";
+  const CACHE_KEY = "gestionweb.billing";
 
   function db() {
     return window.SupabaseClient?.getClient?.() || null;
@@ -102,7 +102,7 @@
     try {
       if (state) localStorage.setItem(CACHE_KEY, JSON.stringify(state));
       else localStorage.removeItem(CACHE_KEY);
-      window.dispatchEvent(new CustomEvent("barbercloud:billing-updated"));
+      window.dispatchEvent(new CustomEvent("gestionweb:billing-updated"));
     } catch {
       /* ignore */
     }
@@ -289,9 +289,9 @@
     };
     cache(next);
     try {
-      const subRaw = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+      const subRaw = JSON.parse(localStorage.getItem("gestionweb.subscription") || "{}");
       localStorage.setItem(
-        "barbercloud.subscription",
+        "gestionweb.subscription",
         JSON.stringify({
           ...subRaw,
           planId: next.planId || subRaw.planId || "pro",
@@ -324,7 +324,7 @@
       cache(local);
       try {
         localStorage.setItem(
-          "barbercloud.subscription",
+          "gestionweb.subscription",
           JSON.stringify({
             planId: local.planId,
             status: local.status,

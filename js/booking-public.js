@@ -3254,6 +3254,17 @@
         window.AppShell?.toast?.("No se pudo enviar el aviso al correo del barbero");
       }
 
+      try {
+        const wa = await window.WhatsAppService?.sendBookingConfirmation?.(result.booking, {
+          respectDelay: true,
+        });
+        if (wa?.ok && !wa?.queued) {
+          window.AppShell?.toast?.("Confirmación enviada por WhatsApp al cliente");
+        }
+      } catch (err) {
+        console.warn("[booking] WhatsApp confirmación", err);
+      }
+
       // El cliente público no tiene el token del barbero. Si esta misma
       // sesión sí está conectada (el dueño probando su link), se envía ya.
       // Si no, queda pending y el panel la empuja a Google Calendar.

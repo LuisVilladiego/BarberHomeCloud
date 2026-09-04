@@ -1,4 +1,4 @@
--- BarberCloud · facturación con Wompi
+-- Gestiónweb.app · facturación con Wompi
 -- Ejecutar DESPUÉS de schema.sql, tenant.sql y rls.sql
 --
 -- Qué hace:

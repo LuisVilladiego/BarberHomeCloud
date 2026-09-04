@@ -1,11 +1,11 @@
 (function () {
   const KEY_MAP = {
-    confirmafy_settings: "barbercloud_settings",
-    confirmafy_feedback: "barbercloud_feedback",
-    "confirmafy.autoagenda": "barbercloud.autoagenda",
-    "confirmafy.bookings": "barbercloud.bookings",
-    "confirmafy.subscription": "barbercloud.subscription",
-    "confirmafy.tutorial": "barbercloud.tutorial",
+    confirmafy_settings: "gestionweb_settings",
+    confirmafy_feedback: "gestionweb_feedback",
+    "confirmafy.autoagenda": "gestionweb.autoagenda",
+    "confirmafy.bookings": "gestionweb.bookings",
+    "confirmafy.subscription": "gestionweb.subscription",
+    "confirmafy.tutorial": "gestionweb.tutorial",
   };
 
   try {
@@ -20,7 +20,7 @@
 
   function authUserFromStorage() {
     try {
-      const data = JSON.parse(localStorage.getItem("barbercloud.auth") || "{}");
+      const data = JSON.parse(localStorage.getItem("gestionweb.auth") || "{}");
       return data?.user || data?.currentSession?.user || data?.session?.user || null;
     } catch {
       return null;
@@ -35,7 +35,7 @@
     const email = String(user?.email || "").trim();
     if (email) return email.split("@")[0];
     try {
-      const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+      const s = JSON.parse(localStorage.getItem("gestionweb_settings") || "{}");
       const settingsName = String(s.name || "").trim();
       const settingsEmail = String(s.email || "").trim().toLowerCase();
       const authEmail = email.toLowerCase();
@@ -75,7 +75,7 @@
       wrap.appendChild(name);
       const sub = document.createElement("small");
       sub.className = "brand__sub";
-      sub.textContent = "Plataforma para barberías";
+      sub.textContent = window.Brand?.tagline || "Tu negocio, más simple";
       wrap.appendChild(sub);
     });
     document.querySelectorAll('a.nav__item[href="marketplace.html"]').forEach((a) => {
@@ -85,7 +85,7 @@
     });
     let negocio = "";
     try {
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       negocio = String(auto.title || "").trim();
     } catch {
       negocio = "";
@@ -118,7 +118,7 @@
 
   function unreadNotificationCount() {
     try {
-      const list = JSON.parse(localStorage.getItem("barbercloud.notifications") || "[]");
+      const list = JSON.parse(localStorage.getItem("gestionweb.notifications") || "[]");
       if (!Array.isArray(list) || !list.length) return 0;
       return list.filter((n) => !n.read).length;
     } catch {
@@ -149,8 +149,8 @@
   }
 
   const REMINDER_MINUTES = 30;
-  const BOOKINGS_KEY = "barbercloud.bookings";
-  const NOTIF_KEY = "barbercloud.notifications";
+  const BOOKINGS_KEY = "gestionweb.bookings";
+  const NOTIF_KEY = "gestionweb.notifications";
   function parseBookingDate(booking) {
     if (!booking?.date || !booking?.time) return null;
     const time =
@@ -227,7 +227,7 @@
     if (!created.length) return;
     syncNotificationBadge();
     window.dispatchEvent(
-      new CustomEvent("barbercloud:notifications", { detail: { created } })
+      new CustomEvent("gestionweb:notifications", { detail: { created } })
     );
   }
 
@@ -418,12 +418,12 @@
     runRetentionScan();
   }
 
-  const LAST_ACTIVITY_KEY = "barbercloud.last_activity";
+  const LAST_ACTIVITY_KEY = "gestionweb.last_activity";
   const IDLE_MS = 15 * 60 * 1000;
 
   function hasAuthSessionEarly() {
     try {
-      const raw = localStorage.getItem("barbercloud.auth");
+      const raw = localStorage.getItem("gestionweb.auth");
       if (!raw) return false;
       const data = JSON.parse(raw);
       return !!(data?.access_token || data?.currentSession?.access_token || data?.user);
@@ -445,7 +445,7 @@
       /* ignore */
     }
     try {
-      localStorage.removeItem("barbercloud.auth");
+      localStorage.removeItem("gestionweb.auth");
       localStorage.removeItem(LAST_ACTIVITY_KEY);
       window.Tenant?.clearLocalData?.();
     } catch {
@@ -496,7 +496,7 @@
       if (!document.hidden) check();
     });
     window.addEventListener("storage", (e) => {
-      if (e.key === LAST_ACTIVITY_KEY || e.key === "barbercloud.auth") check();
+      if (e.key === LAST_ACTIVITY_KEY || e.key === "gestionweb.auth") check();
     });
   }
 
@@ -553,7 +553,7 @@
         fn();
         return;
       }
-      window.addEventListener("barbercloud:panel-ready", fn, { once: true });
+      window.addEventListener("gestionweb:panel-ready", fn, { once: true });
     },
   };
 
@@ -567,12 +567,12 @@
     if (window.Tenant?.hasConfiguredBusiness?.()) return true;
     if (window.Tenant?.hasExistingBusiness?.()) return true;
     try {
-      if (localStorage.getItem("barbercloud.onboarded") === "1") return true;
-      if (localStorage.getItem("barbercloud.negocio_id")) {
+      if (localStorage.getItem("gestionweb.onboarded") === "1") return true;
+      if (localStorage.getItem("gestionweb.negocio_id")) {
         const biz = window.Tenant?.cached?.();
         if (biz?.slug && !window.Tenant?.isDemoSlug?.(biz.slug)) return true;
       }
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       const slug = auto.slug || "";
       const title = String(auto.title || "").trim();
       if (title && slug && String(slug).length >= 3 && !window.Tenant?.isDemoSlug?.(slug)) {
@@ -586,7 +586,7 @@
 
   function hasAuthSession() {
     try {
-      const raw = localStorage.getItem("barbercloud.auth");
+      const raw = localStorage.getItem("gestionweb.auth");
       if (!raw) return false;
       const data = JSON.parse(raw);
       return !!(data?.access_token || data?.currentSession?.access_token || data?.user);
@@ -601,7 +601,7 @@
     }
     if (window.Tenant?.hasActiveSubscription) return window.Tenant.hasActiveSubscription();
     try {
-      const raw = localStorage.getItem("barbercloud.subscription");
+      const raw = localStorage.getItem("gestionweb.subscription");
       if (!raw) return false;
       const sub = JSON.parse(raw);
       if (window.BusinessModel?.hasSubscriptionAccess) {
@@ -733,7 +733,7 @@
     let welcome = window.WelcomeTour?.load?.() || {};
     if (!welcome.seen && !welcome.pendingAutoagenda) {
       try {
-        welcome = JSON.parse(localStorage.getItem("barbercloud.welcome") || "{}");
+        welcome = JSON.parse(localStorage.getItem("gestionweb.welcome") || "{}");
       } catch {
         return;
       }
@@ -830,7 +830,7 @@
     panel.setAttribute("aria-label", "Progreso de configuración");
     panel.innerHTML = `
       <header class="onboarding-checklist__head">
-        <h2>Configura tu barbería</h2>
+        <h2>Configura tu negocio</h2>
         <p>${done}/${items.length} pasos completados — termina para empezar a recibir reservas.</p>
       </header>
       <ul class="onboarding-checklist__list">
@@ -1051,7 +1051,7 @@
     syncUserFromSettings();
 
     window.AppShell.panelReady = true;
-    window.dispatchEvent(new CustomEvent("barbercloud:panel-ready"));
+    window.dispatchEvent(new CustomEvent("gestionweb:panel-ready"));
     loadPlansModal();
 
     applyMembershipChrome();
@@ -1066,7 +1066,7 @@
     }
     renderTodayOps();
     window.BookingStore?.subscribe?.(renderTodayOps);
-    window.addEventListener("barbercloud:bookings-changed", renderTodayOps);
+    window.addEventListener("gestionweb:bookings-changed", renderTodayOps);
 
     await applyNavPermissions();
     if (!membershipState().restricted) {

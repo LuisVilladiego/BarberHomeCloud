@@ -1,6 +1,6 @@
 (function () {
-  const SUB_KEY = "barbercloud.subscription";
-  const BOOKINGS_KEY = "barbercloud.bookings";
+  const SUB_KEY = "gestionweb.subscription";
+  const BOOKINGS_KEY = "gestionweb.bookings";
   const OVERAGE_COP = 800;
 
   const formatMoney =
@@ -419,7 +419,7 @@
   function renderCheckout() {
     const copy = experienceCopy();
     const title = document.getElementById("sub-checkout-title");
-    if (title) title.textContent = copy.title || "Suscríbete y accede a BarberCloud";
+    if (title) title.textContent = copy.title || "Suscríbete y accede a Gestiónweb.app";
     renderCheckoutToggle();
     renderCheckoutCards();
     updateCheckoutCta();
@@ -461,7 +461,7 @@
       const amount = window.Plans?.chargeCop?.(plan, "monthly") ?? plan.price;
       paymentLead.textContent = `Vas a pagar ${formatMoney(amount)} por un mes del plan ${
         plan.label || plan.name
-      } en la página segura de Wompi. BarberCloud no almacena números de tarjeta ni CVC.`;
+      } en la página segura de Wompi. Gestiónweb.app no almacena números de tarjeta ni CVC.`;
     }
     showPaymentError("");
     openModal("payment-modal");
@@ -526,7 +526,7 @@
     if (!pago) return;
     const amount = formatMoney(Number(pago.amount_in_cents || 0) / 100);
     const lines = [
-      "BarberCloud · comprobante de pago",
+      "Gestiónweb.app · comprobante de pago",
       `Referencia: ${pago.reference}`,
       `Transacción Wompi: ${pago.wompi_transaction_id || "—"}`,
       `Fecha: ${formatDate(pago.created_at, "long")}`,
@@ -731,7 +731,7 @@
   window.addEventListener("storage", (e) => {
     if (e.key === BOOKINGS_KEY) renderUsage();
   });
-  window.addEventListener("barbercloud:bookings-changed", renderUsage);
+  window.addEventListener("gestionweb:bookings-changed", renderUsage);
   window.BookingStore?.subscribe?.(renderUsage);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") renderUsage();

@@ -191,7 +191,17 @@ ${link}`,
   }
 
   function saveAll(all) {
-    return store.saveAll(all);
+    const ok = store.saveAll(all);
+    if (ok) syncServerConfig(all);
+    return ok;
+  }
+
+  async function syncServerConfig(all) {
+    try {
+      await window.WhatsAppService?.syncCalendarConfig?.(all);
+    } catch (err) {
+      console.warn("[calendario-config] sync WhatsApp", err);
+    }
   }
 
   function syncTimeFormatToPublic(timeFormat) {
@@ -678,18 +688,66 @@ ${link}`,
     setLogoUI("", "");
   });
 
-  sendTestBtn?.addEventListener("click", () => {
+  sendTestBtn?.addEventListener("click", async () => {
     const cc = fields.testCc?.value || "+57";
     const phone = String(fields.testPhone?.value || "").replace(/\D/g, "");
     if (phone.length < 7) return;
-    window.AppShell?.toast(`Mensaje de prueba enviado a ${cc}${phone} (demo)`);
+    if (!window.WhatsAppService?.sendTest) {
+      window.AppShell?.toast("WhatsApp no disponible.");
+      return;
+    }
+    sendTestBtn.disabled = true;
+    try {
+      const cfg = readForm();
+      const data = await window.WhatsAppService.sendTest({
+        messageType: "reminder",
+        phone,
+        countryCode: cc,
+        calendarId,
+        config: cfg,
+      });
+      if (data?.ok) {
+        window.AppShell?.toast(`Mensaje de prueba enviado a ${cc}${phone}`);
+      } else {
+        window.AppShell?.toast(data?.message || "No se pudo enviar el mensaje de prueba.");
+      }
+    } catch (err) {
+      window.AppShell?.toast(err?.message || "Error al enviar la prueba.");
+    } finally {
+      sendTestBtn.disabled = false;
+      updateTestButton();
+    }
   });
 
-  sendAfterTestBtn?.addEventListener("click", () => {
+  sendAfterTestBtn?.addEventListener("click", async () => {
     const cc = fields.afterTestCc?.value || "+57";
     const phone = String(fields.afterTestPhone?.value || "").replace(/\D/g, "");
     if (phone.length < 7) return;
-    window.AppShell?.toast(`Mensaje post-cita de prueba enviado a ${cc}${phone} (demo)`);
+    if (!window.WhatsAppService?.sendTest) {
+      window.AppShell?.toast("WhatsApp no disponible.");
+      return;
+    }
+    sendAfterTestBtn.disabled = true;
+    try {
+      const cfg = readForm();
+      const data = await window.WhatsAppService.sendTest({
+        messageType: "after",
+        phone,
+        countryCode: cc,
+        calendarId,
+        config: cfg,
+      });
+      if (data?.ok) {
+        window.AppShell?.toast(`Mensaje post-cita enviado a ${cc}${phone}`);
+      } else {
+        window.AppShell?.toast(data?.message || "No se pudo enviar el mensaje post-cita.");
+      }
+    } catch (err) {
+      window.AppShell?.toast(err?.message || "Error al enviar la prueba.");
+    } finally {
+      sendAfterTestBtn.disabled = false;
+      updateTestButton();
+    }
   });
 
   form?.addEventListener("submit", (e) => {

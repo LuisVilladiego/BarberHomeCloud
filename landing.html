@@ -2,16 +2,20 @@
 <html lang="es" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="assets/favicon.png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>BarberCloud — Agenda, WhatsApp y tienda para tu barbería</title>
+    <title>Gestiónweb.app — Agenda, WhatsApp y tienda para tu negocio</title>
     <meta
       name="description"
-      content="Tus clientes reservan, confirman por WhatsApp y pueden comprar tus productos en el mismo link. Prueba BarberCloud 7 días."
+      content="Tus clientes reservan, confirman por WhatsApp y pueden comprar tus productos en el mismo link. Prueba Gestiónweb.app 7 días."
     />
     <script>
       (function () {
         try {
-          var saved = localStorage.getItem("barbercloud.landing_theme");
+          var saved =
+            localStorage.getItem("gestionweb.landing_theme") ||
+            localStorage.getItem("barbercloud.landing_theme");
           var theme =
             saved === "light" || saved === "dark"
               ? saved
@@ -37,9 +41,9 @@
   <body class="landing-page">
     <header class="landing-nav" id="landing-nav">
       <div class="landing-container landing-nav__inner">
-        <a class="landing-brand" href="landing.html" aria-label="BarberCloud inicio">
+        <a class="landing-brand" href="landing.html" aria-label="Gestiónweb.app inicio">
           <img class="landing-brand__logo" src="assets/logo.png" alt="" width="36" height="36" />
-          <span>Barber<span>Cloud</span></span>
+          <span>Gestión<span>web.app</span></span>
         </a>
 
         <button
@@ -93,7 +97,7 @@
         <div class="landing-hero__glow" aria-hidden="true"></div>
         <div class="landing-container landing-hero__grid">
           <div class="landing-hero__copy landing-reveal is-inview">
-            <p class="landing-hero__eyebrow">Software para barberías</p>
+            <p class="landing-hero__eyebrow">Tu negocio, más simple</p>
             <h1>Tus clientes reservan. Tú atiendes. Y vendes.</h1>
             <p class="landing-hero__lead">
               Un link para agendar, confirmar por WhatsApp y vender productos
@@ -174,7 +178,7 @@
             </article>
             <article>
               <h3>Tienda en tu link</h3>
-              <p>Vende ceras, kits o merch a tus clientes dentro de BarberCloud, en la misma página donde reservan.</p>
+              <p>Vende ceras, kits o merch a tus clientes dentro de Gestiónweb.app, en la misma página donde reservan.</p>
             </article>
           </div>
         </div>
@@ -260,7 +264,7 @@
       <div class="landing-container landing-footer__row">
         <a class="landing-brand" href="landing.html">
           <img class="landing-brand__logo" src="assets/logo.png" alt="" width="28" height="28" />
-          <span>Barber<span>Cloud</span></span>
+          <span>Gestión<span>web.app</span></span>
         </a>
         <nav aria-label="Pie">
           <a href="#producto">Producto</a>
@@ -268,12 +272,13 @@
           <a href="#precios">Precios</a>
           <a href="login.html">Entrar</a>
         </nav>
-        <p>© 2026 BarberCloud</p>
+        <p>© 2026 Gestiónweb.app</p>
       </div>
     </footer>
 
     <div class="landing-toast" id="landing-toast" hidden role="status"></div>
 
+    <script src="js/brand.js?v=20260903e"></script>
     <script src="js/business-model.js?v=20260829m"></script>
     <script src="js/plan-limits.js?v=20260824"></script>
     <script src="js/plans.js?v=20260822"></script>

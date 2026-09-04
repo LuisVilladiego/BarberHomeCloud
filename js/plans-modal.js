@@ -1,5 +1,5 @@
 /**
- * Modal de upsell de planes BarberCloud. Se inyecta en páginas con sidebar.
+ * Modal de upsell de planes Gestiónweb.app. Se inyecta en páginas con sidebar.
  */
 (function () {
   const MODAL_ID = "plans-upsell-modal";
@@ -41,7 +41,7 @@
     if (window.Billing?.isActive?.(window.Billing.cached?.())) return true;
     if (window.Tenant?.hasActiveSubscription?.()) return true;
     try {
-      const raw = localStorage.getItem("barbercloud.subscription");
+      const raw = localStorage.getItem("gestionweb.subscription");
       if (!raw) return false;
       const status = String(JSON.parse(raw)?.status || "").toLowerCase();
       return (
@@ -100,7 +100,7 @@
         <div class="modal__dialog plans-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="plans-modal-title">
           <header class="plans-modal__head">
             <div class="plans-modal__intro">
-              <h2 id="plans-modal-title">Suscríbete y accede a todo BarberCloud</h2>
+              <h2 id="plans-modal-title">Suscríbete y accede a todo Gestiónweb.app</h2>
               <p class="plans-modal__lead">Elimina las inasistencias, automatiza tus mensajes y llena tu agenda.</p>
             </div>
             <button class="icon-btn plans-modal__close" type="button" data-close-plans-modal aria-label="Cerrar">
@@ -141,7 +141,7 @@
       const promo = document.createElement("div");
       promo.className = "sidebar-promo";
       promo.innerHTML = `
-        <p class="sidebar-promo__eyebrow">BarberCloud</p>
+        <p class="sidebar-promo__eyebrow">Gestiónweb.app</p>
         <p class="sidebar-promo__title">Más citas, menos ausencias</p>
         <p class="sidebar-promo__text">Automatiza confirmaciones y recordatorios por WhatsApp.</p>
         <div class="sidebar-promo__actions">
@@ -196,7 +196,7 @@
     updatePromoVisibility();
     maybeOpenFromQuery();
 
-    window.addEventListener("barbercloud:billing-updated", updatePromoVisibility);
+    window.addEventListener("gestionweb:billing-updated", updatePromoVisibility);
   }
 
   window.PlansModal = { init, open, close };

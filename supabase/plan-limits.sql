@@ -1,4 +1,4 @@
--- BarberCloud · límites de plan por tenant (Confirmafy-style)
+-- Gestiónweb.app · límites de plan por tenant (Confirmafy-style)
 -- Ejecutar DESPUÉS de business-model.sql
 
 create or replace function public.plan_max_citas(p_plan text)

@@ -1,15 +1,15 @@
 /**
- * Automatizaciones de retención — BarberCloud
+ * Automatizaciones de retención — Gestiónweb.app
  * Detecta clientes inactivos, hitos, puntos cerca de canje y cumpleaños;
  * genera alertas accionables en notificaciones.
  */
 (function () {
-  const BOOKINGS_KEY = "barbercloud.bookings";
-  const LOYALTY_USERS_KEY = "barbercloud.loyalty_users";
-  const REDEEM_KEY = "barbercloud.loyalty_redeem_products";
-  const AUTOAGENDA_KEY = "barbercloud.autoagenda";
-  const NOTIF_KEY = "barbercloud.notifications";
-  const LAST_SCAN_KEY = "barbercloud.retention_last_scan";
+  const BOOKINGS_KEY = "gestionweb.bookings";
+  const LOYALTY_USERS_KEY = "gestionweb.loyalty_users";
+  const REDEEM_KEY = "gestionweb.loyalty_redeem_products";
+  const AUTOAGENDA_KEY = "gestionweb.autoagenda";
+  const NOTIF_KEY = "gestionweb.notifications";
+  const LAST_SCAN_KEY = "gestionweb.retention_last_scan";
 
   const RULES = {
     frequentMinIn60: 4,
@@ -73,7 +73,7 @@
 
   function businessName() {
     const data = safeParse(localStorage.getItem(AUTOAGENDA_KEY), {});
-    return data?.title || "tu barbería";
+    return data?.title || "tu negocio";
   }
 
   function isActiveBooking(booking) {
@@ -470,7 +470,7 @@
       localStorage.setItem(NOTIF_KEY, JSON.stringify(merged.slice(0, 300)));
       window.AppShell?.syncNotificationBadge?.();
       created.forEach((n) => {
-        window.dispatchEvent(new CustomEvent("barbercloud:retention-alert", { detail: n }));
+        window.dispatchEvent(new CustomEvent("gestionweb:retention-alert", { detail: n }));
       });
     }
 

@@ -42,7 +42,7 @@ async function postAppsScript(payload) {
   const bodyObj = {
     ...payload,
     secret: cfg.secret,
-    from_name: payload.from_name || "BarberCloud",
+    from_name: payload.from_name || "Gestiónweb.app",
   };
   const type = String(bodyObj.type || "verify").toLowerCase();
 
@@ -94,7 +94,7 @@ function bookingPayload(booking, businessName) {
     notes: booking?.notes || "",
     status: booking?.status || "pending_confirmation",
     source: booking?.source || "public",
-    business: booking?.business || businessName || "BarberCloud",
+    business: booking?.business || businessName || "Gestiónweb.app",
     clientFingerprint: booking?.clientFingerprint || "",
   };
 }
@@ -157,16 +157,16 @@ async function sendTrialEmail({ toEmail, toName, daysLeft, periodEnd, copy }) {
   const payload = {
     to_email: String(toEmail || "").trim(),
     to_name: name,
-    subject: copy?.subject || "Tu prueba de BarberCloud",
+    subject: copy?.subject || "Tu prueba de Gestiónweb.app",
     headline: copy?.headline || "",
     message: copy?.body || "",
     html:
       copy?.html ||
-      `<p>Hola ${name},</p><p>${copy?.body || ""}</p><p><a href="${copy?.href || ""}">${copy?.cta || "Abrir BarberCloud"}</a></p>`,
+      `<p>Hola ${name},</p><p>${copy?.body || ""}</p><p><a href="${copy?.href || ""}">${copy?.cta || "Abrir Gestiónweb.app"}</a></p>`,
     text: copy?.body || "",
     days_left: days,
     period_end: periodEnd || "",
-    cta_label: copy?.cta || "Abrir BarberCloud",
+    cta_label: copy?.cta || "Abrir Gestiónweb.app",
     cta_url: copy?.href || "",
   };
   try {

@@ -21,7 +21,8 @@
 
   function hasAuth() {
     try {
-      const raw = localStorage.getItem("barbercloud.auth");
+      const raw =
+        localStorage.getItem("gestionweb.auth") || localStorage.getItem("barbercloud.auth");
       if (!raw) return false;
       const data = JSON.parse(raw);
       return !!(data?.access_token || data?.currentSession?.access_token || data?.user);
@@ -32,8 +33,16 @@
 
   function cachedAccess() {
     try {
-      const billing = JSON.parse(localStorage.getItem("barbercloud.billing") || "null");
-      const sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+      const billing = JSON.parse(
+        localStorage.getItem("gestionweb.billing") ||
+          localStorage.getItem("barbercloud.billing") ||
+          "null"
+      );
+      const sub = JSON.parse(
+        localStorage.getItem("gestionweb.subscription") ||
+          localStorage.getItem("barbercloud.subscription") ||
+          "{}"
+      );
       const status = String(billing?.status || sub.status || "").toLowerCase();
       const periodEnd = billing?.periodEnd || sub.periodEnd || null;
       if (!periodEnd) return false;
@@ -54,8 +63,8 @@
   function hasBillingCache() {
     try {
       return !!(
-        localStorage.getItem("barbercloud.billing") ||
-        localStorage.getItem("barbercloud.subscription")
+        localStorage.getItem("gestionweb.billing") ||
+        localStorage.getItem("gestionweb.subscription")
       );
     } catch {
       return false;
@@ -79,7 +88,7 @@
     cachedAccess,
     isReadOnly() {
       try {
-        return sessionStorage.getItem("barbercloud.readonly") === "1";
+        return sessionStorage.getItem("gestionweb.readonly") === "1";
       } catch {
         return false;
       }

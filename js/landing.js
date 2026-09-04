@@ -1,9 +1,9 @@
 /**
- * BarberCloud landing — precios, tema claro/oscuro y microinteracciones.
+ * Gestiónweb.app landing — precios, tema claro/oscuro y microinteracciones.
  */
 (function () {
   const POPULAR_PLAN_ID = "pro";
-  const THEME_KEY = "barbercloud.landing_theme";
+  const THEME_KEY = "gestionweb.landing_theme";
 
   const FEATURE_LABELS = {
     "Todo Basic": "Incluye Basic",
@@ -22,6 +22,14 @@
 
   function currentTheme() {
     return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  }
+
+  function readThemeKey() {
+    try {
+      return localStorage.getItem(THEME_KEY) || localStorage.getItem("barbercloud.landing_theme");
+    } catch {
+      return null;
+    }
   }
 
   function syncThemeButton() {

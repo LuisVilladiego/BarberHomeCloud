@@ -1,6 +1,6 @@
 (function () {
-  const AUTOAGENDA_KEY = "barbercloud.autoagenda";
-  const ACTIVE_CAL_BASE = "barbercloud.active_calendar";
+  const AUTOAGENDA_KEY = "gestionweb.autoagenda";
+  const ACTIVE_CAL_BASE = "gestionweb.active_calendar";
   const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
   const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const START_HOUR = 5;
@@ -88,7 +88,7 @@
     const m = minutes % 60;
     let format = "12";
     try {
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       if (auto.timeFormat === "12" || auto.timeFormat === "24") format = auto.timeFormat;
       else {
         const all = window.CalendarStore?.loadAll?.() || {};
@@ -149,12 +149,12 @@
 
   function businessName() {
     try {
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       if (auto.title) return String(auto.title);
     } catch {
       /* ignore */
     }
-    return window.Tenant?.cached?.()?.name || "Mi barbería";
+    return window.Tenant?.cached?.()?.name || "Mi negocio";
   }
 
   function availableCalendars() {
@@ -790,7 +790,7 @@
     refreshCalendar();
   });
 
-  window.addEventListener("barbercloud:bookings-changed", () => {
+  window.addEventListener("gestionweb:bookings-changed", () => {
     refreshCalendar();
   });
 
@@ -843,7 +843,7 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendar);
-  else window.addEventListener("barbercloud:panel-ready", startCalendar, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", startCalendar, { once: true });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) return;

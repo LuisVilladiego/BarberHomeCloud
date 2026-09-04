@@ -1,6 +1,6 @@
-# Flujo BarberCloud (referencia QA)
+# Flujo Gestiónweb.app (referencia QA)
 
-Marca: **BarberCloud** · Precios en **COP** · Usuario nuevo = **campos vacíos** (sin calendarios precargados).
+Marca: **Gestiónweb.app** · Precios en **COP** · Usuario nuevo = **campos vacíos** (sin calendarios precargados).
 
 Inspirado en Confirmafy: registro → prueba o pago → panel → configuración en Autoagenda.
 
@@ -46,7 +46,7 @@ Inspirado en Confirmafy: registro → prueba o pago → panel → configuración
 | `js/login.js` → `afterAuth()` | `next=suscripcion` → suscripción; cuenta nueva → trial + panel; activo → panel; vencido → panel lectura; else → suscripción |
 | `js/app.js` → `initTenantGate()` | Panel exige login; suscripción exige login; ya no manda a `onboarding.html` |
 | `js/suscripcion.js` | Post-Wompi aprobado + welcome pendiente → `index.html` |
-| `js/welcome.js` | Escucha `barbercloud:panel-ready` y abre wizard |
+| `js/welcome.js` | Escucha `gestionweb:panel-ready` y abre wizard |
 
 ---
 
@@ -77,7 +77,7 @@ Inspirado en Confirmafy: registro → prueba o pago → panel → configuración
 
 1. **Trial**: ventana incógnito → `landing.html` → Empieza gratis → crear cuenta → verificar panel vacío + wizard + coachmarks → Autoagenda vacío.
 2. **Pago**: incógnito → landing → Elegir plan → login → suscripción → Wompi sandbox → panel + wizard.
-3. **Re-login**: cerrar sesión → entrar → ir directo al panel (sin repetir wizard si `barbercloud.welcome.seen`).
+3. **Re-login**: cerrar sesión → entrar → ir directo al panel (sin repetir wizard si `gestionweb.welcome.seen`).
 4. **Sin plan**: usuario con trial vencido → banner + redirect a suscripción al intentar editar.
 
 `onboarding.html` queda solo para pruebas locales sin Supabase (`?force=1`).

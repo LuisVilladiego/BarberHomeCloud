@@ -1,4 +1,4 @@
--- BarberCloud · aislamiento multi-tenant + roles
+-- Gestiónweb.app · aislamiento multi-tenant + roles
 -- Ejecutar DESPUÉS de schema.sql y tenant.sql
 -- 1) Authentication → Users → Invite/Add (o regístrate en /login.html)
 -- 2) SQL Editor → Run este archivo

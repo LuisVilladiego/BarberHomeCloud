@@ -66,7 +66,7 @@
     const c = cfg();
     return {
       secret: c.appsScriptSecret,
-      from_name: payload.from_name || c.fromName || "BarberCloud",
+      from_name: payload.from_name || c.fromName || "Gestiónweb.app",
       ...payload,
     };
   }
@@ -132,7 +132,7 @@
       to_name: toName || "cliente",
       code: String(code),
       product_label: productLabel || "",
-      from_name: fromName || cfg().fromName || "BarberCloud",
+      from_name: fromName || cfg().fromName || "Gestiónweb.app",
     });
     return { ok: true, demo: false, message: "Código enviado al correo." };
   }
@@ -144,7 +144,7 @@
       to_email: toEmail,
       to_name: toName || "cliente",
       code: String(code),
-      from_name: c.fromName || "BarberHome",
+      from_name: c.fromName || "Mi negocio",
       from_email: c.fromEmail || "",
       reply_to: c.fromEmail || toEmail,
     });
@@ -157,7 +157,7 @@
         toEmail,
         toName,
         type: "verify",
-        productLabel: productLabel || "BarberCloud",
+        productLabel: productLabel || "Gestiónweb.app",
         code,
       });
       if (server.otpToken || server.ok || server.demo) return server;
@@ -182,8 +182,8 @@
           toName,
           code,
           type: "verify",
-          productLabel: productLabel || "BarberCloud",
-          fromName: "BarberCloud",
+          productLabel: productLabel || "Gestiónweb.app",
+          fromName: "Gestiónweb.app",
         });
         return { ...sent, code };
       }
@@ -226,7 +226,7 @@
           toName,
           code,
           type: "recover",
-          fromName: "BarberCloud",
+          fromName: "Gestiónweb.app",
         });
         return { ...sent, code };
       }
@@ -309,7 +309,7 @@
 
     const admin = await resolveNotifyEmail(booking);
     if (!admin) {
-      return { ok: false, message: "No hay correo del dueño de esta barbería." };
+      return { ok: false, message: "No hay correo del dueño de este negocio." };
     }
 
     try {
@@ -328,7 +328,7 @@
         notes: booking?.notes || "",
         status: booking?.status || "pending_confirmation",
         source: booking?.source || "public",
-        business: booking?.business || c.fromName || "BarberCloud",
+        business: booking?.business || c.fromName || "Gestiónweb.app",
         clientFingerprint:
           booking?.clientFingerprint ||
           (typeof window !== "undefined" && window.Security?.getDeviceId?.()) ||
@@ -386,7 +386,7 @@
 
     const admin = await resolveNotifyEmail(redeem);
     if (!admin) {
-      return { ok: false, message: "No hay correo del dueño de esta barbería." };
+      return { ok: false, message: "No hay correo del dueño de este negocio." };
     }
 
     try {

@@ -34,7 +34,7 @@ async function handleSend(req, res) {
       toName: name,
       code,
       type,
-      productLabel: type === "verify" ? "BarberCloud" : undefined,
+      productLabel: type === "verify" ? "Gestiónweb.app" : undefined,
     });
   } catch (sendErr) {
     console.error("[auth/otp send] mail", sendErr);

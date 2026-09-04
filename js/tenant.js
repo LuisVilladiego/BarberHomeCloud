@@ -1,9 +1,9 @@
 /**
- * Multi-tenant BarberCloud: slug único por negocio, una sola app/DB.
+ * Multi-tenant Gestiónweb.app: slug único por negocio, una sola app/DB.
  */
 (function () {
-  const NEGOCIO_ID_KEY = "barbercloud.negocio_id";
-  const NEGOCIO_CACHE_KEY = "barbercloud.negocio";
+  const NEGOCIO_ID_KEY = "gestionweb.negocio_id";
+  const NEGOCIO_CACHE_KEY = "gestionweb.negocio";
 
   const RESERVED_SLUGS = [
     "admin",
@@ -167,7 +167,7 @@
       return true;
     }
     try {
-      const raw = localStorage.getItem("barbercloud.subscription");
+      const raw = localStorage.getItem("gestionweb.subscription");
       if (!raw) return false;
       const sub = JSON.parse(raw);
       if (!isSubscriptionActive(sub?.status)) return false;
@@ -187,10 +187,10 @@
   }
 
   const SCOPED_STORAGE_BASES = [
-    "barbercloud.calendar_configs",
-    "barbercloud.google_auth",
-    "barbercloud.google_busy_cache",
-    "barbercloud.active_calendar",
+    "gestionweb.calendar_configs",
+    "gestionweb.google_auth",
+    "gestionweb.google_busy_cache",
+    "gestionweb.active_calendar",
   ];
 
   /**
@@ -228,7 +228,7 @@
       localStorage.setItem(NEGOCIO_CACHE_KEY, JSON.stringify(negocio));
       if (prev && prev !== negocio.id) {
         window.dispatchEvent(
-          new CustomEvent("barbercloud:tenant-changed", {
+          new CustomEvent("gestionweb:tenant-changed", {
             detail: { prevId: prev, negocioId: negocio.id },
           })
         );
@@ -253,7 +253,7 @@
     }
   }
 
-  const ONBOARDED_KEY = "barbercloud.onboarded";
+  const ONBOARDED_KEY = "gestionweb.onboarded";
 
   /** Slugs de demo / otro tenant que no deben contarse como negocio del usuario. */
   const DEMO_SLUGS = new Set([
@@ -271,7 +271,7 @@
 
   function readAutoagendaCache() {
     try {
-      return JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      return JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
     } catch {
       return {};
     }
@@ -333,12 +333,12 @@
   }
 
   /** Claves que no se borran al cerrar sesión (sí se borran al pulsar Desconectar). */
-  const SESSION_PERSIST_KEYS = new Set(["barbercloud.device_id", "barbercloud.auth"]);
+  const SESSION_PERSIST_KEYS = new Set(["gestionweb.device_id", "gestionweb.auth"]);
 
   function shouldPersistAcrossLogout(key) {
     if (SESSION_PERSIST_KEYS.has(key)) return true;
-    if (key === "barbercloud.welcome" || key.startsWith("barbercloud.welcome.")) return true;
-    if (key.startsWith("barbercloud.login_throttle:")) return true;
+    if (key === "gestionweb.welcome" || key.startsWith("gestionweb.welcome.")) return true;
+    if (key.startsWith("gestionweb.login_throttle:")) return true;
     if (key.endsWith(".__legacy_owner")) return true;
     for (const base of SCOPED_STORAGE_BASES) {
       if (key.startsWith(`${base}.`) && key.length > base.length + 1) return true;
@@ -350,7 +350,7 @@
   function clearLocalData() {
     try {
       Object.keys(localStorage).forEach((key) => {
-        if (!key.startsWith("barbercloud")) return;
+        if (!key.startsWith("gestionweb") && !key.startsWith("barbercloud")) return;
         if (shouldPersistAcrossLogout(key)) return;
         localStorage.removeItem(key);
       });
@@ -363,11 +363,11 @@
     if (!negocio) return;
     try {
       if (negocio.autoagenda && typeof negocio.autoagenda === "object") {
-        localStorage.setItem("barbercloud.autoagenda", JSON.stringify(negocio.autoagenda));
+        localStorage.setItem("gestionweb.autoagenda", JSON.stringify(negocio.autoagenda));
       }
       if (negocio.subscription_status || negocio.plan_id) {
         localStorage.setItem(
-          "barbercloud.subscription",
+          "gestionweb.subscription",
           JSON.stringify({
             planId: window.BusinessModel?.normalizePlanId?.(negocio.plan_id) || negocio.plan_id || "pro",
             status: window.BusinessModel?.normalizeStatus?.(negocio.subscription_status) || negocio.subscription_status || "expired",

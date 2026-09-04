@@ -1,8 +1,8 @@
 (function () {
-  const USERS_KEY = "barbercloud.loyalty_users";
-  const HISTORY_KEY = "barbercloud.loyalty_history";
-  const SALES_KEY = "barbercloud.marketplace_sales";
-  const PRODUCT_REDEEMS_KEY = "barbercloud.loyalty_product_redemptions";
+  const USERS_KEY = "gestionweb.loyalty_users";
+  const HISTORY_KEY = "gestionweb.loyalty_history";
+  const SALES_KEY = "gestionweb.marketplace_sales";
+  const PRODUCT_REDEEMS_KEY = "gestionweb.loyalty_product_redemptions";
   const EXPIRE_MONTHS = 12;
 
   const form = document.getElementById("points-assign-form");
@@ -557,5 +557,5 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(start);
-  else window.addEventListener("barbercloud:panel-ready", start, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", start, { once: true });
 })();

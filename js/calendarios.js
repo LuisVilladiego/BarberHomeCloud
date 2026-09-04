@@ -64,7 +64,7 @@
         const name =
           calendarId === "barberhome"
             ? cfg?.businessName || bizName || "Tu negocio"
-            : cfg?.businessName || (bizName ? `Calendario ${bizName}` : "Calendario en BarberCloud");
+            : cfg?.businessName || (bizName ? `Calendario ${bizName}` : "Calendario en Gestiónweb.app");
         const nameSpan = row.querySelector(".calendar-cell span:not(.calendar-icon)");
         if (nameSpan) nameSpan.textContent = name;
         const menuBtn = row.querySelector(".row-menu__trigger");
@@ -371,11 +371,11 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startCalendars);
-  else window.addEventListener("barbercloud:panel-ready", startCalendars, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", startCalendars, { once: true });
 
-  window.addEventListener("barbercloud:billing-updated", syncCalendarRows);
-  window.addEventListener("barbercloud:calendars-changed", syncCalendarRows);
-  window.addEventListener("barbercloud:tenant-changed", () => {
+  window.addEventListener("gestionweb:billing-updated", syncCalendarRows);
+  window.addEventListener("gestionweb:calendars-changed", syncCalendarRows);
+  window.addEventListener("gestionweb:tenant-changed", () => {
     store.migrateLegacyOnce?.();
     syncCalendarRows();
     refreshGoogleRow();

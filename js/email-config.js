@@ -13,7 +13,7 @@ window.EmailConfig = {
    */
   provider: "appscript",
 
-  fromName: "BarberCloud",
+  fromName: "Gestiónweb.app",
   fromEmail: "barberhomeluisvilladiego20@gmail.com",
 
   /**

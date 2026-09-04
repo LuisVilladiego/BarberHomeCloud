@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
       const name =
         String(user.user_metadata?.name || "").trim() ||
         String(user.email || "").split("@")[0] ||
-        "Mi barbería";
+        "Mi negocio";
       negocio = await insertNegocio({
         slug,
         name,
@@ -75,7 +75,7 @@ module.exports = async function handler(req, res) {
         onboarding_completed: false,
       });
     }
-    if (!negocio) return res.status(409).json({ error: "Todavía no tienes una barbería creada" });
+    if (!negocio) return res.status(409).json({ error: "Todavía no tienes un negocio creada" });
 
     const currency = "COP";
     const cents = amountInCents(plan, billingPeriod);

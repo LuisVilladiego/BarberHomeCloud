@@ -64,7 +64,7 @@ async function handleSendCode(req, res) {
     type: "lookup",
   });
 
-  const businessName = negocio.name || "BarberCloud";
+  const businessName = negocio.name || "Gestiónweb.app";
 
   if (!isConfigured()) {
     return res.status(503).json({

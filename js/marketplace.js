@@ -1,7 +1,7 @@
 (function () {
-  const PRODUCTS_KEY = "barbercloud.marketplace_products";
-  const REDEEM_PRODUCTS_KEY = "barbercloud.loyalty_redeem_products";
-  const SALES_KEY = "barbercloud.marketplace_sales";
+  const PRODUCTS_KEY = "gestionweb.marketplace_products";
+  const REDEEM_PRODUCTS_KEY = "gestionweb.loyalty_redeem_products";
+  const SALES_KEY = "gestionweb.marketplace_sales";
   const PESOS_PER_POINT = 800;
   const MAX_IMAGES = 8;
   const LOW_STOCK = 5;
@@ -55,7 +55,7 @@
     try {
       return (
         window.Tenant?.currentId?.() ||
-        localStorage.getItem("barbercloud.negocio_id") ||
+        localStorage.getItem("gestionweb.negocio_id") ||
         ""
       );
     } catch {
@@ -890,6 +890,6 @@
       renderAllCatalogs();
     };
     if (window.AppShell?.whenReady) window.AppShell.whenReady(start);
-    else window.addEventListener("barbercloud:panel-ready", start, { once: true });
+    else window.addEventListener("gestionweb:panel-ready", start, { once: true });
   })();
 })();

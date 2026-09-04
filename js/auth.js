@@ -121,13 +121,13 @@
     if (!id && !cached?.slug) return { ok: false, skipped: true };
     let auto = {};
     try {
-      auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
     } catch {
       auto = {};
     }
     let sub = {};
     try {
-      sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+      sub = JSON.parse(localStorage.getItem("gestionweb.subscription") || "{}");
     } catch {
       sub = {};
     }
@@ -159,7 +159,7 @@
     return `${CANONICAL_ORIGIN}/login.html${qs}`;
   }
 
-  const PENDING_PW_KEY = "barbercloud.pending_pw";
+  const PENDING_PW_KEY = "gestionweb.pending_pw";
 
   function savePendingPassword(email, password) {
     try {

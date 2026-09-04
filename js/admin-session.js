@@ -1,4 +1,4 @@
-/** Parseo de sesión Supabase en localStorage (storageKey: barbercloud.auth). */
+/** Parseo de sesión Supabase en localStorage (storageKey: gestionweb.auth). */
 (function () {
   const ADMIN_EMAIL = "adminbarbercloud@gmail.com";
 
@@ -28,7 +28,7 @@
   }
 
   function readAdminSession() {
-    const session = parseSession(localStorage.getItem("barbercloud.auth"));
+    const session = parseSession(localStorage.getItem("gestionweb.auth"));
     if (!session || session.email !== ADMIN_EMAIL) return null;
     return session;
   }

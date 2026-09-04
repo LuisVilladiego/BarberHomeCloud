@@ -1,5 +1,5 @@
 /**
- * Modelo de negocio BarberCloud (referencia Confirmafy).
+ * Modelo de negocio Gestiónweb.app (referencia Confirmafy).
  * Fuente autoritativa en servidor: planes, estados, roles y límites.
  */
 const USD_TO_COP = 4000;

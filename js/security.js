@@ -102,7 +102,7 @@
   }
 
   function loginThrottleKey(scope) {
-    return `barbercloud.login_throttle:${scope || "default"}`;
+    return `gestionweb.login_throttle:${scope || "default"}`;
   }
 
   function getLoginThrottle(scope) {
@@ -141,7 +141,7 @@
     return `Demasiados intentos. Espera ~${waitMin} min e inténtalo de nuevo.`;
   }
 
-  const DEVICE_ID_KEY = "barbercloud.device_id";
+  const DEVICE_ID_KEY = "gestionweb.device_id";
 
   function getDeviceId() {
     try {

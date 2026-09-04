@@ -1,5 +1,5 @@
 (function () {
-  const STORAGE_KEY = "barbercloud.tutorial";
+  const STORAGE_KEY = "gestionweb.tutorial";
   const phone = document.getElementById("phone");
   const cc = document.getElementById("cc");
   const btnNext = document.getElementById("btn-next");
@@ -32,7 +32,7 @@
       summary.innerHTML = `
         <li><strong>WhatsApp:</strong> ${cc.value} ${phone.value.trim()}</li>
         <li><strong>Calendario:</strong> ${
-          calendar === "google" ? "Google Calendar" : "Calendario en BarberCloud"
+          calendar === "google" ? "Google Calendar" : "Calendario en Gestiónweb.app"
         }</li>`;
       localStorage.setItem(
         STORAGE_KEY,

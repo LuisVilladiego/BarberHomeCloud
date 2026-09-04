@@ -10,8 +10,8 @@
  * 6. Dashboard Inicio con formularios vacíos → Autoagenda
  */
 (function () {
-  const STORAGE_KEY = "barbercloud.welcome";
-  const AUTH_KEY = "barbercloud.auth";
+  const STORAGE_KEY = "gestionweb.welcome";
+  const AUTH_KEY = "gestionweb.auth";
 
   function userFromAuthStorage() {
     try {
@@ -85,7 +85,7 @@
       id: "dailyVolume",
       kind: "choice",
       question: "¿Cuántas citas gestionas al día?",
-      note: "Puedes usar BarberCloud para confirmar citas presenciales, reuniones virtuales, clases, enviar recordatorios y más.",
+      note: "Puedes usar Gestiónweb.app para confirmar citas presenciales, reuniones virtuales, clases, enviar recordatorios y más.",
       options: [
         { id: "1-15", label: "Entre 1 y 15" },
         { id: "16-40", label: "Entre 16 y 40" },
@@ -101,7 +101,7 @@
           id: "google",
           icon: "google",
           label: "En Google Calendar",
-          desc: "Sincronizaremos BarberCloud con tu Google Calendar existente.",
+          desc: "Sincronizaremos Gestiónweb.app con tu Google Calendar existente.",
         },
         {
           id: "otra-app",
@@ -113,7 +113,7 @@
           id: "papel",
           icon: "notebook",
           label: "En una agenda de papel",
-          desc: "Te crearemos un calendario dentro de BarberCloud.",
+          desc: "Te crearemos un calendario dentro de Gestiónweb.app.",
         },
         {
           id: "ninguna",
@@ -206,7 +206,7 @@
 
   function publicLink() {
     try {
-      const auto = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const auto = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       const slug = auto?.slug || window.Tenant?.cached?.()?.slug || "";
       if (!slug || !window.Tenant?.validateSlug?.(slug)?.ok) return "";
       return window.Tenant.displayLink(slug);
@@ -241,7 +241,7 @@
           <path d="M4.6 21c.9-4.2 3.8-6.4 7.4-6.4s6.5 2.2 7.4 6.4H4.6Z" fill="#1f2937" />
         </svg>
       </div>
-      <h2 id="welcome-title">¡Bienvenido a BarberCloud!</h2>
+      <h2 id="welcome-title">¡Bienvenido a Gestiónweb.app!</h2>
       <p class="welcome-lead">Automatiza la gestión de citas por WhatsApp y ahorra cientos de horas.</p>
       <p class="welcome-lead">Vamos a configurarlo en menos de 2 minutos.</p>`;
   }
@@ -304,7 +304,7 @@
 
   function savedPhone() {
     try {
-      const settings = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+      const settings = JSON.parse(localStorage.getItem("gestionweb_settings") || "{}");
       const raw = String(settings.waPhone || "").trim();
       const match = raw.match(/^(\+\d{1,3})\s*(.*)$/);
       if (match) return { cc: match[1], number: match[2].trim() };
@@ -317,9 +317,9 @@
   /** Mismo destino que usa el onboarding para el WhatsApp del negocio. */
   function saveWhatsAppSetting(display) {
     try {
-      const prev = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+      const prev = JSON.parse(localStorage.getItem("gestionweb_settings") || "{}");
       localStorage.setItem(
-        "barbercloud_settings",
+        "gestionweb_settings",
         JSON.stringify({ ...prev, waPhone: display, waConnected: true })
       );
     } catch {
@@ -427,7 +427,7 @@
     return `
       ${outroStarsHtml()}
       <h2 id="welcome-title" class="welcome-outro__title">¡Listo! Ya tienes todo para empezar</h2>
-      <p class="welcome-outro__lead">Tu membresía está activa. BarberCloud se encargará de confirmar tus citas por WhatsApp.</p>
+      <p class="welcome-outro__lead">Tu membresía está activa. Gestiónweb.app se encargará de confirmar tus citas por WhatsApp.</p>
       ${linkBlock}`;
   }
 
@@ -549,7 +549,7 @@
           serviceName: "Cita de prueba",
           status: "pending_confirmation",
           source: "admin",
-          notes: "Creada desde la bienvenida de BarberCloud.",
+          notes: "Creada desde la bienvenida de Gestiónweb.app.",
         });
       } catch (err) {
         console.warn("[welcome] cita de prueba", err);
@@ -714,7 +714,7 @@
           <h3 class="welcome-coach__title" id="welcome-coach-text">¡WhatsApp enviado automáticamente!</h3>
         </div>
         <p class="welcome-coach__desc">
-          ¡Magia! <span aria-hidden="true">✨</span> Luego de crear la cita, BarberCloud le envió un mensaje a tu cliente para confirmar.
+          ¡Magia! <span aria-hidden="true">✨</span> Luego de crear la cita, Gestiónweb.app le envió un mensaje a tu cliente para confirmar.
         </p>
         <div class="welcome-coach__actions welcome-coach__actions--split">
           <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
@@ -746,7 +746,7 @@
           <h3 class="welcome-coach__title" id="welcome-coach-text">Verde significa &lsquo;Confirmado&rsquo;</h3>
         </div>
         <p class="welcome-coach__desc">
-          Cuando tu cliente responde &ldquo;<strong>Sí</strong>&rdquo; en WhatsApp, BarberCloud detecta la respuesta y marca la cita en verde automáticamente.
+          Cuando tu cliente responde &ldquo;<strong>Sí</strong>&rdquo; en WhatsApp, Gestiónweb.app detecta la respuesta y marca la cita en verde automáticamente.
         </p>
         <div class="welcome-coach__actions welcome-coach__actions--split">
           <button class="btn btn--secondary welcome-coach__back" type="button">Atrás</button>
@@ -790,7 +790,7 @@
     return `
       <span class="welcome-coach__arrow" aria-hidden="true"></span>
       <p class="welcome-coach__text" id="welcome-coach-text">
-        <span aria-hidden="true">🎉</span> Creamos esta cita para mostrarte la magia de BarberCloud.
+        <span aria-hidden="true">🎉</span> Creamos esta cita para mostrarte la magia de Gestiónweb.app.
       </p>
       <div class="welcome-coach__actions">
         <button class="btn btn--primary welcome-coach__next" type="button">Siguiente</button>
@@ -980,5 +980,5 @@
   };
 
   if (window.AppShell?.panelReady) maybeOpen();
-  else window.addEventListener("barbercloud:panel-ready", maybeOpen, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", maybeOpen, { once: true });
 })();

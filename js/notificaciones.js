@@ -1,6 +1,6 @@
 (function () {
-  const NOTIF_KEY = "barbercloud.notifications";
-  const BOOKINGS_KEY = "barbercloud.bookings";
+  const NOTIF_KEY = "gestionweb.notifications";
+  const BOOKINGS_KEY = "gestionweb.bookings";
 
   const listEl = document.getElementById("notif-list");
   let filter = "all";
@@ -133,7 +133,7 @@
 
       byId.set(id, {
         id,
-        title: `${b.name || "Cliente"} - Agendar cita en BarberHome -`,
+        title: `${b.name || "Cliente"} - Agendar cita -`,
         appointmentAt,
         createdAt: b.createdAt || new Date().toISOString(),
         type,
@@ -294,7 +294,7 @@
     }
   });
 
-  window.addEventListener("barbercloud:notifications", () => {
+  window.addEventListener("gestionweb:notifications", () => {
     render();
     window.AppShell?.syncNotificationBadge?.();
   });
@@ -306,5 +306,5 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(start);
-  else window.addEventListener("barbercloud:panel-ready", start, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", start, { once: true });
 })();

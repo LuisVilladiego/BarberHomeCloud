@@ -1,5 +1,5 @@
 /**
- * CORREO BarberHome (OTP + aviso de reservas)
+ * CORREO Gestiónweb.app (OTP + aviso de reservas)
  * -----------------------------------------
  * 1) Ve a https://script.google.com → abre tu proyecto (o crea uno nuevo)
  * 2) Reemplaza TODO el código por este archivo y Guarda
@@ -68,7 +68,7 @@ function doGet(e) {
     return json_({
       ok: true,
       message:
-        "BarberHome mail OK. Usa POST type=verify, recover, booking, redeem o trial.",
+        "Gestiónweb.app mail OK. Usa POST type=verify, recover, booking, redeem o trial.",
     });
   } catch (err) {
     return json_({ ok: false, message: "Error interno" });
@@ -79,7 +79,7 @@ function sendVerifyCode_(data) {
   var to = String(data.to_email || "").trim();
   var name = String(data.to_name || "cliente").trim();
   var code = String(data.code || "").trim();
-  var fromName = String(data.from_name || "BarberHome").trim();
+  var fromName = String(data.from_name || "Mi negocio").trim();
 
   if (!to || !code) {
     return json_({ ok: false, message: "Faltan to_email o code" });
@@ -140,7 +140,7 @@ function sendRecoverCode_(data) {
   var to = String(data.to_email || "").trim();
   var name = String(data.to_name || "cliente").trim();
   var code = String(data.code || "").trim();
-  var fromName = String(data.from_name || "BarberHome").trim();
+  var fromName = String(data.from_name || "Mi negocio").trim();
 
   if (!to || !code) {
     return json_({ ok: false, message: "Faltan to_email o code" });
@@ -152,12 +152,12 @@ function sendRecoverCode_(data) {
     return json_({ ok: false, message: "Código inválido" });
   }
 
-  var subject = "Recupera tu contraseña BarberCloud: " + code;
+  var subject = "Recupera tu contraseña Gestiónweb.app: " + code;
   var body =
     "Hola " +
     name +
     ",\n\n" +
-    "Recibimos una solicitud para recuperar tu contraseña de BarberCloud.\n" +
+    "Recibimos una solicitud para recuperar tu contraseña de Gestiónweb.app.\n" +
     "Tu código es: " +
     code +
     "\n\n" +
@@ -171,7 +171,7 @@ function sendRecoverCode_(data) {
     "<p>Hola <strong>" +
     escapeHtml_(name) +
     "</strong>,</p>" +
-    "<p>Usa este código para <strong>recuperar tu contraseña</strong> de BarberCloud:</p>" +
+    "<p>Usa este código para <strong>recuperar tu contraseña</strong> de Gestiónweb.app:</p>" +
     '<p style="font-size:32px;letter-spacing:6px;font-weight:700;margin:24px 0;color:#5b21b6">' +
     escapeHtml_(code) +
     "</p>" +
@@ -195,7 +195,7 @@ function sendRecoverCode_(data) {
 
 function sendBookingAlert_(data) {
   var to = String(data.to_email || data.admin_email || "").trim();
-  var fromName = String(data.from_name || "BarberHome").trim();
+  var fromName = String(data.from_name || "Mi negocio").trim();
   var booking = data.booking || {};
 
   if (!to) {
@@ -260,7 +260,7 @@ function sendBookingAlert_(data) {
     (bookingId ? "ID: " + bookingId + "\n" : "") +
     (fingerprint ? "Dispositivo: " + fingerprint + "\n" : "") +
     (notes ? "Notas: " + notes + "\n" : "") +
-    "\n— BarberCloud";
+    "\n— Gestiónweb.app";
 
   var html =
     '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827">' +
@@ -282,7 +282,7 @@ function sendBookingAlert_(data) {
     (fingerprint ? row_("Dispositivo", fingerprint) : "") +
     (notes ? row_("Notas", notes) : "") +
     "</table>" +
-    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de BarberCloud</p>' +
+    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de Gestiónweb.app</p>' +
     "</div>";
 
   MailApp.sendEmail({
@@ -298,7 +298,7 @@ function sendBookingAlert_(data) {
 
 function sendRedeemAlert_(data) {
   var to = String(data.to_email || data.admin_email || "").trim();
-  var fromName = String(data.from_name || "BarberHome").trim();
+  var fromName = String(data.from_name || "Mi negocio").trim();
   var redeem = data.redeem || {};
   var customer = redeem.customer || {};
 
@@ -346,7 +346,7 @@ function sendRedeemAlert_(data) {
     "\n" +
     (redeemId ? "ID: " + redeemId + "\n" : "") +
     "\nLos puntos ya fueron descontados. Entrega el producto y márcalo como entregado en Puntos.\n" +
-    "\n— BarberCloud";
+    "\n— Gestiónweb.app";
 
   var html =
     '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827">' +
@@ -361,7 +361,7 @@ function sendRedeemAlert_(data) {
     row_("Correo", email) +
     (redeemId ? row_("ID", redeemId) : "") +
     "</table>" +
-    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de BarberCloud</p>' +
+    '<p style="color:#6b7280;font-size:12px;margin-top:24px">Aviso automático de Gestiónweb.app</p>' +
     "</div>";
 
   MailApp.sendEmail({
@@ -378,11 +378,11 @@ function sendRedeemAlert_(data) {
 function sendTrialNotice_(data) {
   var to = String(data.to_email || "").trim();
   var name = String(data.to_name || "barbero").trim();
-  var fromName = String(data.from_name || "BarberCloud").trim();
-  var subject = String(data.subject || "Tu prueba de BarberCloud").trim();
+  var fromName = String(data.from_name || "Gestiónweb.app").trim();
+  var subject = String(data.subject || "Tu prueba de Gestiónweb.app").trim();
   var headline = String(data.headline || "Tu prueba gratis").trim();
   var message = String(data.message || data.text || data.body || "").trim();
-  var ctaLabel = String(data.cta_label || "Abrir BarberCloud").trim();
+  var ctaLabel = String(data.cta_label || "Abrir Gestiónweb.app").trim();
   var ctaUrl = String(data.cta_url || data.href || "https://barber-home-cloud.vercel.app/index.html").trim();
   var days = String(data.days_left != null ? data.days_left : "").trim();
 
@@ -395,8 +395,8 @@ function sendTrialNotice_(data) {
   if (!message) {
     message =
       days === "0"
-        ? "Hoy termina tu prueba gratis. Elige un plan para seguir usando BarberCloud."
-        : "Tu prueba de BarberCloud se está acabando. Elige un plan para no pausar tu enlace de reservas.";
+        ? "Hoy termina tu prueba gratis. Elige un plan para seguir usando Gestiónweb.app."
+        : "Tu prueba de Gestiónweb.app se está acabando. Elige un plan para no pausar tu enlace de reservas.";
   }
 
   var body =
@@ -413,7 +413,7 @@ function sendTrialNotice_(data) {
 
   var html =
     '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111827;background:#f8fafc">' +
-    '<p style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#2563eb;font-weight:700;margin:0 0 8px">BarberCloud</p>' +
+    '<p style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#2563eb;font-weight:700;margin:0 0 8px">Gestiónweb.app</p>' +
     '<p style="font-size:22px;font-weight:700;margin:0 0 12px">' +
     escapeHtml_(headline) +
     "</p>" +

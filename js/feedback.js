@@ -1,5 +1,5 @@
 (function () {
-  const STORAGE_KEY = "barbercloud_feedback";
+  const STORAGE_KEY = "gestionweb_feedback";
   const form = document.getElementById("feedback-form");
   const input = document.getElementById("feedback-message");
   const nameEl = document.getElementById("feedback-name");
@@ -7,7 +7,7 @@
   const userName =
     (() => {
       try {
-        const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+        const s = JSON.parse(localStorage.getItem("gestionweb_settings") || "{}");
         if (s.name && String(s.name).trim().toLowerCase() !== "luis villadiego") {
           return s.name.trim().split(/\s+/)[0];
         }
@@ -21,7 +21,7 @@
   }
 
   try {
-    const s = JSON.parse(localStorage.getItem("barbercloud_settings") || "{}");
+    const s = JSON.parse(localStorage.getItem("gestionweb_settings") || "{}");
     if (s.name && String(s.name).trim().toLowerCase() !== "luis villadiego") {
       document.querySelectorAll(".user__name").forEach((el) => {
         el.textContent = s.name;

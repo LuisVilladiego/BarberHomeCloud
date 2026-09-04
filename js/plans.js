@@ -1,5 +1,5 @@
 /**
- * Planes BarberCloud para la UI.
+ * Planes Gestiónweb.app para la UI.
  * Definición y límites en js/business-model.js; precios deben coincidir con api/_lib/plans.js.
  */
 (function () {

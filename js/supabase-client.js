@@ -27,7 +27,7 @@
         autoRefreshToken: true,
         detectSessionInUrl: true,
         flowType: "implicit",
-        storageKey: "barbercloud.auth",
+        storageKey: "gestionweb.auth",
       },
     });
     return client;

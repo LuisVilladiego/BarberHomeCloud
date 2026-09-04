@@ -4,6 +4,7 @@
     { "source": "/", "destination": "/landing.html", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/favicon.ico", "destination": "/assets/favicon.png" },
     { "source": "/landing", "destination": "/landing.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/onboarding", "destination": "/onboarding.html" },

@@ -54,7 +54,7 @@
 
   function countLocalClients(negocioId) {
     try {
-      const users = JSON.parse(localStorage.getItem("barbercloud.loyalty_users") || "[]");
+      const users = JSON.parse(localStorage.getItem("gestionweb.loyalty_users") || "[]");
       if (!Array.isArray(users)) return 0;
       return users.filter((u) => !negocioId || !u.negocioId || u.negocioId === negocioId).length;
     } catch {

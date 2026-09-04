@@ -1,7 +1,7 @@
 (function () {
-  const BOOKINGS_KEY = "barbercloud.bookings";
-  const SUB_KEY = "barbercloud.subscription";
-  const NOTIF_KEY = "barbercloud.notifications";
+  const BOOKINGS_KEY = "gestionweb.bookings";
+  const SUB_KEY = "gestionweb.subscription";
+  const NOTIF_KEY = "gestionweb.notifications";
 
   const dateFrom = document.getElementById("date-from");
   const dateTo = document.getElementById("date-to");
@@ -94,7 +94,7 @@
     if (!f || f === "all") return true;
     if (f === "gmail") return calendarId === "gmail";
     if (
-      f === "BarberHome" ||
+      f === "Mi negocio" ||
       f === "barberhome" ||
       f === "native" ||
       f === "negocio" ||
@@ -593,5 +593,5 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(render);
-  else window.addEventListener("barbercloud:panel-ready", render, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", render, { once: true });
 })();

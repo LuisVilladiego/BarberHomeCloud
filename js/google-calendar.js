@@ -2,9 +2,9 @@
  * Conexión a Google Calendar vía Google Identity Services (token en navegador).
  */
 (function () {
-  const AUTH_BASE = "barbercloud.google_auth";
-  const BUSY_BASE = "barbercloud.google_busy_cache";
-  const ACTIVE_BASE = "barbercloud.active_calendar";
+  const AUTH_BASE = "gestionweb.google_auth";
+  const BUSY_BASE = "gestionweb.google_busy_cache";
+  const ACTIVE_BASE = "gestionweb.active_calendar";
   const CANONICAL_ORIGIN = "https://barber-home-cloud.vercel.app";
   const cfg = () => window.GoogleConfig || {};
 
@@ -367,7 +367,7 @@
     const fromTenant = window.Tenant?.cached?.()?.autoagenda;
     if (fromTenant && typeof fromTenant === "object") return fromTenant;
     try {
-      const local = JSON.parse(localStorage.getItem("barbercloud.autoagenda") || "{}");
+      const local = JSON.parse(localStorage.getItem("gestionweb.autoagenda") || "{}");
       return local && typeof local === "object" ? local : {};
     } catch {
       return {};
@@ -403,7 +403,7 @@
         }
       : { connected: false };
     try {
-      localStorage.setItem("barbercloud.autoagenda", JSON.stringify(auto));
+      localStorage.setItem("gestionweb.autoagenda", JSON.stringify(auto));
     } catch {
       /* ignore */
     }
@@ -649,7 +649,7 @@
     const tz = calendarTimeZone();
     const endAt = addMinutesToDateTime(date, time, duration);
     const body = {
-      summary: summary || "Cita BarberCloud",
+      summary: summary || "Cita Gestiónweb.app",
       description: description || "",
       start: { dateTime: dateTimeLocal(date, time), timeZone: tz },
       end: { dateTime: dateTimeLocal(endAt.date, endAt.time), timeZone: tz },
@@ -704,7 +704,7 @@
     const data = await createEvent({
       summary: `${service} · ${name}${phone ? ` ${phone}` : ""}`.trim(),
       description: [
-        "Reserva BarberCloud",
+        "Reserva Gestiónweb.app",
         `Cliente: ${name}`,
         phone ? `WhatsApp: ${phone}` : "",
         booking.notes ? `Notas: ${booking.notes}` : "",

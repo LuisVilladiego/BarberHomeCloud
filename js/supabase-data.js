@@ -58,6 +58,7 @@
         confirmationStatus: b.confirmationStatus || "",
         googleSync: b.googleSync || "",
         googleSyncError: b.googleSyncError || "",
+        waMessages: b.waMessages && typeof b.waMessages === "object" ? b.waMessages : {},
       },
       updated_at: new Date().toISOString(),
     };
@@ -90,6 +91,7 @@
       confirmationStatus: r.meta?.confirmationStatus || "",
       googleSync: r.meta?.googleSync || (r.google_event_id ? "synced" : ""),
       googleSyncError: r.meta?.googleSyncError || "",
+      waMessages: r.meta?.waMessages && typeof r.meta.waMessages === "object" ? r.meta.waMessages : {},
     };
   }
 

@@ -145,7 +145,7 @@
     if (!clientId) throw new Error("Falta GoogleConfig.clientId");
 
     return new Promise((resolve, reject) => {
-      const hostId = "barbercloud-google-credential-host";
+      const hostId = "gestionweb-google-credential-host";
       let host = document.getElementById(hostId);
       if (!host) {
         host = document.createElement("div");
@@ -154,15 +154,15 @@
         host.innerHTML =
           '<div class="google-credential-overlay__card" role="dialog" aria-modal="true" aria-labelledby="google-credential-title">' +
           '<p class="google-credential-overlay__lead" id="google-credential-title">Continúa con tu cuenta de Google</p>' +
-          '<div id="barbercloud-google-credential-btn"></div>' +
-          '<button type="button" class="btn btn--ghost btn--sm" id="barbercloud-google-credential-cancel">Cancelar</button>' +
+          '<div id="gestionweb-google-credential-btn"></div>' +
+          '<button type="button" class="btn btn--ghost btn--sm" id="gestionweb-google-credential-cancel">Cancelar</button>' +
           "</div>";
         document.body.appendChild(host);
       }
 
       host.hidden = false;
-      const btnWrap = host.querySelector("#barbercloud-google-credential-btn");
-      const cancelBtn = host.querySelector("#barbercloud-google-credential-cancel");
+      const btnWrap = host.querySelector("#gestionweb-google-credential-btn");
+      const cancelBtn = host.querySelector("#gestionweb-google-credential-cancel");
       if (!btnWrap || !cancelBtn) {
         reject(new Error("No se pudo abrir el inicio de sesión con Google."));
         return;
@@ -224,7 +224,7 @@
     url.searchParams.set("prompt", "select_account");
 
     return new Promise((resolve, reject) => {
-      const popup = window.open(url.toString(), "barbercloud-google", "width=480,height=640");
+      const popup = window.open(url.toString(), "gestionweb-google", "width=480,height=640");
       if (!popup) {
         reject(new Error("popup"));
         return;

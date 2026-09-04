@@ -1,6 +1,6 @@
 (function () {
-  const STORAGE_KEY = "barbercloud.autoagenda";
-  const BOOKINGS_KEY = "barbercloud.bookings";
+  const STORAGE_KEY = "gestionweb.autoagenda";
+  const BOOKINGS_KEY = "gestionweb.bookings";
   const form = document.getElementById("autoagenda-form");
   if (!form) return;
 
@@ -116,7 +116,7 @@
     if (!window.SupabaseData?.enabled?.()) return;
     let sub = {};
     try {
-      sub = JSON.parse(localStorage.getItem("barbercloud.subscription") || "{}");
+      sub = JSON.parse(localStorage.getItem("gestionweb.subscription") || "{}");
     } catch {
       sub = {};
     }
@@ -514,7 +514,7 @@
   }
 
   if (window.AppShell?.whenReady) window.AppShell.whenReady(startAutoagenda);
-  else window.addEventListener("barbercloud:panel-ready", startAutoagenda, { once: true });
+  else window.addEventListener("gestionweb:panel-ready", startAutoagenda, { once: true });
 
   const urlPrefix = document.getElementById("url-prefix");
   if (urlPrefix) {

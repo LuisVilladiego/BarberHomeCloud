@@ -142,6 +142,53 @@ async function sendWhatsApp({ to, body, contentSid, contentVariables }) {
   return twilioSendMessage(params);
 }
 
+function resolveUtilityContentSid(fromAddress) {
+  const configured = String(process.env.TWILIO_WHATSAPP_UTILITY_CONTENT_SID || "").trim();
+  if (configured) return configured;
+  if (fromAddress === SANDBOX_WHATSAPP_FROM) return SANDBOX_DEFAULT_CONTENT_SID;
+  return "";
+}
+
+function buildUtilityContentVariables({ title, body, datePart, timePart, contentSid }) {
+  const full = String(body || "").trim();
+  const custom = String(process.env.TWILIO_WHATSAPP_UTILITY_VARIABLES || "").trim();
+  if (custom) {
+    return custom
+      .replace(/\{\{1\}\}/g, full.slice(0, 900))
+      .replace(/\{\{2\}\}/g, String(title || "").slice(0, 200))
+      .replace(/\{\{date\}\}/g, String(datePart || ""))
+      .replace(/\{\{time\}\}/g, String(timePart || ""));
+  }
+  if (contentSid === SANDBOX_DEFAULT_CONTENT_SID) {
+    return JSON.stringify({
+      1: String(datePart || title || "Tu cita").slice(0, 200),
+      2: String(full || timePart || title || "Recordatorio").slice(0, 900),
+    });
+  }
+  return JSON.stringify({ 1: full.slice(0, 1024) });
+}
+
+async function sendBusinessWhatsApp({ toE164, title, body, datePart, timePart, businessName }) {
+  const cfg = twilioConfig();
+  const utilitySid = resolveUtilityContentSid(cfg?.from || "");
+  const contentVariables = buildUtilityContentVariables({
+    title,
+    body,
+    datePart,
+    timePart,
+    contentSid: utilitySid,
+  });
+
+  if (utilitySid) {
+    return sendWhatsApp({ to: toE164, contentSid: utilitySid, contentVariables });
+  }
+
+  const brand = String(businessName || "BarberCloud").trim();
+  const text = String(body || title || "").trim();
+  const fallbackBody = text || `${brand}: recordatorio de cita`;
+  return sendWhatsApp({ to: toE164, body: fallbackBody.slice(0, 1024) });
+}
+
 async function sendLookupCode({ toE164, code, businessName }) {
   const cfg = twilioConfig();
   const contentSid = resolveContentSid(cfg?.from || "");
@@ -163,5 +210,6 @@ async function sendLookupCode({ toE164, code, businessName }) {
 module.exports = {
   isConfigured: () => !!twilioConfig(),
   sendLookupCode,
+  sendBusinessWhatsApp,
   sendWhatsApp,
 };
